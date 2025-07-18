@@ -49,7 +49,7 @@ type CompanySettings = z.infer<typeof companySettingsSchema>;
 type EmailSettings = z.infer<typeof emailSettingsSchema>;
 type UserInvite = z.infer<typeof userInviteSchema>;
 
-export default function Settings() {
+export default function SettingsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('company');

@@ -124,6 +124,25 @@ export function Sidebar() {
                   </a>
                 </div>
               </div>
+
+              {/* Settings Section */}
+              <div className="mt-6">
+                <h3 className="px-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+                  Systém
+                </h3>
+                <div className="mt-2 space-y-1">
+                  <a 
+                    href="/settings" 
+                    className={cn(
+                      "sidebar-nav-item",
+                      isActive("/settings") && "active"
+                    )}
+                  >
+                    <i className="fas fa-cog mr-3"></i>
+                    Nastavení
+                  </a>
+                </div>
+              </div>
             </nav>
           </div>
 

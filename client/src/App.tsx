@@ -8,6 +8,7 @@ import Dashboard from "@/pages/dashboard";
 import Invoices from "@/pages/invoices";
 import Customers from "@/pages/customers";
 import InvoiceDetail from "@/pages/invoice-detail";
+import SettingsPage from "@/pages/settings";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { UniversalAIChat } from "@/components/universal-ai-chat";
@@ -21,6 +22,7 @@ function Router() {
       <Route path="/invoices" component={Invoices} />
       <Route path="/invoices/:id" component={InvoiceDetail} />
       <Route path="/customers" component={Customers} />
+      <Route path="/settings" component={SettingsPage} />
       <Route component={NotFound} />
     </Switch>
   );

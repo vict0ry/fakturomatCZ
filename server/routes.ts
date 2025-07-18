@@ -11,6 +11,8 @@ import { processAICommand, generateInvoiceDescription, processUniversalAICommand
 import { generateInvoicePDF } from "./services/pdf";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
+import setupEmailRoutes from "./routes/email";
+import setupCompanyRoutes from "./routes/company";
 
 // Simple session middleware (in production, use proper session management)
 const sessions = new Map<string, { userId: number; companyId: number }>();
@@ -585,6 +587,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('WebSocket connection closed');
     });
   });
+
+  // Mount additional routes
+  setupEmailRoutes(app, sessions);
+  setupCompanyRoutes(app, sessions);
 
   return server;
 }

@@ -13,6 +13,7 @@ import { Plus, Search, Download, Eye, Edit, Trash2 } from "lucide-react";
 
 export default function Invoices() {
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const [typeFilter, setTypeFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -168,12 +169,12 @@ export default function Invoices() {
                   <SelectItem value="overdue">Po splatnosti</SelectItem>
                 </SelectContent>
               </Select>
-              <Select>
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
                 <SelectTrigger className="w-full sm:w-48">
                   <SelectValue placeholder="Typ dokumentu" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Všechny typy</SelectItem>
+                  <SelectItem value="">Všechny typy</SelectItem>
                   <SelectItem value="invoice">Faktury</SelectItem>
                   <SelectItem value="proforma">Proformy</SelectItem>
                   <SelectItem value="credit_note">Dobropisy</SelectItem>

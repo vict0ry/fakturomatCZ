@@ -25,7 +25,7 @@ const invoiceItemSchema = z.object({
 });
 
 const invoiceSchema = z.object({
-  customerId: z.number().min(1, "Zákazník je povinný"),
+  customerId: z.number(),
   type: z.enum(["invoice", "proforma", "credit_note"]).default("invoice"),
   invoiceNumber: z.string().optional(),
   issueDate: z.string().min(1, "Datum vystavení je povinné"),
@@ -89,7 +89,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
     },
   });
 
-  const { register, handleSubmit, setValue, watch, control, formState: { errors } } = form;
+  const { register, handleSubmit, setValue, watch, control, formState: { errors }, clearErrors } = form;
   const { fields, append, remove } = useFieldArray({
     control,
     name: "items",
@@ -117,7 +117,9 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
   const selectCustomer = (customer: Customer) => {
     setSelectedCustomer(customer);
     setCustomerSearch(customer.name);
-    setValue("customerId", customer.id);
+    // If customer doesn't have ID (from ARES), set a temporary value
+    setValue("customerId", customer.id || -1);
+    clearErrors("customerId"); // Clear validation error
     setShowCustomerResults(false);
   };
 
@@ -187,7 +189,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
   };
 
   const handleFormSubmit = (data: InvoiceFormData) => {
-    if (!selectedCustomer && data.customerId === 0) {
+    if (!selectedCustomer || (!selectedCustomer.id && data.customerId <= 0)) {
       toast({
         title: "Chyba",
         description: "Musíte vybrat zákazníka.",
