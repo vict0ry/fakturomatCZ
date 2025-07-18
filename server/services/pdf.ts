@@ -164,8 +164,8 @@ function generateInvoiceHTML(invoice: Invoice & { customer: Customer; items: Inv
       <div class="info-section">
         <div class="info-block">
           <h3>Dodavatel</h3>
-          <p><strong>FakturaAI s.r.o.</strong></p>
-          <p>Příkladová 123</p>
+          <p><strong>Test s.r.o.</strong></p>
+          <p>Testovací 123</p>
           <p>110 00 Praha 1</p>
           <p>IČO: 12345678</p>
           <p>DIČ: CZ12345678</p>
