@@ -122,6 +122,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test endpoint for ARES API
+  app.get("/api/test/ares/:ico", async (req, res) => {
+    try {
+      const ico = req.params.ico;
+      const aresData = await fetchCompanyFromAres(ico);
+      res.json({ ico, data: aresData });
+    } catch (error) {
+      console.error("Error testing ARES:", error);
+      res.status(500).json({ message: "Failed to test ARES", error: (error as Error).message });
+    }
+  });
+
   // Company routes
   app.get("/api/company", requireAuth, async (req: any, res) => {
     try {

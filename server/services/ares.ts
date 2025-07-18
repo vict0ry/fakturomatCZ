@@ -1,16 +1,15 @@
 interface AresResponse {
-  ekonomickySubjekt: {
-    ico: string;
-    obchodniJmeno: string;
-    sidlo: {
-      nazevObce: string;
-      psc: string;
-      nazevUlice?: string;
-      cisloDomovni?: string;
-      cisloOrientacni?: string;
-    };
-    dic?: string;
+  ico: string;
+  obchodniJmeno: string;
+  sidlo: {
+    nazevObce: string;
+    psc: string;
+    nazevUlice?: string;
+    cisloDomovni?: string;
+    cisloOrientacni?: string;
+    cisloOrientacniPismeno?: string;
   };
+  dic?: string;
 }
 
 export async function fetchCompanyFromAres(ico: string): Promise<{
@@ -33,26 +32,48 @@ export async function fetchCompanyFromAres(ico: string): Promise<{
     }
 
     const data: AresResponse = await response.json();
-    const subject = data.ekonomickySubjekt;
+    
+    // Log the response for debugging
+    console.log('ARES response keys:', Object.keys(data));
+    console.log('ARES response sample:', {
+      ico: data.ico,
+      obchodniJmeno: data.obchodniJmeno,
+      hasSidlo: !!data.sidlo,
+      sidloKeys: data.sidlo ? Object.keys(data.sidlo) : 'no sidlo'
+    });
+    
+    if (!data.ico || !data.obchodniJmeno) {
+      console.error('Missing required fields in ARES response');
+      return null;
+    }
+
+    // Safe check for sidlo data
+    if (!data.sidlo) {
+      console.error('No sidlo data in response');
+      return null;
+    }
 
     let address = '';
-    if (subject.sidlo.nazevUlice) {
-      address += subject.sidlo.nazevUlice;
-      if (subject.sidlo.cisloDomovni) {
-        address += ` ${subject.sidlo.cisloDomovni}`;
+    if (data.sidlo?.nazevUlice) {
+      address += data.sidlo.nazevUlice;
+      if (data.sidlo.cisloDomovni) {
+        address += ` ${data.sidlo.cisloDomovni}`;
       }
-      if (subject.sidlo.cisloOrientacni) {
-        address += `/${subject.sidlo.cisloOrientacni}`;
+      if (data.sidlo.cisloOrientacni) {
+        address += `/${data.sidlo.cisloOrientacni}`;
+        if (data.sidlo.cisloOrientacniPismeno) {
+          address += data.sidlo.cisloOrientacniPismeno;
+        }
       }
     }
 
     return {
-      ico: subject.ico,
-      name: subject.obchodniJmeno,
-      dic: subject.dic,
+      ico: data.ico,
+      name: data.obchodniJmeno,
+      dic: data.dic,
       address: address || '',
-      city: subject.sidlo.nazevObce,
-      postalCode: subject.sidlo.psc,
+      city: data.sidlo?.nazevObce || '',
+      postalCode: data.sidlo?.psc?.toString() || '',
     };
   } catch (error) {
     console.error('ARES API error:', error);
