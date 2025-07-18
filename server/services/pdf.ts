@@ -1,36 +1,11 @@
-import puppeteer from 'puppeteer';
+// PDF generation without Puppeteer - using HTML response instead
 import { Invoice, Customer, InvoiceItem } from '@shared/schema';
 
 export async function generateInvoicePDF(
   invoice: Invoice & { customer: Customer; items: InvoiceItem[] }
-): Promise<Buffer> {
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  });
-
-  try {
-    const page = await browser.newPage();
-    
-    const html = generateInvoiceHTML(invoice);
-    
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-    
-    const pdf = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '20mm',
-        right: '15mm',
-        bottom: '20mm',
-        left: '15mm'
-      }
-    });
-
-    return pdf;
-  } finally {
-    await browser.close();
-  }
+): Promise<string> {
+  // Return HTML instead of PDF for now - browser can handle printing to PDF
+  return generateInvoiceHTML(invoice);
 }
 
 function generateInvoiceHTML(invoice: Invoice & { customer: Customer; items: InvoiceItem[] }): string {
