@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRoute } from "wouter";
+import { useRoute, useLocation } from "wouter";
 import { invoiceAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,12 +9,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Download, Edit, ArrowLeft, Send, Check, Clock, AlertTriangle } from "lucide-react";
+import { Download, Edit, ArrowLeft, Send, Check, Clock, AlertTriangle, Plus } from "lucide-react";
 import type { Invoice } from "@/lib/api";
+import { InvoiceForm } from "@/components/invoice-form";
 
 export default function InvoiceDetail() {
   const [, params] = useRoute("/invoices/:id");
-  const invoiceId = params?.id ? parseInt(params.id) : null;
+  const [location, setLocation] = useLocation();
+  const isNew = params?.id === "new";
+  const invoiceId = params?.id && !isNew ? parseInt(params.id) : null;
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -128,6 +131,66 @@ export default function InvoiceDetail() {
         return type;
     }
   };
+
+  // Handle creating new invoice
+  if (isNew) {
+    const createInvoiceMutation = useMutation({
+      mutationFn: invoiceAPI.create,
+      onSuccess: (newInvoice) => {
+        queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+        toast({
+          title: "Faktura vytvořena",
+          description: "Nová faktura byla úspěšně vytvořena.",
+        });
+        setLocation(`/invoices/${newInvoice.id}`);
+      },
+      onError: () => {
+        toast({
+          title: "Chyba",
+          description: "Nepodařilo se vytvořit fakturu.",
+          variant: "destructive",
+        });
+      },
+    });
+
+    return (
+      <div className="py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+          <div className="mb-8">
+            <Button 
+              variant="ghost" 
+              onClick={() => setLocation("/invoices")}
+              className="mb-4"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Zpět na faktury
+            </Button>
+            <h1 className="text-2xl font-bold leading-7 text-neutral-900 sm:text-3xl">
+              Nová faktura
+            </h1>
+            <p className="mt-1 text-sm text-neutral-500">
+              Vytvořte novou fakturu, proformu nebo dobropis
+            </p>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                <Plus className="mr-2 h-5 w-5 inline" />
+                Vytvořit dokument
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <InvoiceForm
+                onSubmit={createInvoiceMutation.mutate}
+                isLoading={createInvoiceMutation.isPending}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   if (!invoiceId) {
     return (
