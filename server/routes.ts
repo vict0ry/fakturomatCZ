@@ -385,6 +385,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/invoices/:id", requireAuth, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const invoiceData = insertInvoiceSchema.partial().parse(req.body);
+      const invoice = await storage.updateInvoice(id, invoiceData, req.user.companyId);
+      res.json(invoice);
+    } catch (error) {
+      console.error("Error updating invoice:", error);
+      res.status(500).json({ message: "Failed to update invoice" });
+    }
+  });
+
   app.patch("/api/invoices/:id/due-date", requireAuth, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);

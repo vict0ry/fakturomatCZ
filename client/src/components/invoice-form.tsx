@@ -33,6 +33,8 @@ const invoiceSchema = z.object({
   subtotal: z.string().default("0"),
   vatAmount: z.string().default("0"),
   total: z.string().default("0"),
+  currency: z.string().default("CZK"),
+  isReverseCharge: z.boolean().default(false),
   status: z.enum(["draft", "sent", "paid", "overdue"]).default("draft"),
   notes: z.string().optional(),
   items: z.array(invoiceItemSchema).min(1, "Alespoň jedna položka je povinná"),
@@ -69,6 +71,8 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
       subtotal: invoice?.subtotal || "0",
       vatAmount: invoice?.vatAmount || "0",
       total: invoice?.total || "0",
+      currency: invoice?.currency || "CZK",
+      isReverseCharge: invoice?.isReverseCharge || false,
       status: invoice?.status || "draft",
       notes: invoice?.notes || "",
       items: invoice?.items?.map(item => ({
@@ -127,6 +131,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
   const calculateTotals = () => {
     let subtotal = 0;
     let vatAmount = 0;
+    const isReverseCharge = watch("isReverseCharge");
 
     watchedItems.forEach((item, index) => {
       const quantity = parseFloat(item.quantity) || 0;
@@ -134,7 +139,8 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
       const vatRate = parseFloat(item.vatRate) || 21;
       
       const itemSubtotal = quantity * unitPrice;
-      const itemVat = (itemSubtotal * vatRate) / 100;
+      // If reverse charge, VAT is 0
+      const itemVat = isReverseCharge ? 0 : (itemSubtotal * vatRate) / 100;
       const itemTotal = itemSubtotal + itemVat;
 
       subtotal += itemSubtotal;
@@ -151,10 +157,10 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
     setValue("total", total.toFixed(2));
   };
 
-  // Recalculate when items change
+  // Recalculate when items or reverse charge change
   useEffect(() => {
     calculateTotals();
-  }, [watchedItems]);
+  }, [watchedItems, watch("isReverseCharge")]);
 
   const addItem = () => {
     append({
@@ -262,6 +268,37 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                   {errors.dueDate && (
                     <p className="text-sm text-red-600">{errors.dueDate.message}</p>
                   )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="currency">Měna</Label>
+                  <Select
+                    value={watch("currency")}
+                    onValueChange={(value) => setValue("currency", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CZK">CZK - Česká koruna</SelectItem>
+                      <SelectItem value="EUR">EUR - Euro</SelectItem>
+                      <SelectItem value="USD">USD - Americký dolar</SelectItem>
+                      <SelectItem value="GBP">GBP - Britská libra</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2 flex items-end">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      {...register("isReverseCharge")}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-medium">Reverse Charge (přenesení daňové povinnosti)</span>
+                  </label>
                 </div>
               </div>
 
