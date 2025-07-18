@@ -39,22 +39,77 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing session in localStorage
-    const savedUser = localStorage.getItem('user');
-    const savedSessionId = localStorage.getItem('sessionId');
-    
-    if (savedUser && savedSessionId) {
-      try {
-        setUser(JSON.parse(savedUser));
-        setSessionId(savedSessionId);
-      } catch (error) {
-        console.error('Error parsing stored user data:', error);
-        localStorage.removeItem('user');
-        localStorage.removeItem('sessionId');
+    const validateSession = async () => {
+      // Check for existing session in localStorage
+      const savedUser = localStorage.getItem('user');
+      const savedSessionId = localStorage.getItem('sessionId');
+      
+      if (savedUser && savedSessionId) {
+        try {
+          // Validate session with server
+          const response = await fetch('/api/auth/validate', {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${savedSessionId}`,
+            },
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            setUser(data.user);
+            setSessionId(savedSessionId);
+          } else {
+            // Invalid session, clear storage and try development session
+            localStorage.removeItem('user');
+            localStorage.removeItem('sessionId');
+            
+            // Try development session
+            const devResponse = await fetch('/api/auth/validate', {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer test-session-dev`,
+              },
+            });
+            
+            if (devResponse.ok) {
+              const devData = await devResponse.json();
+              setUser(devData.user);
+              setSessionId('test-session-dev');
+              localStorage.setItem('user', JSON.stringify(devData.user));
+              localStorage.setItem('sessionId', 'test-session-dev');
+            }
+          }
+        } catch (error) {
+          console.error('Error validating session:', error);
+          localStorage.removeItem('user');
+          localStorage.removeItem('sessionId');
+        }
+      } else {
+        // No saved session, try development session
+        try {
+          const devResponse = await fetch('/api/auth/validate', {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer test-session-dev`,
+            },
+          });
+          
+          if (devResponse.ok) {
+            const devData = await devResponse.json();
+            setUser(devData.user);
+            setSessionId('test-session-dev');
+            localStorage.setItem('user', JSON.stringify(devData.user));
+            localStorage.setItem('sessionId', 'test-session-dev');
+          }
+        } catch (error) {
+          console.error('Error with development session:', error);
+        }
       }
-    }
-    
-    setIsLoading(false);
+      
+      setIsLoading(false);
+    };
+
+    validateSession();
   }, []);
 
   const login = (user: User, sessionId: string) => {

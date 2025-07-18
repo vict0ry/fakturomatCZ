@@ -41,6 +41,7 @@ export interface IStorage {
   getInvoiceWithDetails(id: number, companyId: number): Promise<(Invoice & { items: InvoiceItem[], customer: Customer }) | undefined>;
   createInvoice(invoice: InsertInvoice): Promise<Invoice>;
   updateInvoice(id: number, invoice: Partial<InsertInvoice>, companyId: number): Promise<Invoice>;
+  updateInvoiceStatus(id: number, status: string): Promise<Invoice>;
   getCompanyInvoices(companyId: number, filters?: {
     status?: string;
     type?: string;
@@ -256,6 +257,15 @@ export class DatabaseStorage implements IStorage {
       .update(invoices)
       .set({ ...invoice, updatedAt: new Date() })
       .where(and(eq(invoices.id, id), eq(invoices.companyId, companyId)))
+      .returning();
+    return updatedInvoice;
+  }
+
+  async updateInvoiceStatus(id: number, status: string): Promise<Invoice> {
+    const [updatedInvoice] = await db
+      .update(invoices)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(invoices.id, id))
       .returning();
     return updatedInvoice;
   }

@@ -15,6 +15,9 @@ import bcrypt from "bcryptjs";
 // Simple session middleware (in production, use proper session management)
 const sessions = new Map<string, { userId: number; companyId: number }>();
 
+// Initialize with a test session for development
+sessions.set('test-session-dev', { userId: 1, companyId: 1 });
+
 // Authentication middleware
 const requireAuth = (req: any, res: any, next: any) => {
   const sessionId = req.headers.authorization?.replace('Bearer ', '');
@@ -83,6 +86,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Login error:", error);
       res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  app.get("/api/auth/validate", requireAuth, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.userId);
+      if (user) {
+        res.json({ 
+          user: { ...user, password: undefined },
+          valid: true
+        });
+      } else {
+        res.status(401).json({ message: "Invalid session" });
+      }
+    } catch (error) {
+      console.error("Session validation error:", error);
+      res.status(401).json({ message: "Invalid session" });
     }
   });
 
@@ -468,7 +488,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { message, context, currentPath } = req.body;
       
-      const aiResponse = await processUniversalAICommand(message, context, currentPath, req.user.companyId, req.user.userId);
+      const aiResponse = await processUniversalAICommand(message, context, currentPath, {
+        companyId: req.user.companyId,
+        userId: req.user.userId,
+        storage
+      });
       
       // Save chat message to history
       await storage.createChatMessage({
