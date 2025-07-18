@@ -7,7 +7,7 @@ import {
   insertInvoiceSchema, insertInvoiceItemSchema, insertChatMessageSchema 
 } from "@shared/schema";
 import { fetchCompanyFromAres, searchCompaniesByName } from "./services/ares";
-import { processAICommand, generateInvoiceDescription } from "./services/openai";
+import { processAICommand, generateInvoiceDescription, processUniversalAICommand, processPublicAICommand } from "./services/openai";
 import { generateInvoicePDF } from "./services/pdf";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
@@ -92,6 +92,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       sessions.delete(sessionId);
     }
     res.json({ message: "Logged out successfully" });
+  });
+
+  // Public ARES search for registration
+  app.get("/api/public/ares/search", async (req, res) => {
+    try {
+      const query = req.query.q as string;
+      if (!query) {
+        return res.json([]);
+      }
+
+      let aresResults: any[] = [];
+      if (/^\d{8}$/.test(query)) {
+        // Query is ICO
+        const aresCompany = await fetchCompanyFromAres(query);
+        if (aresCompany) {
+          aresResults = [{ ...aresCompany, source: 'ares' }];
+        }
+      } else if (query.length > 2) {
+        // Query is company name
+        const aresCompanies = await searchCompaniesByName(query);
+        aresResults = aresCompanies.map(company => ({ ...company, source: 'ares' }));
+      }
+
+      res.json(aresResults);
+    } catch (error) {
+      console.error("Error searching ARES:", error);
+      res.status(500).json({ message: "Failed to search ARES" });
+    }
   });
 
   // Company routes
@@ -419,6 +447,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(chatMessage);
     } catch (error) {
       console.error("Error processing AI command:", error);
+      res.status(500).json({ message: "Failed to process AI command" });
+    }
+  });
+
+  // Universal AI Chat - for authenticated users
+  app.post("/api/chat/universal", requireAuth, async (req: any, res) => {
+    try {
+      const { message, context, currentPath } = req.body;
+      
+      const aiResponse = await processUniversalAICommand(message, context, currentPath, req.user.companyId, req.user.userId);
+      
+      // Save chat message to history
+      await storage.createChatMessage({
+        message,
+        response: aiResponse.content,
+        companyId: req.user.companyId,
+        userId: req.user.userId
+      });
+      
+      res.json(aiResponse);
+    } catch (error) {
+      console.error("Error processing universal AI command:", error);
+      res.status(500).json({ message: "Failed to process AI command" });
+    }
+  });
+
+  // Public AI Chat - for non-authenticated users (registration/login)
+  app.post("/api/chat/public", async (req, res) => {
+    try {
+      const { message, context } = req.body;
+      
+      const aiResponse = await processPublicAICommand(message, context);
+      
+      res.json(aiResponse);
+    } catch (error) {
+      console.error("Error processing public AI command:", error);
       res.status(500).json({ message: "Failed to process AI command" });
     }
   });

@@ -8,6 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, LogIn } from "lucide-react";
+import { LoginAIChat } from "@/components/universal-ai-chat";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Uživatelské jméno je povinné"),
@@ -147,6 +148,9 @@ export function Login({ onSuccess, onSwitchToRegister }: LoginProps) {
           </div>
         </CardContent>
       </Card>
+      
+      {/* AI Chat for login assistance */}
+      <LoginAIChat />
     </div>
   );
 }

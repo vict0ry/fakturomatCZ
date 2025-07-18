@@ -10,7 +10,7 @@ import Customers from "@/pages/customers";
 import InvoiceDetail from "@/pages/invoice-detail";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
-import { AIChatWidget } from "@/components/ai-chat";
+import { UniversalAIChat } from "@/components/universal-ai-chat";
 import { AuthProvider } from "@/contexts/auth-context";
 import { AuthGuard } from "@/components/auth/auth-guard";
 
@@ -45,7 +45,7 @@ function App() {
                 </main>
               </div>
               
-              <AIChatWidget />
+              <UniversalAIChat />
               
               {/* Mobile Navigation */}
               <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-neutral-200 px-4 py-2 z-40">

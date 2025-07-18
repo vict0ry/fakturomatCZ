@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -8,6 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, UserPlus } from "lucide-react";
+import { RegistrationAIChat } from "@/components/universal-ai-chat";
 
 const registerSchema = z.object({
   // Company data
@@ -42,6 +43,7 @@ interface RegisterProps {
 export function Register({ onSuccess, onSwitchToLogin }: RegisterProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isAutoFilling, setIsAutoFilling] = useState(false);
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -62,6 +64,42 @@ export function Register({ onSuccess, onSwitchToLogin }: RegisterProps) {
       lastName: "",
     },
   });
+
+  // Handle AI form filling
+  const handleAIFormFill = async (data: any) => {
+    if (data.ico && data.autoFetch) {
+      setIsAutoFilling(true);
+      try {
+        // Fetch company data from ARES
+        const response = await fetch(`/api/public/ares/search?q=${data.ico}`);
+        const results = await response.json();
+        
+        if (results.length > 0 && results[0].source === 'ares') {
+          const aresData = results[0];
+          
+          // Auto-fill form with ARES data
+          form.setValue('companyName', aresData.name || '');
+          form.setValue('companyIco', aresData.ico || '');
+          form.setValue('companyDic', aresData.dic || '');
+          form.setValue('companyAddress', aresData.address || '');
+          form.setValue('companyCity', aresData.city || '');
+          form.setValue('companyPostalCode', aresData.postalCode || '');
+          
+          if (data.email) {
+            form.setValue('email', data.email);
+            form.setValue('companyEmail', data.email);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching ARES data:', error);
+      } finally {
+        setIsAutoFilling(false);
+      }
+    } else if (data.email) {
+      form.setValue('email', data.email);
+      form.setValue('companyEmail', data.email);
+    }
+  };
 
   const onSubmit = async (data: RegisterFormData) => {
     setIsLoading(true);
@@ -375,6 +413,21 @@ export function Register({ onSuccess, onSwitchToLogin }: RegisterProps) {
           </div>
         </CardContent>
       </Card>
+      
+      {/* AI Chat for registration assistance */}
+      <RegistrationAIChat onFormFill={handleAIFormFill} />
+      
+      {/* Auto-filling indicator */}
+      {isAutoFilling && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-80">
+            <CardContent className="flex items-center space-x-3 p-6">
+              <Loader2 className="h-6 w-6 animate-spin" />
+              <span>Načítám data firmy z ARES...</span>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
