@@ -333,13 +333,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/invoices", requireAuth, async (req: any, res) => {
     try {
-      const invoiceData = insertInvoiceSchema.parse({
-        ...req.body,
+      let { customer, customerId, ...invoiceData } = req.body;
+      
+      // If customer is included but no customerId, create customer first
+      if (customer && (!customerId || customerId === -1)) {
+        const newCustomer = await storage.createCustomer({
+          ...customer,
+          companyId: req.user.companyId
+        });
+        customerId = newCustomer.id;
+      }
+      
+      const invoiceDataParsed = insertInvoiceSchema.parse({
+        ...invoiceData,
+        customerId,
         companyId: req.user.companyId,
         userId: req.user.userId
       });
       
-      const invoice = await storage.createInvoice(invoiceData);
+      const invoice = await storage.createInvoice(invoiceDataParsed);
       res.json(invoice);
     } catch (error) {
       console.error("Error creating invoice:", error);

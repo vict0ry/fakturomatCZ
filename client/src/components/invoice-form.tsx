@@ -189,7 +189,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
   };
 
   const handleFormSubmit = (data: InvoiceFormData) => {
-    if (!selectedCustomer || (!selectedCustomer.id && data.customerId <= 0)) {
+    if (!selectedCustomer) {
       toast({
         title: "Chyba",
         description: "Musíte vybrat zákazníka.",
@@ -198,7 +198,17 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
       return;
     }
 
-    onSubmit(data);
+    // For ARES customers without ID, create them first
+    if (!selectedCustomer.id) {
+      // Include customer data in submission
+      onSubmit({
+        ...data,
+        customer: selectedCustomer,
+        customerId: -1 // Flag for new customer
+      });
+    } else {
+      onSubmit(data);
+    }
   };
 
   return (

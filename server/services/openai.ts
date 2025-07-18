@@ -371,34 +371,46 @@ Odpovězte JSON ve formátu:
     }
 
     // Handle invoice creation with AI assistance
-    if (result.action?.type === 'create_invoice' && message.toLowerCase().includes('faktur')) {
+    if ((result.action?.type === 'create_invoice' || message.toLowerCase().includes('vytvoř fakturu') || message.toLowerCase().includes('vytvořit fakturu')) && (message.toLowerCase().includes('faktur') || message.toLowerCase().includes('pro '))) {
       try {
         // Extract company/customer info from message
-        const companyMatch = message.match(/pro\s+([\w\s\.&,]+?)(?:\s+za|\s+s\.r\.o\.|\s+s\.p\.|\s+a\.s\.)/i);
-        const amountMatch = message.match(/(\d+(?:\s?\d{3})*)\s*(?:kč|czk|korun)/i);
-        const serviceMatch = message.match(/za\s+([\w\s]+?)(?:\s+za|\s+\d+|$)/i);
+        const companyMatch = message.match(/pro\s+([\w\s\.&,]+?)(?:\s+za|\s+s\.r\.o\.|\s+s\.p\.|\s+a\.s\.|\s+\d+)/i);
+        const amountMatch = message.match(/za\s+(\d+(?:\s?\d{3})*)\s*(?:kč|czk|korun)?/i) || message.match(/(\d+(?:\s?\d{3})*)\s*(?:kč|czk|korun)/i);
+        const serviceMatch = message.match(/za\s+([\w\s]+?)(?:\s+za\s+\d+|\s+\d+|$)/i);
 
         if (companyMatch && amountMatch) {
           const companyName = companyMatch[1].trim();
           const amount = parseInt(amountMatch[1].replace(/\s/g, ''));
-          const service = serviceMatch ? serviceMatch[1].trim() : 'Služby';
+          const service = serviceMatch ? serviceMatch[1].trim() : 'Konzultace';
+          
+          console.log('AI Invoice Creation:', { companyName, amount, service });
 
           // Try to find existing customer first
           const customers = await userContext.storage.searchCustomers(companyName, userContext.companyId);
           let customerId;
+          
+          console.log('Found existing customers:', customers.length);
 
           if (customers.length > 0) {
             customerId = customers[0].id;
           } else {
             // Search ARES for company info
-            const { fetchCompanyFromAres } = await import('./ares');
+            const { fetchCompanyFromAres, searchCompaniesByName } = await import('./ares');
             let aresData = null;
             
             // Try to extract ICO from company name or search by name
             const icoMatch = companyName.match(/\d{8}/);
             if (icoMatch) {
               aresData = await fetchCompanyFromAres(icoMatch[0]);
+            } else {
+              // Search by company name
+              const aresResults = await searchCompaniesByName(companyName);
+              if (aresResults.length > 0) {
+                aresData = aresResults[0];
+              }
             }
+            
+            console.log('ARES search result:', aresData);
 
             if (aresData) {
               // Create customer from ARES data
