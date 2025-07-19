@@ -263,6 +263,15 @@ export default function Invoices() {
                           <Button 
                             variant="ghost" 
                             size="sm"
+                            asChild
+                          >
+                            <a href={`/invoices/${invoice.id}/edit`}>
+                              <Edit className="h-4 w-4" />
+                            </a>
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
                             onClick={() => downloadPDFMutation.mutate(invoice.id)}
                             disabled={downloadPDFMutation.isPending}
                           >
@@ -275,7 +284,7 @@ export default function Invoices() {
                             }
                           >
                             <SelectTrigger className="w-auto h-8 text-xs">
-                              <Edit className="h-3 w-3" />
+                              <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="draft">Koncept</SelectItem>

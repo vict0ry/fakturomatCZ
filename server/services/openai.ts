@@ -163,33 +163,40 @@ Odpovězte JSON ve formátu:
           // Analyze unpaid invoices by customer
           const unpaidByCustomer = new Map();
           
+          console.log('AI Analytics - Invoices found:', allInvoices.length);
+          console.log('AI Analytics - Customers found:', customers.length);
+          
           allInvoices
             .filter(invoice => invoice.status === 'overdue' || invoice.status === 'sent')
             .forEach(invoice => {
               const customer = customers.find(c => c.id === invoice.customerId);
               const customerName = customer?.name || 'Neznámý zákazník';
               const currentDebt = unpaidByCustomer.get(customerName) || 0;
-              unpaidByCustomer.set(customerName, currentDebt + parseInt(invoice.total));
+              const invoiceTotal = parseFloat(invoice.total?.toString() || '0');
+              unpaidByCustomer.set(customerName, currentDebt + invoiceTotal);
+              console.log(`AI Analytics - Customer: ${customerName}, Invoice: ${invoice.invoiceNumber}, Amount: ${invoiceTotal}, Status: ${invoice.status}`);
             });
           
           const debtorsList = Array.from(unpaidByCustomer.entries())
             .sort(([,a], [,b]) => b - a)
             .slice(0, 10);
           
+          console.log('AI Analytics - Debtors list:', debtorsList);
+          
           if (debtorsList.length === 0) {
             return {
-              content: "🎉 Skvělé! Momentálně nemáte žádné neplacené faktury. Všichni zákazníci jsou ve stavu placeno.",
+              content: "🎉 **Skvělé!** Momentálně nemáte žádné neplacené faktury. Všichni zákazníci jsou ve stavu placeno.\n\nChcete zobrazit zaplacené faktury?",
               action: { type: 'navigate', data: { path: '/invoices?status=paid' } }
             };
           }
           
           const totalDebt = debtorsList.reduce((sum, [, amount]) => sum + amount, 0);
           const debtorsText = debtorsList.map(([name, amount], index) => 
-            `${index + 1}. ${name}: ${amount.toLocaleString('cs-CZ')} Kč`
+            `${index + 1}. **${name}**: ${amount.toLocaleString('cs-CZ')} Kč`
           ).join('\n');
           
           return {
-            content: `💰 Přehled největších neplatičů:\n\n${debtorsText}\n\n📊 Celková pohledávka: ${totalDebt.toLocaleString('cs-CZ')} Kč\n\nDoporučuji poslat připomínky nejvyšším dlužníkům.`,
+            content: `💰 **Přehled největších neplatičů:**\n\n${debtorsText}\n\n📊 **Celková pohledávka: ${totalDebt.toLocaleString('cs-CZ')} Kč**\n\nDoporučuji poslat připomínky nejvyšším dlužníkům nebo navštívit faktury po splatnosti.`,
             action: { type: 'navigate', data: { path: '/invoices?status=overdue' } }
           };
         }
