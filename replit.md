@@ -10,6 +10,20 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### Major Architecture Refactoring (2025-07-19)
+- ✓ Rozdělil obrovský openai.ts soubor (889 řádků → 3 řádky hlavní + 5 modulů)
+- ✓ Vyčistil duplicitní PDF služby (odstraněno 5 souborů)
+- ✓ Vytvořil modulární AI architektura:
+  - server/services/ai/index.ts - hlavní koordinátor
+  - server/services/ai/types.ts - TypeScript typy
+  - server/services/ai/prompts.ts - AI prompty
+  - server/services/ai/invoice-processor.ts - zpracování faktur
+  - server/services/ai/navigation-handler.ts - navigace
+- ✓ Přidal centralizované logování (server/utils/logger.ts)
+- ✓ Vytvořil konfigurační konstanty (server/config/constants.ts)
+- ✓ Vytvořil ARCHITECTURE.md dokumentaci
+- → Zatím 5/14 AI testů prochází - potřeba doladit kompatibilitu
+
 ### PDF Generation & Calculation Fixes (2025-07-19)
 - ✓ Fixed critical invoice calculation bug - totals now calculate correctly instead of showing 0
 - ✓ Replaced broken jsPDF implementation with working Puppeteer + fallback solution
