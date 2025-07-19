@@ -202,6 +202,34 @@
   transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
+/* Fixed action buttons */
+.fixed-action-buttons {
+  @apply fixed bottom-6 right-6 z-50 flex gap-3;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .fixed-action-buttons {
+    @apply bottom-4 right-4 flex-col;
+  }
+  
+  .fixed-action-buttons .btn {
+    @apply w-full;
+  }
+}
+
+/* Ensure forms have proper bottom padding */
+.invoice-form-container {
+  @apply pb-32 md:pb-24;
+}
+
+/* Sticky sidebar fix */
+.invoice-sidebar {
+  @apply lg:sticky lg:top-6;
+  max-height: calc(100vh - 3rem);
+  overflow-y: auto;
+}
+
 /* Form focus styles */
 .form-input:focus {
   @apply ring-2 ring-primary ring-offset-2 border-transparent;

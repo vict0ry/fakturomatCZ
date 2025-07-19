@@ -278,7 +278,30 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
           </div>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+        {/* Fixed Create Button - Always Visible */}
+        <div className="fixed-action-buttons">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => window.history.back()}
+            disabled={isLoading}
+            className="h-12 px-6 bg-white dark:bg-gray-800 border-2 shadow-lg hover:shadow-xl transition-all btn"
+          >
+            ❌ Zrušit
+          </Button>
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="h-12 px-8 text-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all btn"
+          >
+            {isLoading && (
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+            )}
+            {invoice ? '✏️ Aktualizovat fakturu' : '✨ Vytvořit fakturu'}
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8 invoice-form-container">
           {/* Main Content */}
           <div className="xl:col-span-3 space-y-8">
             {/* Document Settings */}
@@ -718,9 +741,9 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
           </div>
 
           {/* Sidebar */}
-          <div className="xl:col-span-1 space-y-6">
+          <div className="xl:col-span-1 space-y-6 invoice-sidebar">
             {/* Invoice Summary */}
-            <Card className="shadow-lg border-0 bg-white dark:bg-gray-800 sticky top-6">
+            <Card className="shadow-lg border-0 bg-white dark:bg-gray-800">
               <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-t-lg">
                 <CardTitle className="text-lg text-blue-700 dark:text-blue-300">💰 Přehled faktury</CardTitle>
               </CardHeader>
@@ -878,32 +901,26 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
               </CardContent>
             </Card>
 
-            {/* Actions */}
-            <Card className="shadow-lg border-0 bg-white dark:bg-gray-800">
-              <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-t-lg">
-                <CardTitle className="text-lg text-green-700 dark:text-green-300">🚀 Akce</CardTitle>
+            {/* Form Summary - Better visibility */}
+            <Card className="shadow-lg border-0 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-200 dark:border-green-800">
+              <CardHeader>
+                <CardTitle className="text-lg text-green-700 dark:text-green-300">✅ Přehled faktury</CardTitle>
               </CardHeader>
-              <CardContent className="p-6 space-y-4">
-                <Button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full h-12 text-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
-                >
-                  {isLoading && (
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  )}
-                  {invoice ? '✏️ Aktualizovat fakturu' : '✨ Vytvořit fakturu'}
-                </Button>
-                
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => window.history.back()}
-                  disabled={isLoading}
-                  className="w-full h-12 border-2 hover:bg-gray-50 dark:hover:bg-gray-800"
-                >
-                  ❌ Zrušit
-                </Button>
+              <CardContent className="p-6">
+                <div className="text-center space-y-2">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Zkontrolujte údaje faktury před vytvořením
+                  </p>
+                  <div className="text-2xl font-bold text-green-700 dark:text-green-300">
+                    {formatCurrency(watch("total"))}
+                  </div>
+                  <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <p className="text-xs text-blue-600 dark:text-blue-400 flex items-center justify-center gap-2">
+                      <span>💡</span>
+                      <span>Tlačítko "Vytvořit fakturu" najdete v pravém dolním rohu obrazovky</span>
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
