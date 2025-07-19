@@ -13,8 +13,8 @@ import { Plus, Search, Download, Eye, Edit, Trash2 } from "lucide-react";
 import { useLocation, Link } from "wouter";
 
 export default function Invoices() {
-  const [statusFilter, setStatusFilter] = useState<string>("");
-  const [typeFilter, setTypeFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [customerFilter, setCustomerFilter] = useState<string>("");
   const { toast } = useToast();
@@ -32,7 +32,7 @@ export default function Invoices() {
 
   const { data: invoices, isLoading } = useQuery({
     queryKey: ["/api/invoices", statusFilter, customerFilter],
-    queryFn: () => invoiceAPI.getAll(statusFilter || undefined),
+    queryFn: () => invoiceAPI.getAll(statusFilter === "all" ? undefined : statusFilter),
   });
 
   // Filter invoices by customer if customerFilter is set
@@ -41,6 +41,12 @@ export default function Invoices() {
       return false;
     }
     if (searchQuery && !invoice.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase())) {
+      return false;
+    }
+    if (statusFilter && statusFilter !== "all" && invoice.status !== statusFilter) {
+      return false;
+    }
+    if (typeFilter && typeFilter !== "all" && invoice.type !== typeFilter) {
       return false;
     }
     return true;
@@ -178,7 +184,7 @@ export default function Invoices() {
                   <SelectValue placeholder="Filtrovat podle stavu" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Všechny stavy</SelectItem>
+                  <SelectItem value="all">Všechny stavy</SelectItem>
                   <SelectItem value="draft">Koncepty</SelectItem>
                   <SelectItem value="sent">Odeslané</SelectItem>
                   <SelectItem value="paid">Uhrazené</SelectItem>
@@ -190,7 +196,7 @@ export default function Invoices() {
                   <SelectValue placeholder="Typ dokumentu" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Všechny typy</SelectItem>
+                  <SelectItem value="all">Všechny typy</SelectItem>
                   <SelectItem value="invoice">Faktury</SelectItem>
                   <SelectItem value="proforma">Proformy</SelectItem>
                   <SelectItem value="credit_note">Dobropisy</SelectItem>
@@ -207,11 +213,11 @@ export default function Invoices() {
               <h3 className="text-lg font-medium">
                 {displayedInvoices ? `${displayedInvoices.length} faktur` : 'Faktury'}
               </h3>
-              {statusFilter && (
+              {statusFilter && statusFilter !== "all" && (
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  onClick={() => setStatusFilter("")}
+                  onClick={() => setStatusFilter("all")}
                 >
                   Zrušit filtr
                 </Button>

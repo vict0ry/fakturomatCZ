@@ -352,9 +352,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: req.user.userId,
         issueDate: new Date(invoiceData.issueDate),
         dueDate: new Date(invoiceData.dueDate),
-        subtotal: parseFloat(invoiceData.subtotal || '0'),
-        vatAmount: parseFloat(invoiceData.vatAmount || '0'),
-        total: parseFloat(invoiceData.total || '0')
+        subtotal: String(invoiceData.subtotal || '0'),
+        vatAmount: String(invoiceData.vatAmount || '0'),
+        total: String(invoiceData.total || '0')
       };
       
       const invoiceDataParsed = insertInvoiceSchema.parse(processedInvoiceData);
@@ -401,9 +401,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...req.body,
         issueDate: req.body.issueDate ? new Date(req.body.issueDate) : undefined,
         dueDate: req.body.dueDate ? new Date(req.body.dueDate) : undefined,
-        subtotal: req.body.subtotal ? parseFloat(req.body.subtotal) : undefined,
-        vatAmount: req.body.vatAmount ? parseFloat(req.body.vatAmount) : undefined,
-        total: req.body.total ? parseFloat(req.body.total) : undefined
+        subtotal: req.body.subtotal ? String(req.body.subtotal) : undefined,
+        vatAmount: req.body.vatAmount ? String(req.body.vatAmount) : undefined,
+        total: req.body.total ? String(req.body.total) : undefined
       };
       
       const oldInvoice = await storage.getInvoice(id, req.user.companyId);
@@ -445,9 +445,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...req.body,
         issueDate: req.body.issueDate ? new Date(req.body.issueDate) : undefined,
         dueDate: req.body.dueDate ? new Date(req.body.dueDate) : undefined,
-        subtotal: req.body.subtotal ? parseFloat(req.body.subtotal) : undefined,
-        vatAmount: req.body.vatAmount ? parseFloat(req.body.vatAmount) : undefined,
-        total: req.body.total ? parseFloat(req.body.total) : undefined
+        subtotal: req.body.subtotal ? String(req.body.subtotal) : undefined,
+        vatAmount: req.body.vatAmount ? String(req.body.vatAmount) : undefined,
+        total: req.body.total ? String(req.body.total) : undefined
       };
       
       const invoiceData = insertInvoiceSchema.partial().parse(processedData);
