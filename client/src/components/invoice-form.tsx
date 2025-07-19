@@ -155,11 +155,20 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
 
   // Calculate totals
   const calculateTotals = () => {
+    if (!watchedItems || watchedItems.length === 0) {
+      setValue("subtotal", "0.00");
+      setValue("vatAmount", "0.00");
+      setValue("total", "0.00");
+      return;
+    }
+
     let subtotal = 0;
     let vatAmount = 0;
     const isReverseCharge = watch("isReverseCharge");
 
     watchedItems.forEach((item, index) => {
+      if (!item) return;
+      
       const quantity = parseFloat(item.quantity) || 0;
       const unitPrice = parseFloat(item.unitPrice) || 0;
       const vatRate = parseFloat(item.vatRate) || 21;

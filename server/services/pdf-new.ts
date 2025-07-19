@@ -7,11 +7,24 @@ export async function generateInvoicePDF(
 ): Promise<Buffer> {
   console.log('Generuji PDF pro fakturu:', invoice.invoiceNumber);
   
-  const doc = new jsPDF({
-    orientation: 'portrait',
-    unit: 'mm',
-    format: 'a4'
-  });
+  // Create jsPDF instance - handle different import formats
+  let doc;
+  try {
+    // Try new jsPDF() first
+    doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+  } catch (error) {
+    // Fallback for different module format
+    const jsPDFConstructor = jsPDF.default || jsPDF;
+    doc = new jsPDFConstructor({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+  }
   
   // Nastavenie písma
   doc.setFont('helvetica');
