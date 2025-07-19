@@ -1,13 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { invoiceAPI } from "@/lib/api";
 import { StatsCards } from "@/components/stats-cards";
+import { RevenueChart } from "@/components/revenue-chart";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Download, Plus, ExternalLink, AlertTriangle } from "lucide-react";
+import { Download, Plus, ExternalLink, AlertTriangle, BarChart3, TrendingUp } from "lucide-react";
 
 export default function Dashboard() {
   const { data: recentInvoices, isLoading: invoicesLoading } = useQuery({
@@ -67,10 +68,14 @@ export default function Dashboard() {
           </div>
           <div className="mt-4 flex md:mt-0 md:ml-4 space-x-3">
             <Button variant="outline" className="flex items-center">
+              <BarChart3 className="mr-2 h-4 w-4" />
+              Analýzy
+            </Button>
+            <Button variant="outline" className="flex items-center">
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
-            <Button asChild>
+            <Button asChild className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
               <a href="/invoices/new" className="flex items-center">
                 <Plus className="mr-2 h-4 w-4" />
                 Nová faktura
@@ -84,11 +89,19 @@ export default function Dashboard() {
           <StatsCards />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Recent Invoices */}
-          <Card>
+        {/* Revenue Chart */}
+        <div className="mb-8">
+          <RevenueChart />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Recent Invoices - Larger column */}
+          <Card className="lg:col-span-2">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-              <h3 className="text-lg font-medium">Nejnovější faktury</h3>
+              <div>
+                <h3 className="text-lg font-medium">Nejnovější faktury</h3>
+                <p className="text-sm text-gray-500 mt-1">Posledních 5 vytvořených faktér</p>
+              </div>
               <Button variant="ghost" size="sm" asChild>
                 <a href="/invoices" className="text-primary hover:text-blue-700 text-sm font-medium">
                   Zobrazit vše
@@ -148,12 +161,20 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Quick Actions */}
+          {/* Quick Actions - Smaller column */}
           <div className="space-y-6">
             {/* Quick Invoice Creation */}
-            <Card>
+            <Card className="border-2 border-dashed border-blue-200 hover:border-blue-300 transition-colors">
               <CardHeader>
-                <h3 className="text-lg font-medium">Rychlé vytvoření faktury</h3>
+                <div className="flex items-center">
+                  <div className="p-2 bg-blue-100 rounded-lg mr-3">
+                    <Plus className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-medium">Rychlé vytvoření</h3>
+                    <p className="text-sm text-gray-500">Nová faktura za 30 sekund</p>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -211,9 +232,17 @@ export default function Dashboard() {
             </Card>
 
             {/* Customer Quick Add */}
-            <Card>
+            <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
               <CardHeader>
-                <h3 className="text-lg font-medium">Přidat zákazníka</h3>
+                <div className="flex items-center">
+                  <div className="p-2 bg-green-100 rounded-lg mr-3">
+                    <i className="fas fa-user-plus text-green-600"></i>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-medium">Přidat zákazníka</h3>
+                    <p className="text-sm text-gray-500">S ARES integrací</p>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -249,10 +278,77 @@ export default function Dashboard() {
                       />
                     </div>
                   </div>
-                  <Button className="w-full bg-secondary hover:bg-green-700" asChild>
+                  <Button className="w-full bg-green-600 hover:bg-green-700" asChild>
                     <a href="/customers/new">
                       <i className="fas fa-user-plus mr-2"></i>
                       Přidat zákazníka
+                    </a>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* AI Assistant Card */}
+            <Card className="bg-gradient-to-br from-purple-50 to-violet-50 border-purple-200">
+              <CardHeader>
+                <div className="flex items-center">
+                  <div className="p-2 bg-purple-100 rounded-lg mr-3">
+                    <i className="fas fa-robot text-purple-600"></i>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-medium">AI Asistent</h3>
+                    <p className="text-sm text-gray-500">Chytrá pomoc s faktérami</p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-600">
+                    Zkuste: "Vytvoř fakturu pro ABC s.r.o. za konzultace 5000 Kč"
+                  </p>
+                  <div className="flex space-x-2">
+                    <Button size="sm" variant="outline" className="flex-1 text-xs">
+                      💬 Vytvořit fakturu
+                    </Button>
+                    <Button size="sm" variant="outline" className="flex-1 text-xs">
+                      📊 Analýza
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Quick Stats */}
+            <Card className="bg-gradient-to-br from-gray-50 to-slate-50 border-gray-200">
+              <CardHeader>
+                <div className="flex items-center">
+                  <div className="p-2 bg-gray-100 rounded-lg mr-3">
+                    <TrendingUp className="w-4 h-4 text-gray-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-medium">Rychlé akce</h3>
+                    <p className="text-sm text-gray-500">Často používané</p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Button variant="ghost" size="sm" className="w-full justify-start" asChild>
+                    <a href="/invoices?status=overdue">
+                      <AlertTriangle className="w-4 h-4 mr-2 text-red-500" />
+                      Faktury po splatnosti
+                    </a>
+                  </Button>
+                  <Button variant="ghost" size="sm" className="w-full justify-start" asChild>
+                    <a href="/customers">
+                      <i className="fas fa-users w-4 h-4 mr-2 text-blue-500"></i>
+                      Správa zákazníků
+                    </a>
+                  </Button>
+                  <Button variant="ghost" size="sm" className="w-full justify-start" asChild>
+                    <a href="/settings">
+                      <i className="fas fa-cog w-4 h-4 mr-2 text-gray-500"></i>
+                      Nastavení
                     </a>
                   </Button>
                 </div>

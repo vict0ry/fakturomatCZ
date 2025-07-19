@@ -5,7 +5,13 @@ import type { Invoice, Customer, InvoiceItem } from "@shared/schema";
 export async function generateInvoicePDF(
   invoice: Invoice & { customer: Customer; items: InvoiceItem[] }
 ): Promise<Buffer> {
-  const doc = new jsPDF();
+  console.log('Generuji PDF pro fakturu:', invoice.invoiceNumber);
+  
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4'
+  });
   
   // Nastavenie písma
   doc.setFont('helvetica');
@@ -175,7 +181,17 @@ export async function generateInvoicePDF(
   doc.text('FakturaAI s.r.o. | Václavské náměstí 1, 110 00 Praha 1 | IČO: 12345678 | DIČ: CZ12345678', 20, footerY);
   doc.text('www.fakturaai.cz | info@fakturaai.cz | +420 123 456 789', 20, footerY + 4);
   
-  return Buffer.from(doc.output('arraybuffer'));
+  // Generujeme PDF ako Buffer
+  const pdfData = doc.output('arraybuffer');
+  const buffer = Buffer.from(pdfData);
+  
+  console.log('PDF vygenerované, veľkosť:', buffer.length, 'bytov');
+  
+  if (buffer.length < 1000) {
+    throw new Error(`PDF je príliš malé: ${buffer.length} bytov`);
+  }
+  
+  return buffer;
 }
 
 function getPaymentMethodLabel(method: string | null) {

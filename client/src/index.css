@@ -91,7 +91,7 @@
   }
   
   .stat-card {
-    @apply bg-white overflow-hidden shadow-sm rounded-lg border border-neutral-200 p-5;
+    @apply bg-white overflow-hidden shadow-sm rounded-xl border border-neutral-200 p-5 hover:shadow-lg transition-all duration-300 hover:scale-[1.02];
   }
   
   .stat-icon {
