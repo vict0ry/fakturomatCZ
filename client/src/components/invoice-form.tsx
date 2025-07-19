@@ -218,395 +218,553 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
   };
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Invoice Header */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Základní informace</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="type">Typ dokumentu</Label>
-                  <Select
-                    value={watch("type")}
-                    onValueChange={(value) => setValue("type", value as any)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="invoice">Faktura</SelectItem>
-                      <SelectItem value="proforma">Proforma faktura</SelectItem>
-                      <SelectItem value="credit_note">Dobropis</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+    <div className="max-w-7xl mx-auto">
+      <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-8">
+        {/* Header Section with Progress */}
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl p-6 border border-blue-100 dark:border-blue-900/20">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                {invoice ? 'Upravit fakturu' : 'Nová faktura'}
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                {invoice ? 'Upravte údaje existující faktury' : 'Vytvořte novou fakturu pro vašeho zákazníka'}
+              </p>
+            </div>
+            <div className="flex items-center space-x-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-lg border shadow-sm">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Krok 1 ze 3</span>
+            </div>
+          </div>
+          
+          <div className="flex space-x-1">
+            <div className="flex-1 h-2 bg-blue-500 rounded-full"></div>
+            <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+            <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+          </div>
+        </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="issueDate">Datum vystavení</Label>
-                  <Input
-                    {...register("issueDate")}
-                    type="date"
-                    className={errors.issueDate ? "border-red-500" : ""}
-                  />
-                  {errors.issueDate && (
-                    <p className="text-sm text-red-600">{errors.issueDate.message}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="dueDate">Datum splatnosti</Label>
-                  <Input
-                    {...register("dueDate")}
-                    type="date"
-                    className={errors.dueDate ? "border-red-500" : ""}
-                  />
-                  {errors.dueDate && (
-                    <p className="text-sm text-red-600">{errors.dueDate.message}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="currency">Měna</Label>
-                  <Select
-                    value={watch("currency")}
-                    onValueChange={(value) => setValue("currency", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="CZK">CZK - Česká koruna</SelectItem>
-                      <SelectItem value="EUR">EUR - Euro</SelectItem>
-                      <SelectItem value="USD">USD - Americký dolar</SelectItem>
-                      <SelectItem value="GBP">GBP - Britská libra</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2 flex items-end">
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      {...register("isReverseCharge")}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm font-medium">Reverse Charge (přenesení daňové povinnosti)</span>
-                  </label>
-                </div>
-              </div>
-
-              {invoice?.invoiceNumber && (
-                <div className="space-y-2">
-                  <Label htmlFor="invoiceNumber">Číslo faktury</Label>
-                  <Input
-                    {...register("invoiceNumber")}
-                    placeholder="Automaticky generováno"
-                    readOnly
-                  />
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Customer Selection */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Zákazník</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="customer">Vybrat zákazníka *</Label>
-                  <div className="relative">
-                    <Input
-                      value={customerSearch}
-                      onChange={(e) => {
-                        setCustomerSearch(e.target.value);
-                        searchCustomers(e.target.value);
-                      }}
-                      placeholder="Začněte psát název nebo IČO zákazníka..."
-                      className={errors.customerId ? "border-red-500" : ""}
-                    />
-                    <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 h-4 w-4" />
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+          {/* Main Content */}
+          <div className="xl:col-span-3 space-y-8">
+            {/* Document Settings */}
+            <Card className="shadow-lg border-0 bg-white dark:bg-gray-800">
+              <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-t-lg">
+                <CardTitle className="flex items-center space-x-2 text-lg">
+                  <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">1</span>
                   </div>
-                  {errors.customerId && (
-                    <p className="text-sm text-red-600">{errors.customerId.message}</p>
-                  )}
+                  <span>Nastavení dokumentu</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="type" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Typ dokumentu *
+                    </Label>
+                    <Select
+                      value={watch("type")}
+                      onValueChange={(value) => setValue("type", value as any)}
+                    >
+                      <SelectTrigger className="h-12 border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 focus:border-blue-500 transition-colors">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="invoice">📄 Faktura</SelectItem>
+                        <SelectItem value="proforma">📋 Proforma faktura</SelectItem>
+                        <SelectItem value="credit_note">↩️ Dobropis</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                  {/* Customer Search Results */}
-                  {showCustomerResults && customers.length > 0 && (
-                    <Card className="mt-2">
-                      <CardContent className="p-3">
-                        <div className="space-y-2 max-h-48 overflow-y-auto">
-                          {customers.map((customer) => (
-                            <div
-                              key={customer.id || customer.ico}
-                              className="p-3 border rounded-lg hover:bg-neutral-50 cursor-pointer transition-colors"
-                              onClick={() => selectCustomer(customer)}
-                            >
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  <div className="flex items-center space-x-2 mb-1">
-                                    <h4 className="font-medium text-sm">{customer.name}</h4>
-                                    {customer.source === 'ares' && (
-                                      <Badge variant="secondary" className="text-xs">
-                                        ARES
-                                      </Badge>
+                  <div className="space-y-2">
+                    <Label htmlFor="issueDate" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Datum vystavení *
+                    </Label>
+                    <Input
+                      {...register("issueDate")}
+                      type="date"
+                      className={`h-12 border-2 transition-colors ${
+                        errors.issueDate 
+                          ? "border-red-500 focus:border-red-500" 
+                          : "border-gray-200 dark:border-gray-600 hover:border-blue-300 focus:border-blue-500"
+                      }`}
+                    />
+                    {errors.issueDate && (
+                      <p className="text-sm text-red-600 flex items-center space-x-1">
+                        <span>⚠️</span>
+                        <span>{errors.issueDate.message}</span>
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="dueDate" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Datum splatnosti *
+                    </Label>
+                    <Input
+                      {...register("dueDate")}
+                      type="date"
+                      className={`h-12 border-2 transition-colors ${
+                        errors.dueDate 
+                          ? "border-red-500 focus:border-red-500" 
+                          : "border-gray-200 dark:border-gray-600 hover:border-blue-300 focus:border-blue-500"
+                      }`}
+                    />
+                    {errors.dueDate && (
+                      <p className="text-sm text-red-600 flex items-center space-x-1">
+                        <span>⚠️</span>
+                        <span>{errors.dueDate.message}</span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <Separator className="my-6" />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="currency" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Měna *
+                    </Label>
+                    <Select
+                      value={watch("currency")}
+                      onValueChange={(value) => setValue("currency", value)}
+                    >
+                      <SelectTrigger className="h-12 border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 focus:border-blue-500 transition-colors">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="CZK">🇨🇿 CZK - Česká koruna</SelectItem>
+                        <SelectItem value="EUR">🇪🇺 EUR - Euro</SelectItem>
+                        <SelectItem value="USD">🇺🇸 USD - Americký dolar</SelectItem>
+                        <SelectItem value="GBP">🇬🇧 GBP - Britská libra</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Speciální nastavení
+                    </Label>
+                    <div className="h-12 flex items-center">
+                      <label className="flex items-center space-x-3 cursor-pointer p-3 rounded-lg border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all">
+                        <input
+                          type="checkbox"
+                          {...register("isReverseCharge")}
+                          className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                        />
+                        <div>
+                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Reverse Charge</span>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Přenesení daňové povinnosti</p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {invoice?.invoiceNumber && (
+                  <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border-l-4 border-blue-500">
+                    <Label htmlFor="invoiceNumber" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Číslo faktury
+                    </Label>
+                    <Input
+                      {...register("invoiceNumber")}
+                      placeholder="Automaticky generováno"
+                      readOnly
+                      className="mt-2 bg-white dark:bg-gray-800 font-mono"
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Customer Selection */}
+            <Card className="shadow-lg border-0 bg-white dark:bg-gray-800">
+              <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-t-lg">
+                <CardTitle className="flex items-center space-x-2 text-lg">
+                  <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">2</span>
+                  </div>
+                  <span>Výběr zákazníka</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="customer" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Vyhledat zákazníka *
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        value={customerSearch}
+                        onChange={(e) => {
+                          setCustomerSearch(e.target.value);
+                          searchCustomers(e.target.value);
+                        }}
+                        placeholder="🔍 Začněte psát název firmy nebo IČO..."
+                        className={`h-14 pl-12 text-lg border-2 transition-colors ${
+                          errors.customerId 
+                            ? "border-red-500 focus:border-red-500" 
+                            : "border-gray-200 dark:border-gray-600 hover:border-green-300 focus:border-green-500"
+                        }`}
+                      />
+                      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                    </div>
+                    {errors.customerId && (
+                      <p className="text-sm text-red-600 flex items-center space-x-1">
+                        <span>⚠️</span>
+                        <span>{errors.customerId.message}</span>
+                      </p>
+                    )}
+
+                    {/* Customer Search Results */}
+                    {showCustomerResults && customers.length > 0 && (
+                      <Card className="mt-4 border-2 border-green-200 dark:border-green-700 shadow-xl">
+                        <CardHeader className="pb-3">
+                          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                            Nalezení zákazníci ({customers.length})
+                          </h3>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                          <div className="space-y-3 max-h-64 overflow-y-auto">
+                            {customers.map((customer) => (
+                              <div
+                                key={customer.id || customer.ico}
+                                className="p-4 border-2 border-gray-100 dark:border-gray-700 rounded-xl hover:border-green-300 hover:bg-green-50 dark:hover:bg-green-950/20 cursor-pointer transition-all duration-200 group"
+                                onClick={() => selectCustomer(customer)}
+                              >
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center space-x-2 mb-2">
+                                      <h4 className="font-semibold text-gray-900 dark:text-gray-100 group-hover:text-green-700 dark:group-hover:text-green-300">
+                                        {customer.name}
+                                      </h4>
+                                      {customer.source === 'ares' && (
+                                        <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                                          📋 ARES
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    {customer.ico && (
+                                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                                        🏢 IČO: {customer.ico}
+                                      </p>
+                                    )}
+                                    {customer.address && (
+                                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                                        📍 {customer.address}
+                                      </p>
                                     )}
                                   </div>
-                                  {customer.ico && (
-                                    <p className="text-xs text-neutral-500">IČO: {customer.ico}</p>
+                                  <div className="text-green-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    ✅
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Selected Customer Display */}
+                    {selectedCustomer && (
+                      <Card className="mt-4 border-2 border-green-500 bg-green-50 dark:bg-green-950/20 shadow-lg">
+                        <CardHeader className="pb-3">
+                          <h3 className="text-sm font-semibold text-green-700 dark:text-green-300 flex items-center space-x-2">
+                            <span>✅</span>
+                            <span>Vybraný zákazník</span>
+                          </h3>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-green-200 dark:border-green-700">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2 mb-3">
+                                  <h4 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                                    {selectedCustomer.name}
+                                  </h4>
+                                  {selectedCustomer.source === 'ares' && (
+                                    <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                                      ARES
+                                    </Badge>
                                   )}
-                                  {customer.email && (
-                                    <p className="text-xs text-neutral-500">{customer.email}</p>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  {selectedCustomer.ico && (
+                                    <p className="text-sm text-gray-700 dark:text-gray-300 flex items-center space-x-2">
+                                      <span className="font-medium">🏢 IČO:</span>
+                                      <span>{selectedCustomer.ico}</span>
+                                    </p>
+                                  )}
+                                  {selectedCustomer.dic && (
+                                    <p className="text-sm text-gray-700 dark:text-gray-300 flex items-center space-x-2">
+                                      <span className="font-medium">💼 DIČ:</span>
+                                      <span>{selectedCustomer.dic}</span>
+                                    </p>
+                                  )}
+                                  {selectedCustomer.address && (
+                                    <p className="text-sm text-gray-700 dark:text-gray-300 flex items-center space-x-2">
+                                      <span className="font-medium">📍 Adresa:</span>
+                                      <span>{selectedCustomer.address}</span>
+                                    </p>
+                                  )}
+                                  {selectedCustomer.city && selectedCustomer.postalCode && (
+                                    <p className="text-sm text-gray-700 dark:text-gray-300 flex items-center space-x-2">
+                                      <span className="font-medium">🏙️ Město:</span>
+                                      <span>{selectedCustomer.postalCode} {selectedCustomer.city}</span>
+                                    </p>
                                   )}
                                 </div>
                               </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedCustomer(null);
+                                  setCustomerSearch("");
+                                  setValue("customerId", 0);
+                                }}
+                                className="text-gray-500 hover:text-red-500"
+                              >
+                                ❌
+                              </Button>
                             </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-
-                {/* Selected Customer Info */}
-                {selectedCustomer && (
-                  <Card className="bg-neutral-50">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h4 className="font-medium">{selectedCustomer.name}</h4>
-                          <div className="mt-1 space-y-1 text-sm text-neutral-600">
-                            {selectedCustomer.ico && <p>IČO: {selectedCustomer.ico}</p>}
-                            {selectedCustomer.address && <p>{selectedCustomer.address}</p>}
-                            {(selectedCustomer.city || selectedCustomer.postalCode) && (
-                              <p>{selectedCustomer.postalCode} {selectedCustomer.city}</p>
-                            )}
-                            {selectedCustomer.email && <p>{selectedCustomer.email}</p>}
                           </div>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedCustomer(null);
-                            setCustomerSearch("");
-                            setValue("customerId", 0);
-                          }}
-                        >
-                          Změnit
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-          {/* Invoice Items */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Položky faktury</CardTitle>
-              <Button type="button" variant="outline" onClick={addItem}>
-                <Plus className="mr-2 h-4 w-4" />
-                Přidat položku
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {fields.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Popis</TableHead>
-                      <TableHead>Množství</TableHead>
-                      <TableHead>Jednotková cena</TableHead>
-                      <TableHead>DPH %</TableHead>
-                      <TableHead>Celkem</TableHead>
-                      <TableHead></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {fields.map((field, index) => (
-                      <TableRow key={field.id}>
-                        <TableCell>
+            {/* Invoice Items */}
+            <Card className="shadow-lg border-0 bg-white dark:bg-gray-800">
+              <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-t-lg">
+                <CardTitle className="flex items-center space-x-2 text-lg">
+                  <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">3</span>
+                  </div>
+                  <span>Položky faktury</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  {items.map((item, index) => (
+                    <div key={index} className="p-4 border-2 border-gray-100 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-700/50">
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                        <div className="md:col-span-4">
+                          <Label className="text-sm font-semibold">Popis služby/produktu</Label>
                           <Input
-                            {...register(`items.${index}.description`)}
-                            placeholder="Popis služby/produktu"
-                            className={errors.items?.[index]?.description ? "border-red-500" : ""}
+                            value={item.description}
+                            onChange={(e) => updateItem(index, 'description', e.target.value)}
+                            placeholder="Název položky..."
+                            className="mt-1 h-11 border-2 border-gray-200 dark:border-gray-600"
                           />
-                        </TableCell>
-                        <TableCell>
+                        </div>
+                        <div className="md:col-span-2">
+                          <Label className="text-sm font-semibold">Množství</Label>
                           <Input
-                            {...register(`items.${index}.quantity`)}
                             type="number"
-                            step="0.01"
+                            value={item.quantity}
+                            onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
+                            placeholder="1"
                             min="0"
-                            className="w-20"
+                            step="0.01"
+                            className="mt-1 h-11 border-2 border-gray-200 dark:border-gray-600"
                           />
-                        </TableCell>
-                        <TableCell>
+                        </div>
+                        <div className="md:col-span-2">
+                          <Label className="text-sm font-semibold">Jednotka</Label>
                           <Input
-                            {...register(`items.${index}.unitPrice`)}
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            className="w-24"
+                            value={item.unit}
+                            onChange={(e) => updateItem(index, 'unit', e.target.value)}
+                            placeholder="ks"
+                            className="mt-1 h-11 border-2 border-gray-200 dark:border-gray-600"
                           />
-                        </TableCell>
-                        <TableCell>
+                        </div>
+                        <div className="md:col-span-2">
+                          <Label className="text-sm font-semibold">Cena za jednotku</Label>
+                          <Input
+                            type="number"
+                            value={item.unitPrice}
+                            onChange={(e) => updateItem(index, 'unitPrice', parseFloat(e.target.value) || 0)}
+                            placeholder="0.00"
+                            min="0"
+                            step="0.01"
+                            className="mt-1 h-11 border-2 border-gray-200 dark:border-gray-600"
+                          />
+                        </div>
+                        <div className="md:col-span-1">
+                          <Label className="text-sm font-semibold">VAT %</Label>
                           <Select
-                            value={watch(`items.${index}.vatRate`)}
-                            onValueChange={(value) => setValue(`items.${index}.vatRate`, value)}
+                            value={item.vatRate.toString()}
+                            onValueChange={(value) => updateItem(index, 'vatRate', parseFloat(value))}
                           >
-                            <SelectTrigger className="w-20">
+                            <SelectTrigger className="h-11 border-2 border-gray-200 dark:border-gray-600">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="0">0%</SelectItem>
-                              <SelectItem value="12">12%</SelectItem>
+                              <SelectItem value="10">10%</SelectItem>
+                              <SelectItem value="15">15%</SelectItem>
                               <SelectItem value="21">21%</SelectItem>
                             </SelectContent>
                           </Select>
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {formatCurrency(watch(`items.${index}.total`) || "0")}
-                        </TableCell>
-                        <TableCell>
-                          {fields.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => remove(index)}
-                            >
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <div className="text-center py-8 text-neutral-500">
-                  <Calculator className="mx-auto h-12 w-12 text-neutral-300 mb-4" />
-                  <p>Zatím nemáte přidané žádné položky</p>
-                  <Button type="button" variant="outline" onClick={addItem} className="mt-4">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Přidat první položku
+                        </div>
+                        <div className="md:col-span-1">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removeItem(index)}
+                            className="h-11 w-full bg-red-50 hover:bg-red-100 text-red-600 border-red-200"
+                          >
+                            🗑️
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="mt-3 p-3 bg-white dark:bg-gray-800 rounded-lg border">
+                        <div className="flex justify-between text-sm">
+                          <span>Celkem bez DPH:</span>
+                          <span className="font-medium">{formatCurrency(item.quantity * item.unitPrice)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span>DPH ({item.vatRate}%):</span>
+                          <span className="font-medium">{formatCurrency(item.quantity * item.unitPrice * (item.vatRate / 100))}</span>
+                        </div>
+                        <div className="flex justify-between text-sm font-bold border-t pt-2 mt-2">
+                          <span>Celkem s DPH:</span>
+                          <span className="text-blue-600">{formatCurrency(item.quantity * item.unitPrice * (1 + item.vatRate / 100))}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  <Button
+                    type="button"
+                    onClick={addItem}
+                    variant="outline"
+                    className="w-full h-12 border-2 border-dashed border-gray-300 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20"
+                  >
+                    <Plus className="h-5 w-5 mr-2" />
+                    Přidat položku
                   </Button>
+
+                  {errors.items && (
+                    <p className="text-sm text-red-600 mt-2 flex items-center space-x-1">
+                      <span>⚠️</span>
+                      <span>Alespoň jedna položka je povinná</span>
+                    </p>
+                  )}
                 </div>
-              )}
+              </CardContent>
+            </Card>
 
-              {errors.items && (
-                <p className="text-sm text-red-600 mt-2">Alespoň jedna položka je povinná</p>
-              )}
-            </CardContent>
-          </Card>
+            {/* Notes */}
+            <Card className="shadow-lg border-0 bg-white dark:bg-gray-800">
+              <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-t-lg">
+                <CardTitle className="flex items-center space-x-2 text-lg">
+                  <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">📝</span>
+                  </div>
+                  <span>Poznámky</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <Textarea
+                  {...register("notes")}
+                  placeholder="Volitelné poznámky k faktuře..."
+                  rows={4}
+                  className="border-2 border-gray-200 dark:border-gray-600 hover:border-orange-300 focus:border-orange-500 transition-colors"
+                />
+              </CardContent>
+            </Card>
+          </div>
 
-          {/* Notes */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Poznámky</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                {...register("notes")}
-                placeholder="Volitelné poznámky k faktuře..."
-                rows={3}
-              />
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Invoice Summary */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Přehled</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Celkem bez DPH:</span>
-                  <span>{formatCurrency(watch("subtotal"))}</span>
+          {/* Sidebar */}
+          <div className="xl:col-span-1 space-y-6">
+            {/* Invoice Summary */}
+            <Card className="shadow-lg border-0 bg-white dark:bg-gray-800 sticky top-6">
+              <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-t-lg">
+                <CardTitle className="text-lg text-blue-700 dark:text-blue-300">💰 Přehled faktury</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Celkem bez DPH:</span>
+                    <span className="font-medium">{formatCurrency(watch("subtotal"))}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">DPH:</span>
+                    <span className="font-medium">{formatCurrency(watch("vatAmount"))}</span>
+                  </div>
+                  <Separator className="my-2" />
+                  <div className="flex justify-between font-bold text-lg">
+                    <span>Celkem k úhradě:</span>
+                    <span className="text-blue-600 dark:text-blue-400">
+                      {formatCurrency(watch("total"))}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span>DPH:</span>
-                  <span>{formatCurrency(watch("vatAmount"))}</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between font-semibold">
-                  <span>Celkem k úhradě:</span>
-                  <span className="text-primary text-lg">
-                    {formatCurrency(watch("total"))}
-                  </span>
-                </div>
-              </div>
 
-              <Separator />
+                <Separator className="my-4" />
 
-              <div className="space-y-2">
-                <Label htmlFor="status">Stav faktury</Label>
-                <Select
-                  value={watch("status")}
-                  onValueChange={(value) => setValue("status", value as any)}
+                <div className="space-y-3">
+                  <Label htmlFor="status" className="text-sm font-semibold">Stav faktury</Label>
+                  <Select
+                    value={watch("status")}
+                    onValueChange={(value) => setValue("status", value as any)}
+                  >
+                    <SelectTrigger className="h-11 border-2 border-gray-200 dark:border-gray-600">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">📝 Koncept</SelectItem>
+                      <SelectItem value="sent">📤 Odeslána</SelectItem>
+                      <SelectItem value="paid">✅ Uhrazena</SelectItem>
+                      <SelectItem value="overdue">⚠️ Po splatnosti</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Actions */}
+            <Card className="shadow-lg border-0 bg-white dark:bg-gray-800">
+              <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-t-lg">
+                <CardTitle className="text-lg text-green-700 dark:text-green-300">🚀 Akce</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full h-12 text-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
                 >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Koncept</SelectItem>
-                    <SelectItem value="sent">Odeslána</SelectItem>
-                    <SelectItem value="paid">Uhrazena</SelectItem>
-                    <SelectItem value="overdue">Po splatnosti</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Akce</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="w-full"
-              >
-                {isLoading && (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                )}
-                {invoice ? 'Aktualizovat fakturu' : 'Vytvořit fakturu'}
-              </Button>
-              
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => window.history.back()}
-                disabled={isLoading}
-                className="w-full"
-              >
-                Zrušit
-              </Button>
-            </CardContent>
-          </Card>
+                  {isLoading && (
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  )}
+                  {invoice ? '✏️ Aktualizovat fakturu' : '✨ Vytvořit fakturu'}
+                </Button>
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => window.history.back()}
+                  disabled={isLoading}
+                  className="w-full h-12 border-2 hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+                  ❌ Zrušit
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </div>
-    </form>
+      </form>
+    </div>
   );
 }
