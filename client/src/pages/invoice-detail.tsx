@@ -141,26 +141,27 @@ export default function InvoiceDetail() {
     }
   };
 
+  const createInvoiceMutation = useMutation({
+    mutationFn: invoiceAPI.create,
+    onSuccess: (newInvoice) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      toast({
+        title: "Faktura vytvořena",
+        description: "Nová faktura byla úspěšně vytvořena.",
+      });
+      setLocation(`/invoices/${newInvoice.id}`);
+    },
+    onError: () => {
+      toast({
+        title: "Chyba",
+        description: "Nepodařilo se vytvořit fakturu.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Handle creating new invoice
   if (isNew) {
-    const createInvoiceMutation = useMutation({
-      mutationFn: invoiceAPI.create,
-      onSuccess: (newInvoice) => {
-        queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
-        toast({
-          title: "Faktura vytvořena",
-          description: "Nová faktura byla úspěšně vytvořena.",
-        });
-        setLocation(`/invoices/${newInvoice.id}`);
-      },
-      onError: () => {
-        toast({
-          title: "Chyba",
-          description: "Nepodařilo se vytvořit fakturu.",
-          variant: "destructive",
-        });
-      },
-    });
 
     return (
       <div className="py-6">

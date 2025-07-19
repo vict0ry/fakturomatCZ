@@ -563,7 +563,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
               <CardContent className="p-6">
                 <div className="space-y-4">
                   {fields.map((item, index) => (
-                    <div key={index} className="p-4 border-2 border-gray-100 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-700/50">
+                    <div key={`item-${index}`} className="p-4 border-2 border-gray-100 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-700/50">
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                         <div className="md:col-span-4">
                           <Label className="text-sm font-semibold">Popis služby/produktu</Label>
