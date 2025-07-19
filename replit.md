@@ -79,6 +79,16 @@ Preferred communication style: Simple, everyday language.
 - ✓ Users can choose between: manual form completion or continued AI assistance
 - ✓ Maintains full customer integration with ARES database lookup
 
+### Comprehensive Test Suite (2025-07-19)
+- ✓ Created automated testing framework for all core functions
+- ✓ API tests covering authentication, CRUD operations, and AI communication
+- ✓ AI tests validating natural language processing and invoice creation
+- ✓ PDF tests ensuring document generation and Czech character support
+- ✓ Integration tests verifying complete user workflows
+- ✓ Quick test for rapid verification of critical functions
+- ✓ Test commands: `node tests/quick-test.js` and `node tests/run-all.js`
+- ✓ Comprehensive documentation in `tests/README.md` and `TEST_COMMANDS.md`
+
 ## System Architecture
 
 ### Frontend Architecture
