@@ -111,6 +111,20 @@ export function UniversalAIChat() {
         queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
         queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
       }
+      
+      // Special handling for pricing updates - always invalidate current invoice
+      if (data.content && data.content.includes('byla aktualizována s cenami')) {
+        // Extract invoice ID from navigation path
+        const navPath = data.action?.data?.path;
+        if (navPath && navPath.includes('/invoices/') && navPath.includes('/edit')) {
+          const invoiceId = navPath.match(/\/invoices\/(\d+)\/edit/)?.[1];
+          if (invoiceId) {
+            queryClient.invalidateQueries({ queryKey: ["/api/invoices", parseInt(invoiceId)] });
+            queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+          }
+        }
+      }
     },
     onError: (error: any) => {
       toast({
@@ -128,6 +142,15 @@ export function UniversalAIChat() {
     switch (actionType) {
       case 'navigate':
         if (actionData.path) {
+          // Invalidate cache for invoice data when navigating to invoice edit
+          if (actionData.path.includes('/invoices/') && actionData.path.includes('/edit')) {
+            const invoiceId = actionData.path.match(/\/invoices\/(\d+)\/edit/)?.[1];
+            if (invoiceId) {
+              queryClient.invalidateQueries({ queryKey: ["/api/invoices", parseInt(invoiceId)] });
+              queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+              queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+            }
+          }
           window.location.href = actionData.path;
         }
         break;
