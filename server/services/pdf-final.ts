@@ -1,4 +1,5 @@
 import PDFDocument from 'pdfkit';
+import QRCode from 'qrcode';
 import type { Invoice, Customer, InvoiceItem } from "@shared/schema";
 
 export async function generateInvoicePDF(
@@ -6,11 +7,13 @@ export async function generateInvoicePDF(
 ): Promise<Buffer> {
   console.log('Generuji PDF pro fakturu:', invoice.invoiceNumber);
   
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     try {
       const doc = new PDFDocument({
         size: 'A4',
-        margin: 50
+        margin: 50,
+        bufferPages: true,
+        font: 'Helvetica'
       });
       
       const buffers: Buffer[] = [];
@@ -31,7 +34,7 @@ export async function generateInvoicePDF(
       
       doc.fontSize(14)
          .fillColor('#333333')
-         .text(`č. ${invoice.invoiceNumber}`, 50, 85);
+         .text(`c. ${invoice.invoiceNumber}`, 50, 85);
       
       // Company sections
       let yPos = 130;
@@ -45,17 +48,17 @@ export async function generateInvoicePDF(
       doc.fontSize(12)
          .fillColor('#333333')
          .text('FakturaAI s.r.o.', 50, yPos)
-         .text('Václavské náměstí 1', 50, yPos + 15)
+         .text('Vaclavske namesti 1', 50, yPos + 15)
          .text('110 00 Praha 1', 50, yPos + 30)
-         .text('IČO: 12345678', 50, yPos + 45)
-         .text('DIČ: CZ12345678', 50, yPos + 60)
+         .text('ICO: 12345678', 50, yPos + 45)
+         .text('DIC: CZ12345678', 50, yPos + 60)
          .text('Tel: +420 123 456 789', 50, yPos + 75)
          .text('Email: info@fakturaai.cz', 50, yPos + 90);
       
       // Customer
       doc.fontSize(14)
          .fillColor('#f97316')
-         .text('ODBĚRATEL', 300, 130);
+         .text('ODBERATEL', 300, 130);
       
       yPos = 155;
       doc.fontSize(12)
@@ -74,12 +77,12 @@ export async function generateInvoicePDF(
       
       if (invoice.customer.ico) {
         yPos += 15;
-        doc.text(`IČO: ${invoice.customer.ico}`, 300, yPos);
+        doc.text(`ICO: ${invoice.customer.ico}`, 300, yPos);
       }
       
       if (invoice.customer.dic) {
         yPos += 15;
-        doc.text(`DIČ: ${invoice.customer.dic}`, 300, yPos);
+        doc.text(`DIC: ${invoice.customer.dic}`, 300, yPos);
       }
       
       if (invoice.customer.email) {
@@ -114,16 +117,16 @@ export async function generateInvoicePDF(
       
       doc.fontSize(10)
          .fillColor('#92400e')
-         .text('DATUM VYSTAVENÍ', 70, yPos + 10)
+         .text('DATUM VYSTAVENI', 70, yPos + 10)
          .text(formatDate(invoice.issueDate), 70, yPos + 25);
       
       doc.text('DATUM SPLATNOSTI', 180, yPos + 10)
          .text(formatDate(invoice.dueDate), 180, yPos + 25);
       
-      doc.text('ZPŮSOB PLATBY', 290, yPos + 10)
-         .text('Bankovní převod', 290, yPos + 25);
+      doc.text('ZPUSOB PLATBY', 290, yPos + 10)
+         .text('Bankovni prevod', 290, yPos + 25);
       
-      doc.text('MĚNA', 400, yPos + 10)
+      doc.text('MENA', 400, yPos + 10)
          .text(invoice.currency || 'CZK', 400, yPos + 25);
       
       // Items table
@@ -136,7 +139,7 @@ export async function generateInvoicePDF(
       doc.fontSize(10)
          .fillColor('white')
          .text('POPIS', 60, yPos + 8)
-         .text('MNOŽSTVÍ', 250, yPos + 8)
+         .text('MNOZSTVI', 250, yPos + 8)
          .text('CENA/KS', 320, yPos + 8)
          .text('DPH %', 390, yPos + 8)
          .text('CELKEM', 450, yPos + 8);
@@ -177,7 +180,7 @@ export async function generateInvoicePDF(
       
       doc.fontSize(12)
          .fillColor('#333333')
-         .text('Základ DPH:', totalsX, yPos)
+         .text('Zaklad DPH:', totalsX, yPos)
          .text(formatCurrency(invoice.subtotal), totalsX + 100, yPos);
       
       yPos += 20;
@@ -192,7 +195,7 @@ export async function generateInvoicePDF(
       
       doc.fontSize(14)
          .fillColor('#f97316')
-         .text('CELKEM K ÚHRADĚ:', totalsX, yPos + 3)
+         .text('CELKEM K UHRADE:', totalsX, yPos + 3)
          .text(formatCurrency(invoice.total), totalsX + 100, yPos + 3);
       
       yPos += 50;
@@ -203,16 +206,44 @@ export async function generateInvoicePDF(
       
       doc.fontSize(12)
          .fillColor('#f97316')
-         .text('PLATEBNÍ ÚDAJE', 60, yPos + 10);
+         .text('PLATEBNI UDAJE', 60, yPos + 10);
       
       doc.fontSize(10)
          .fillColor('#333333')
-         .text('Číslo účtu: 123456789/0100', 60, yPos + 30)
+         .text('Cislo uctu: 123456789/0100', 60, yPos + 30)
          .text('IBAN: CZ6508000000192000145399', 60, yPos + 45)
-         .text(`Variabilní symbol: ${invoice.invoiceNumber}`, 300, yPos + 30)
-         .text('Konstantní symbol: 0308', 300, yPos + 45);
+         .text(`Variabilni symbol: ${invoice.invoiceNumber}`, 300, yPos + 30)
+         .text('Konstantni symbol: 0308', 300, yPos + 45);
       
       yPos += 100;
+      
+      // QR Code for payment
+      const qrData = generateQRPaymentString(invoice);
+      const qrImageBuffer = await QRCode.toBuffer(qrData, {
+        width: 120,
+        margin: 1,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+      
+      // QR Code section
+      doc.rect(350, yPos, 195, 140)
+         .fillAndStroke('#f8f9fa', '#f97316');
+      
+      doc.fontSize(12)
+         .fillColor('#f97316')
+         .text('QR KOD PRO PLATBU', 360, yPos + 10);
+      
+      doc.image(qrImageBuffer, 410, yPos + 25, { width: 80, height: 80 });
+      
+      doc.fontSize(8)
+         .fillColor('#666666')
+         .text('Naskenujte kodem', 360, yPos + 115)
+         .text('mobilni aplikace banky', 360, yPos + 125);
+      
+      yPos += 160;
       
       // Notes
       if (invoice.notes) {
@@ -221,7 +252,7 @@ export async function generateInvoicePDF(
         
         doc.fontSize(12)
            .fillColor('#92400e')
-           .text('POZNÁMKY', 60, yPos + 10);
+           .text('POZNAMKY', 60, yPos + 10);
         
         doc.fontSize(10)
            .fillColor('#333333')
@@ -250,4 +281,19 @@ export async function generateInvoicePDF(
       reject(error);
     }
   });
+}
+
+function generateQRPaymentString(invoice: Invoice): string {
+  // QR platba standard for Czech banks
+  const amount = parseFloat(invoice.total).toFixed(2);
+  const accountNumber = '123456789';
+  const bankCode = '0100';
+  const variableSymbol = invoice.invoiceNumber.replace(/\D/g, ''); // Only numbers
+  const specificSymbol = '';
+  const constantSymbol = '0308';
+  const message = `Faktura ${invoice.invoiceNumber}`;
+  const dueDate = new Date(invoice.dueDate).toISOString().split('T')[0].replace(/-/g, '');
+  
+  // SPD format for QR payments in Czech Republic
+  return `SPD*1.0*ACC:${accountNumber}+${bankCode}*AM:${amount}*CC:CZK*MSG:${message}*X-VS:${variableSymbol}*X-SS:${specificSymbol}*X-KS:${constantSymbol}*DT:${dueDate}`;
 }
