@@ -1,50 +1,7 @@
-import puppeteer from "puppeteer";
 import { Invoice, Customer, InvoiceItem } from '@shared/schema';
 
-export async function generateInvoicePDF(
-  invoice: Invoice & { customer: Customer; items: InvoiceItem[] }
-): Promise<Buffer> {
-  const htmlContent = generateInvoiceHTML(invoice);
-  
-  // Launch headless browser with fallback options
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: [
-      '--no-sandbox', 
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-accelerated-2d-canvas',
-      '--no-first-run',
-      '--no-zygote',
-      '--single-process',
-      '--disable-gpu'
-    ],
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined
-  });
-  
-  try {
-    const page = await browser.newPage();
-    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-    
-    // Generate PDF
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      margin: {
-        top: '20mm',
-        right: '15mm',
-        bottom: '20mm',
-        left: '15mm'
-      },
-      printBackground: true
-    });
-    
-    return pdfBuffer;
-  } finally {
-    await browser.close();
-  }
-}
-
-function generateInvoiceHTML(invoice: Invoice & { customer: Customer; items: InvoiceItem[] }): string {
+// Fallback HTML-based PDF solution for when Puppeteer fails
+export function generateInvoiceHTML(invoice: Invoice & { customer: Customer; items: InvoiceItem[] }): string {
   const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleDateString('cs-CZ');
   };
@@ -64,6 +21,10 @@ function generateInvoiceHTML(invoice: Invoice & { customer: Customer; items: Inv
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Faktura ${invoice.invoiceNumber}</title>
       <style>
+        @media print {
+          body { margin: 0; }
+          .no-print { display: none; }
+        }
         body {
           font-family: Arial, sans-serif;
           margin: 0;
@@ -71,6 +32,19 @@ function generateInvoiceHTML(invoice: Invoice & { customer: Customer; items: Inv
           font-size: 14px;
           line-height: 1.4;
           color: #333;
+        }
+        .print-button {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background: #2563EB;
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 5px;
+          cursor: pointer;
+          font-size: 14px;
+          z-index: 1000;
         }
         .header {
           text-align: center;
@@ -154,29 +128,27 @@ function generateInvoiceHTML(invoice: Invoice & { customer: Customer; items: Inv
         }
         .footer {
           text-align: center;
+          margin-top: 40px;
+          padding-top: 20px;
+          border-top: 1px solid #e2e8f0;
           color: #666;
           font-size: 12px;
-          border-top: 1px solid #e2e8f0;
-          padding-top: 20px;
-        }
-        @media print {
-          body { margin: 0; }
-          .info-section { display: block; }
-          .info-block { width: 100%; margin-bottom: 20px; }
         }
       </style>
     </head>
     <body>
+      <button class="print-button no-print" onclick="window.print()">Vytisknout PDF</button>
+      
       <div class="header">
         <div class="invoice-title">FAKTURA</div>
-        <div class="invoice-number">${invoice.invoiceNumber}</div>
+        <div class="invoice-number">Číslo: ${invoice.invoiceNumber}</div>
       </div>
 
       <div class="info-section">
         <div class="info-block">
           <h3>Dodavatel</h3>
-          <p><strong>Test s.r.o.</strong></p>
-          <p>Testovací 123</p>
+          <p><strong>FakturaAI s.r.o.</strong></p>
+          <p>Václavské náměstí 1</p>
           <p>110 00 Praha 1</p>
           <p>IČO: 12345678</p>
           <p>DIČ: CZ12345678</p>
@@ -186,7 +158,6 @@ function generateInvoiceHTML(invoice: Invoice & { customer: Customer; items: Inv
           <h3>Odběratel</h3>
           <p><strong>${invoice.customer.name}</strong></p>
           ${invoice.customer.address ? `<p>${invoice.customer.address}</p>` : ''}
-          ${invoice.customer.city ? `<p>${invoice.customer.postalCode} ${invoice.customer.city}</p>` : ''}
           ${invoice.customer.ico ? `<p>IČO: ${invoice.customer.ico}</p>` : ''}
           ${invoice.customer.dic ? `<p>DIČ: ${invoice.customer.dic}</p>` : ''}
         </div>
@@ -194,12 +165,13 @@ function generateInvoiceHTML(invoice: Invoice & { customer: Customer; items: Inv
 
       <div class="info-section">
         <div class="info-block">
-          <p><strong>Datum vystavení:</strong> ${formatDate(invoice.issueDate)}</p>
-          <p><strong>Datum splatnosti:</strong> ${formatDate(invoice.dueDate)}</p>
+          <h3>Datum vystavení</h3>
+          <p>${formatDate(invoice.issueDate)}</p>
         </div>
+        
         <div class="info-block">
-          <p><strong>Způsob platby:</strong> Bankovní převod</p>
-          <p><strong>Variabilní symbol:</strong> ${invoice.invoiceNumber.replace(/\D/g, '')}</p>
+          <h3>Datum splatnosti</h3>
+          <p>${formatDate(invoice.dueDate)}</p>
         </div>
       </div>
 
@@ -208,9 +180,10 @@ function generateInvoiceHTML(invoice: Invoice & { customer: Customer; items: Inv
           <tr>
             <th>Popis</th>
             <th>Množství</th>
-            <th>Jednotková cena</th>
+            <th>Jednotka</th>
+            <th>Cena/jednotka</th>
             <th>DPH %</th>
-            <th class="amount">Celkem bez DPH</th>
+            <th class="amount">Celkem</th>
           </tr>
         </thead>
         <tbody>
@@ -218,9 +191,10 @@ function generateInvoiceHTML(invoice: Invoice & { customer: Customer; items: Inv
             <tr>
               <td>${item.description}</td>
               <td>${item.quantity}</td>
+              <td>ks</td>
               <td class="amount">${formatCurrency(item.unitPrice)}</td>
               <td>${item.vatRate}%</td>
-              <td class="amount">${formatCurrency(Number(item.unitPrice) * Number(item.quantity))}</td>
+              <td class="amount">${formatCurrency(item.total)}</td>
             </tr>
           `).join('')}
         </tbody>
@@ -228,7 +202,7 @@ function generateInvoiceHTML(invoice: Invoice & { customer: Customer; items: Inv
 
       <div class="totals">
         <div class="total-row">
-          <span>Celkem bez DPH:</span>
+          <span>Základ DPH:</span>
           <span>${formatCurrency(invoice.subtotal)}</span>
         </div>
         <div class="total-row">
@@ -244,8 +218,8 @@ function generateInvoiceHTML(invoice: Invoice & { customer: Customer; items: Inv
       <div class="payment-info">
         <h3>Platební údaje</h3>
         <p><strong>Číslo účtu:</strong> 123456789/0100</p>
-        <p><strong>Variabilní symbol:</strong> ${invoice.invoiceNumber.replace(/\D/g, '')}</p>
-        <p><strong>Částka k úhradě:</strong> ${formatCurrency(invoice.total)}</p>
+        <p><strong>Variabilní symbol:</strong> ${invoice.invoiceNumber}</p>
+        <p><strong>Měna:</strong> ${invoice.currency}</p>
       </div>
 
       ${invoice.notes ? `
@@ -258,6 +232,17 @@ function generateInvoiceHTML(invoice: Invoice & { customer: Customer; items: Inv
       <div class="footer">
         <p>Děkujeme za spolupráci | FakturaAI s.r.o. | www.fakturaai.cz</p>
       </div>
+
+      <script>
+        // Auto-print functionality for better PDF generation
+        if (window.location.search.includes('print=true')) {
+          window.onload = function() {
+            setTimeout(() => {
+              window.print();
+            }, 500);
+          };
+        }
+      </script>
     </body>
     </html>
   `;

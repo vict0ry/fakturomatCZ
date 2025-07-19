@@ -505,11 +505,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Invoice not found" });
       }
       
-      const pdfBuffer = await generateInvoicePDF(invoice as any);
-      
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="Faktura_${invoice.invoiceNumber}.pdf"`);
-      res.send(pdfBuffer);
+      try {
+        // Try Puppeteer first
+        const pdfBuffer = await generateInvoicePDF(invoice as any);
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="Faktura_${invoice.invoiceNumber}.pdf"`);
+        res.send(pdfBuffer);
+      } catch (puppeteerError) {
+        console.warn("Puppeteer failed, falling back to HTML:", puppeteerError.message);
+        
+        // Fallback to HTML with print functionality
+        const { generateInvoiceHTML } = await import('./services/pdf-fallback');
+        const htmlContent = generateInvoiceHTML(invoice as any);
+        
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.send(htmlContent);
+      }
     } catch (error) {
       console.error("Error generating PDF:", error);
       res.status(500).json({ message: "Failed to generate PDF" });
