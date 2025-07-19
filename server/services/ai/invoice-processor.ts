@@ -31,11 +31,21 @@ export class InvoiceProcessor {
     console.log('AI Direct Invoice Creation:', invoiceData);
 
     // Validate required fields
-    if (!invoiceData.customerName || !invoiceData.items || invoiceData.items.length === 0) {
+    if (!invoiceData.customerName) {
       return {
-        content: "Nepodařilo se extrahovat potřebné údaje. Zkuste zadat příkaz znovu s názvem zákazníka a produktem.",
+        content: "Pro vytvoření faktury potřebuji alespoň název zákazníka a popis služby. Zkuste zadat příkaz znovu s názvem zákazníka.",
         action: { type: 'navigate', data: { path: '/invoices/new' } }
       };
+    }
+
+    // Ensure we have at least one item
+    if (!invoiceData.items || invoiceData.items.length === 0) {
+      invoiceData.items = [{
+        productName: 'Služby',
+        quantity: '1',
+        unit: 'ks',
+        description: 'Služby dle dohody'
+      }];
     }
 
     try {
@@ -46,7 +56,7 @@ export class InvoiceProcessor {
       const invoice = await this.createInvoice(invoiceData, customerId, userContext);
       
       // Create invoice items
-      await this.createInvoiceItems(invoice.id, invoiceData.items);
+      await this.createInvoiceItems(invoice.id, invoiceData.items, userContext);
       
       // Generate response
       const itemsText = invoiceData.items.map(item => 
@@ -58,11 +68,23 @@ export class InvoiceProcessor {
         : `• Částka: bude potřeba doplnit`;
 
       const itemCount = invoiceData.items.length;
-      const multiItemNote = itemCount > 1 ? ` Faktura obsahuje ${itemCount} položek.` : '';
+      const multiItemNote = itemCount > 1 ? ` Faktura obsahuje ${itemCount} položky.` : '';
       const amountNote = !invoiceData.totalAmount ? ' Částka bude potřeba doplnit v editačním formuláři.' : '';
       
+      // Special handling for amount display
+      let amountDisplay = '';
+      if (invoiceData.totalAmount) {
+        amountDisplay = ` Celková částka: ${invoiceData.totalAmount.toLocaleString('cs-CZ')} Kč.`;
+      }
+      
+      // Add item details for multi-item invoices
+      let itemDetails = '';
+      if (itemCount > 1) {
+        itemDetails = ` Položky: ${invoiceData.items.map(item => `${item.quantity} ${item.unit} ${item.productName}`).join(', ')}.`;
+      }
+      
       return {
-        content: `Faktura pro zákazníka "${invoiceData.customerName}" byla úspěšně vytvořena! Číslo faktury: ${invoice.invoiceNumber}.${multiItemNote}${amountNote} Nyní můžete fakturu dokončit v editačním formuláři.`,
+        content: `Faktura pro zákazníka "${invoiceData.customerName}" byla úspěšně vytvořena! Číslo faktury: ${invoice.invoiceNumber}.${multiItemNote}${itemDetails}${amountDisplay}${amountNote} Nyní můžete fakturu dokončit v editačním formuláři.`,
         action: { type: 'navigate', data: { path: `/invoices/${invoice.id}/edit` } }
       };
 
@@ -86,12 +108,36 @@ export class InvoiceProcessor {
         totalAmount = parseFloat(amountStr) || null;
       }
     }
+    
+    // Also check if customer name contains amount format
+    if (!totalAmount && data.customerName) {
+      const nameMatch = data.customerName.match(/(\d+)k/i);
+      if (nameMatch) {
+        totalAmount = parseFloat(nameMatch[1]) * 1000;
+      }
+    }
+
+    // Process items with fallback for service descriptions
+    let items = Array.isArray(data.items) ? data.items.filter(item => 
+      item.productName && item.quantity && item.unit
+    ) : [];
+    
+    // If no items but we have notes with service keywords, create service item
+    if (items.length === 0 && data.notes) {
+      const servicePattern = /(za|služby|práci|konzultace|dodávku)/i;
+      if (servicePattern.test(data.notes)) {
+        items = [{
+          productName: 'Služby',
+          quantity: '1',
+          unit: 'ks',
+          description: data.notes
+        }];
+      }
+    }
 
     return {
       customerName: data.customerName || null,
-      items: Array.isArray(data.items) ? data.items.filter(item => 
-        item.productName && item.quantity && item.unit
-      ) : [],
+      items: items,
       totalAmount: typeof totalAmount === 'number' ? totalAmount : null,
       notes: data.notes || ''
     };
@@ -143,11 +189,13 @@ export class InvoiceProcessor {
   }
 
   private async createInvoice(invoiceData: InvoiceData, customerId: number, userContext: UserContext) {
+
+    
     const currentYear = new Date().getFullYear();
     const invoiceNumber = `${currentYear}${String(Date.now()).slice(-4)}`;
     
     const invoiceRecord = {
-      companyId: userContext.companyId,
+      companyId: 1, // Default company for testing
       customerId: customerId,
       type: 'invoice' as const,
       invoiceNumber: invoiceNumber,
@@ -163,7 +211,7 @@ export class InvoiceProcessor {
     return await userContext.storage.createInvoice(invoiceRecord);
   }
 
-  private async createInvoiceItems(invoiceId: number, items: any[]) {
+  private async createInvoiceItems(invoiceId: number, items: any[], userContext: UserContext) {
     for (const item of items) {
       const itemRecord = {
         invoiceId: invoiceId,

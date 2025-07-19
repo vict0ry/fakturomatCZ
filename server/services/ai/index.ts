@@ -21,7 +21,15 @@ export class UniversalAIService {
   ): Promise<UniversalAIResponse> {
     
     try {
-      // First, try specific handlers for common actions
+
+      
+      // Check for invoice creation FIRST before any handlers
+      if (message.toLowerCase().includes('vytvoř fakturu') || message.toLowerCase().includes('vytvořte fakturu')) {
+
+        return await this.handleInvoiceCreation(message, userContext);
+      }
+
+      // Then try specific handlers for common actions
       const quickResponse = this.tryQuickHandlers(message, currentPath);
       if (quickResponse) return quickResponse;
 
@@ -44,24 +52,40 @@ export class UniversalAIService {
   }
 
   private tryQuickHandlers(message: string, currentPath: string): UniversalAIResponse | null {
-    // Try navigation first
-    const navResponse = this.navigationHandler.handleNavigation(message);
-    if (navResponse) return navResponse;
+    const msg = message.toLowerCase();
 
-    // Try search
-    const searchResponse = this.navigationHandler.handleSearch(message);
-    if (searchResponse) return searchResponse;
+    // Handle incomplete invoice requests FIRST (before search handlers)
+    if ((msg.includes('vytvoř fakturu') || msg.includes('vytvořte fakturu')) && message.trim().split(' ').length <= 2) {
+      return {
+        content: "Pro vytvoření faktury potřebuji alespoň název zákazníka a popis služby. Zkuste například: 'vytvoř fakturu TestCompany za služby 15000 Kč'"
+      };
+    }
+
+    // Skip quick handlers for invoice creation - let OpenAI handle it
+    if (msg.includes('vytvoř fakturu') || msg.includes('vytvořte fakturu')) {
+      return null; // Let OpenAI process
+    }
+
+    // Try help first
+    const helpResponse = this.navigationHandler.handleHelp(message);
+    if (helpResponse) return helpResponse;
 
     // Try status updates
     const statusResponse = this.navigationHandler.handleStatusUpdate(message);
     if (statusResponse) return statusResponse;
 
-    // Try help
-    const helpResponse = this.navigationHandler.handleHelp(message);
-    if (helpResponse) return helpResponse;
+    // Try navigation (but not for invoice-related commands)
+    if (!msg.includes('fakturu') && !msg.includes('invoice')) {
+      const navResponse = this.navigationHandler.handleNavigation(message);
+      if (navResponse) return navResponse;
+    }
+
+    // Try search and status filters FIRST before navigation
+    const searchResponse = this.navigationHandler.handleSearch(message);
+    if (searchResponse) return searchResponse;
 
     // Try context-specific responses
-    if (message.toLowerCase().includes('co je') || message.toLowerCase().includes('kde jsem')) {
+    if (msg.includes('co je') || msg.includes('kde jsem')) {
       return {
         content: this.navigationHandler.getContextualResponse(currentPath)
       };

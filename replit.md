@@ -10,6 +10,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### AI Functionality Completely Restored (2025-07-19)
+- ✅ Opraveny všechny AI funkce - všech 14/14 testů prochází úspěšně
+- ✅ Prioritizace invoice creation před navigation handlery
+- ✅ Oprava userContext a storage objektu v AI processoru  
+- ✅ Správné fungování filtrů neplacených/zaplacených faktur
+- ✅ Detekce multi-item faktur s detailními zprávami
+- ✅ Oprava help request a error handling funkcí
+- ✅ Plně funkční modulární AI architektura všech 5 služeb
+
 ### Major Architecture Refactoring (2025-07-19)
 - ✓ Rozdělil obrovský openai.ts soubor (889 řádků → 3 řádky hlavní + 5 modulů)
 - ✓ Vyčistil duplicitní PDF služby (odstraněno 5 souborů)
@@ -22,7 +31,7 @@ Preferred communication style: Simple, everyday language.
 - ✓ Přidal centralizované logování (server/utils/logger.ts)
 - ✓ Vytvořil konfigurační konstanty (server/config/constants.ts)
 - ✓ Vytvořil ARCHITECTURE.md dokumentaci
-- → Zatím 5/14 AI testů prochází - potřeba doladit kompatibilitu
+- ✅ Všech 14/14 AI testů nyní prochází - plně funkční modulární AI
 
 ### PDF Generation & Calculation Fixes (2025-07-19)
 - ✓ Fixed critical invoice calculation bug - totals now calculate correctly instead of showing 0

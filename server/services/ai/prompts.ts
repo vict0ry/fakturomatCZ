@@ -43,11 +43,17 @@ Vrať JSON s:
   "notes": "poznámky"
 }
 
-Pokud text neobsahuje fakturu informace, vrať všechny hodnoty jako null.
-Množství "25k" znamená 25000.
-Rozpoznej české jednotky: ks, kg, hodiny, metry, litry.`;
+DŮLEŽITÉ PRAVIDLA:
+- Rozpoznej "25k" jako 25000, "5k" jako 5000
+- Zpracovávej české znaky (ě, š, č, ř, ž, ý, á, í, é, ó, ú, ů, ď, ť, ň)
+- Pokud není částka uvedena, nastav totalAmount na null
+- Rozpoznej české jednotky: ks, kg, hodiny, metry, litry
+- "za služby", "za práci", "za konzultace" = vytvoř položku služby s jednotkou "ks"
+- Vždy vytvoř alespoň jednu položku, i když je popis obecný
 
-export const HELP_RESPONSE = `Jsem váš inteligentní AI asistent pro český fakturační systém! Umím toho opravdu hodně:
+Pokud text neobsahuje fakturu informace, vrať všechny hodnoty jako null.`;
+
+export const HELP_RESPONSE = `Jsem váš inteligentní AI asistent pro český fakturační systém! Jako váš asistent mohu vytvořit faktury rychle a efektivně:
 
 **Vytváření faktur:**
 • "vytvoř fakturu ABC za služby 15000 Kč"

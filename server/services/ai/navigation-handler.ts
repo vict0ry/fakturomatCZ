@@ -1,4 +1,5 @@
 import type { UniversalAIResponse } from "./types.js";
+import { HELP_RESPONSE } from "./prompts.js";
 
 export class NavigationHandler {
   
@@ -21,8 +22,11 @@ export class NavigationHandler {
       };
     }
 
-    // Invoices navigation
-    if (msg.includes('faktur') || msg.includes('invoice') || msg.includes('účt')) {
+    // Invoices navigation (NOT for creating invoices or filtering)
+    if ((msg.includes('faktur') || msg.includes('invoice') || msg.includes('účt')) && 
+        !msg.includes('vytvoř') && !msg.includes('vytvořte') &&
+        !msg.includes('neplacené') && !msg.includes('zaplacené') &&
+        !msg.includes('neplacen') && !msg.includes('zaplacen')) {
       return {
         content: "📋 Zobrazuji všechny faktury...",
         action: { type: 'navigate', data: { path: '/invoices' } }
@@ -51,8 +55,26 @@ export class NavigationHandler {
   handleSearch(message: string): UniversalAIResponse | null {
     const msg = message.toLowerCase();
 
-    // Search by customer
-    if (msg.includes('najdi') || msg.includes('vyhledej') || msg.includes('zobraz')) {
+    // Status filtering detection FIRST (most specific)
+    if (msg.includes('neplacené faktury') || msg.includes('nezaplacené faktury') || 
+        msg.includes('neplacen') || (msg.includes('zobraz') && msg.includes('neplacené'))) {
+      return {
+        content: "Filtruji neplacené faktury podle vašeho požadavku...",
+        action: { type: 'navigate', data: { path: '/invoices?status=sent' } }
+      };
+    }
+
+    if (msg.includes('zaplacené faktury') || msg.includes('placené faktury') || 
+        msg.includes('zaplacen') || (msg.includes('najdi') && msg.includes('zaplacené'))) {
+      return {
+        content: "Filtruji zaplacené faktury podle vašeho požadavku...",
+        action: { type: 'navigate', data: { path: '/invoices?status=paid' } }
+      };
+    }
+
+    // Search by customer or filter by status (but not for creating invoices)
+    if ((msg.includes('najdi') || msg.includes('vyhledej')) || 
+        (msg.includes('zobraz') && !msg.includes('fakturu') && !msg.includes('vytvoř'))) {
       // Extract customer name for search
       const customerMatch = msg.match(/(?:pro|zákazník[aei]?)\s+([^,\s]+(?:\s+[^,\s]+)*)/);
       if (customerMatch) {
@@ -63,21 +85,6 @@ export class NavigationHandler {
             type: 'navigate', 
             data: { path: `/invoices?customer=${encodeURIComponent(customerName)}` } 
           }
-        };
-      }
-
-      // Filter by status - improved detection
-      if (msg.includes('neplacen') || msg.includes('nezaplacen') || msg.includes('pending') || msg.includes('odeslané')) {
-        return {
-          content: "Filtruji neplacené faktury podle vašeho požadavku...",
-          action: { type: 'navigate', data: { path: '/invoices?status=sent' } }
-        };
-      }
-
-      if (msg.includes('zaplacen') || msg.includes('uhrazen') || msg.includes('paid')) {
-        return {
-          content: "Filtruji zaplacené faktury podle vašeho požadavku...",
-          action: { type: 'navigate', data: { path: '/invoices?status=paid' } }
         };
       }
 
@@ -131,8 +138,7 @@ export class NavigationHandler {
   handleHelp(message: string): UniversalAIResponse | null {
     const msg = message.toLowerCase();
 
-    if (msg.includes('pomoc') || msg.includes('help') || msg.includes('co umíš') || msg.includes('nápověda')) {
-      const { HELP_RESPONSE } = require('./prompts.js');
+    if (msg.includes('pomoc') || msg.includes('help') || msg.includes('co umíš') || msg.includes('co všechno umíš') || msg.includes('nápověda') || msg.includes('schopnosti')) {
       return { content: HELP_RESPONSE };
     }
 
