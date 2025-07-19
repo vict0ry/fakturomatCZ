@@ -16,6 +16,35 @@ export const companies = pgTable("companies", {
   phone: text("phone"),
   website: text("website"),
   bankAccount: text("bank_account"),
+  iban: text("iban"),
+  // Reminder settings
+  reminderIntervals: json("reminder_intervals").default([7, 14, 30]), // Days after due date
+  enableReminders: boolean("enable_reminders").default(true),
+  // Email templates
+  reminderEmailSubject: text("reminder_email_subject").default("Upomínka - nezaplacená faktura č. {invoiceNumber}"),
+  reminderEmailTemplate: text("reminder_email_template").default(`Vážený zákazníku,
+
+dovolujeme si Vás upozornit na nezaplacenou fakturu č. {invoiceNumber} v celkové výši {total} Kč.
+
+Termín splatnosti: {dueDate}
+Počet dní po splatnosti: {daysPastDue}
+
+Prosíme o úhradu této faktury v nejkratším možném termínu.
+
+S pozdravem,
+{companyName}`),
+  finalReminderEmailSubject: text("final_reminder_email_subject").default("Konečná upomínka - nezaplacená faktura č. {invoiceNumber}"),
+  finalReminderEmailTemplate: text("final_reminder_email_template").default(`Vážený zákazníku,
+
+toto je konečná upomínka týkající se nezaplacené faktury č. {invoiceNumber} v celkové výši {total} Kč.
+
+Termín splatnosti: {dueDate}
+Počet dní po splatnosti: {daysPastDue}
+
+V případě neuhrazení této faktury do 7 dnů budeme nuceni přistoupit k dalším krokům.
+
+S pozdravem,
+{companyName}`),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

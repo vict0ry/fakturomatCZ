@@ -12,7 +12,9 @@ import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Mail, Settings, Users, Building2, Save, UserPlus, Shield, Trash2 } from 'lucide-react';
+import { Mail, Settings, Users, Building2, Save, UserPlus, Shield, Trash2, Clock, MessageSquare } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const companySettingsSchema = z.object({
   name: z.string().min(1, 'Název firmy je povinný'),
@@ -25,7 +27,15 @@ const companySettingsSchema = z.object({
   email: z.string().email('Neplatný email'),
   website: z.string().url('Neplatná URL').optional().or(z.literal('')),
   bankAccount: z.string().optional(),
-  iban: z.string().optional()
+  iban: z.string().optional(),
+  // Reminder settings
+  enableReminders: z.boolean().default(true),
+  reminderIntervals: z.array(z.number().min(1)).default([7, 14, 30]),
+  // Email templates
+  reminderEmailSubject: z.string().min(1, 'Předmět upomínky je povinný'),
+  reminderEmailTemplate: z.string().min(1, 'Šablona upomínky je povinná'),
+  finalReminderEmailSubject: z.string().min(1, 'Předmět konečné upomínky je povinný'),
+  finalReminderEmailTemplate: z.string().min(1, 'Šablona konečné upomínky je povinná')
 });
 
 const emailSettingsSchema = z.object({
@@ -68,7 +78,33 @@ export default function SettingsPage() {
       email: '',
       website: '',
       bankAccount: '',
-      iban: ''
+      iban: '',
+      enableReminders: true,
+      reminderIntervals: [7, 14, 30],
+      reminderEmailSubject: 'Upomínka - nezaplacená faktura č. {invoiceNumber}',
+      reminderEmailTemplate: `Vážený zákazníku,
+
+dovolujeme si Vás upozornit na nezaplacenou fakturu č. {invoiceNumber} v celkové výši {total} Kč.
+
+Termín splatnosti: {dueDate}
+Počet dní po splatnosti: {daysPastDue}
+
+Prosíme o úhradu této faktury v nejkratším možném termínu.
+
+S pozdravem,
+{companyName}`,
+      finalReminderEmailSubject: 'Konečná upomínka - nezaplacená faktura č. {invoiceNumber}',
+      finalReminderEmailTemplate: `Vážený zákazníku,
+
+toto je konečná upomínka týkající se nezaplacené faktury č. {invoiceNumber} v celkové výši {total} Kč.
+
+Termín splatnosti: {dueDate}
+Počet dní po splatnosti: {daysPastDue}
+
+V případě neuhrazení této faktury do 7 dnů budeme nuceni přistoupit k dalším krokům.
+
+S pozdravem,
+{companyName}`
     }
   });
 
