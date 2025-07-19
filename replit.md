@@ -10,6 +10,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### PDF Generation & Calculation Fixes (2025-07-19)
+- ✓ Fixed critical invoice calculation bug - totals now calculate correctly instead of showing 0
+- ✓ Replaced broken jsPDF implementation with working Puppeteer + fallback solution
+- ✓ Resolved Czech character encoding issues in PDF generation
+- ✓ Created modern PDF design with orange branding and professional layout
+- ✓ Implemented robust fallback system: Puppeteer → html-pdf-node → jsPDF
+- ✓ Fixed form layout issues by removing problematic grid sidebar layout
+- ✓ Added proper error handling and logging for PDF generation pipeline
+
 ### Dashboard Enhancements (2025-07-19)
 - ✓ Added dark/light theme toggle functionality with ThemeProvider
 - ✓ Implemented customizable dashboard widgets with drag-and-drop using React Beautiful DND
