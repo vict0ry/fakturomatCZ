@@ -359,7 +359,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const invoiceDataParsed = insertInvoiceSchema.parse(processedInvoiceData);
       
+      // Generate invoice number if not provided
+      if (!invoiceDataParsed.invoiceNumber || invoiceDataParsed.invoiceNumber.trim() === '') {
+        const year = new Date().getFullYear();
+        const count = await storage.getInvoiceCount(req.user.companyId, year);
+        invoiceDataParsed.invoiceNumber = `${year}${String(count + 1).padStart(4, '0')}`;
+      }
+
       const invoice = await storage.createInvoice(invoiceDataParsed);
+      
+      // Create invoice items if provided
+      if (invoiceData.items && Array.isArray(invoiceData.items)) {
+        for (const item of invoiceData.items) {
+          await storage.createInvoiceItem({
+            invoiceId: invoice.id,
+            description: item.description || '',
+            quantity: String(item.quantity || '1'),
+            unitPrice: String(item.unitPrice || '0'),
+            vatRate: String(item.vatRate || '21'),
+            total: String(parseFloat(item.quantity || '1') * parseFloat(item.unitPrice || '0'))
+          });
+        }
+      }
       
       // Log creation in history
       await storage.createInvoiceHistory({

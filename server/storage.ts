@@ -66,6 +66,9 @@ export interface IStorage {
   createInvoiceHistory(history: InsertInvoiceHistory): Promise<InvoiceHistory>;
   getInvoiceHistory(invoiceId: number): Promise<InvoiceHistory[]>;
   
+  // Invoice counting
+  getInvoiceCount(companyId: number, year: number): Promise<number>;
+  
   // Reminders
   createReminder(reminder: InsertReminder): Promise<Reminder>;
   getInvoiceReminders(invoiceId: number): Promise<Reminder[]>;
@@ -439,6 +442,21 @@ export class DatabaseStorage implements IStorage {
     .leftJoin(users, eq(invoiceHistory.userId, users.id))
     .where(eq(invoiceHistory.invoiceId, invoiceId))
     .orderBy(desc(invoiceHistory.createdAt));
+  }
+
+  async getInvoiceCount(companyId: number, year: number): Promise<number> {
+    const startOfYear = new Date(year, 0, 1);
+    const endOfYear = new Date(year, 11, 31, 23, 59, 59);
+    
+    const [result] = await db.select({ count: count() })
+      .from(invoices)
+      .where(and(
+        eq(invoices.companyId, companyId),
+        gte(invoices.createdAt, startOfYear),
+        lte(invoices.createdAt, endOfYear)
+      ));
+    
+    return Number(result.count) || 0;
   }
 
   // Statistics
