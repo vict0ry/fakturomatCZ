@@ -15,16 +15,21 @@ export class UniversalAIService {
     message: string, 
     context: string, 
     currentPath: string, 
-    userContext: UserContext
+    userContext: UserContext,
+    chatHistory: any[] = []
   ): Promise<UniversalAIResponse> {
     
     try {
-      // Use OpenAI for ALL processing - AI-first approach
-      const aiResponse = await this.processWithOpenAI(message, context, currentPath);
+      // Use OpenAI for ALL processing - AI-first approach with chat history
+      const aiResponse = await this.processWithOpenAI(message, context, currentPath, chatHistory);
       
       // Handle specific actions based on AI decision
       if (aiResponse.action?.type === 'create_invoice_draft') {
         return await this.handleInvoiceCreation(message, userContext);
+      }
+      
+      if (aiResponse.action?.type === 'update_invoice') {
+        return await this.handleInvoiceUpdate(message, userContext, currentPath);
       }
 
       return aiResponse;
@@ -45,7 +50,8 @@ export class UniversalAIService {
   private async processWithOpenAI(
     message: string, 
     context: string, 
-    currentPath: string
+    currentPath: string,
+    chatHistory: any[] = []
   ): Promise<UniversalAIResponse> {
     
     // Enhanced prompt for better Czech language handling and amount parsing
@@ -57,15 +63,25 @@ export class UniversalAIService {
 - Při chybějících údajích navrhni co doplnit
 - Vždy odpovídej česky s využitím kontextu`;
 
+    // Build conversation with chat history
+    const messages: any[] = [
+      { role: "system", content: enhancedSystemPrompt }
+    ];
+    
+    // Add chat history if available
+    if (chatHistory && chatHistory.length > 0) {
+      messages.push(...chatHistory);
+    }
+    
+    // Add current message with context
+    messages.push({ 
+      role: "user", 
+      content: `Zpráva: ${message}\nKontext: ${context}\nAktuální stránka: ${currentPath}` 
+    });
+
     const response = await openai.chat.completions.create({
       model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-      messages: [
-        { role: "system", content: enhancedSystemPrompt },
-        { 
-          role: "user", 
-          content: `Zpráva: ${message}\nKontext: ${context}\nAktuální stránka: ${currentPath}` 
-        }
-      ],
+      messages,
       response_format: { type: "json_object" },
     });
 
@@ -84,6 +100,20 @@ export class UniversalAIService {
       };
     }
   }
+
+  private async handleInvoiceUpdate(message: string, userContext: UserContext, currentPath: string): Promise<UniversalAIResponse> {
+    try {
+      // Extract pricing information from the message
+      const pricingData = await this.invoiceProcessor.extractPricingData(message);
+      return await this.invoiceProcessor.updateInvoiceWithPricing(pricingData, userContext, currentPath);
+    } catch (error) {
+      console.error('Invoice update failed:', error);
+      return {
+        content: "Nepodařilo se aktualizovat fakturu s cenami. Zkuste to prosím znovu nebo upravte fakturu manuálně.",
+        action: { type: 'navigate', data: { path: '/invoices' } }
+      };
+    }
+  }
 }
 
 // Legacy export for backwards compatibility
@@ -91,10 +121,11 @@ export async function processUniversalAICommand(
   message: string, 
   context: string, 
   currentPath: string, 
-  userContext: UserContext
+  userContext: UserContext,
+  chatHistory: any[] = []
 ): Promise<UniversalAIResponse> {
   const service = new UniversalAIService();
-  return await service.processMessage(message, context, currentPath, userContext);
+  return await service.processMessage(message, context, currentPath, userContext, chatHistory);
 }
 
 // Export types

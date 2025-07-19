@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { INVOICE_EXTRACTION_SYSTEM_PROMPT } from "./prompts.js";
+import { INVOICE_EXTRACTION_SYSTEM_PROMPT, PRICING_EXTRACTION_SYSTEM_PROMPT } from "./prompts.js";
 import type { InvoiceData, UserContext } from "./types.js";
 
 const openai = new OpenAI({ 
@@ -94,6 +94,210 @@ export class InvoiceProcessor {
         content: "Omlouváme se, nepodařilo se vytvořit fakturu. Zkuste to prosím znovu nebo použijte formulář.",
         action: { type: 'navigate', data: { path: '/invoices/new' } }
       };
+    }
+  }
+
+  async extractPricingData(message: string): Promise<any> {
+    try {
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        messages: [
+          { role: "system", content: PRICING_EXTRACTION_SYSTEM_PROMPT },
+          { role: "user", content: message }
+        ],
+        response_format: { type: "json_object" },
+      });
+
+      const result = JSON.parse(response.choices[0].message.content || "{}");
+      return result;
+    } catch (error) {
+      console.error('Pricing extraction error:', error);
+      throw new Error('Failed to extract pricing data');
+    }
+  }
+
+  async updateInvoiceWithPricing(pricingData: any, userContext: UserContext, currentPath?: string): Promise<{ content: string; action: any }> {
+    try {
+      console.log('Pricing data received:', JSON.stringify(pricingData, null, 2));
+      console.log('Current path:', currentPath);
+      
+      let targetInvoice: any = null;
+      
+      // Check if user is in invoice edit route
+      const editMatch = currentPath?.match(/\/invoices\/(\d+)\/edit/);
+      if (editMatch) {
+        const invoiceId = parseInt(editMatch[1]);
+        targetInvoice = await userContext.storage.getInvoice(invoiceId, userContext.companyId);
+        console.log('Found invoice from route:', targetInvoice?.id);
+      }
+      
+      // Fallback to most recent invoice
+      if (!targetInvoice) {
+        const recentInvoices = await userContext.storage.getRecentInvoices(userContext.companyId, 1);
+        if (!recentInvoices || recentInvoices.length === 0) {
+          return {
+            content: "Nenašel jsem žádnou fakturu k aktualizaci. Zkuste přejít na editaci konkrétní faktury.",
+            action: { type: 'navigate', data: { path: '/invoices' } }
+          };
+        }
+        targetInvoice = recentInvoices[0];
+        console.log('Using most recent invoice:', targetInvoice?.id);
+      }
+      
+      // Get current invoice items
+      const currentItems = await userContext.storage.getInvoiceItems(targetInvoice.id);
+      console.log('Current invoice items:', currentItems);
+      
+      if (!pricingData || !pricingData.items || !Array.isArray(pricingData.items)) {
+        console.error('Invalid pricing data structure:', pricingData);
+        return {
+          content: "Nepodařilo se rozpoznat cenové informace. Zkuste zadat ceny ve formátu: 'kvety 12000 za kg, bong 1200 za ks'",
+          action: { type: 'navigate', data: { path: `/invoices/${targetInvoice.id}/edit` } }
+        };
+      }
+      
+      // Update items with pricing
+      let totalAmount = 0;
+      const updatedItems = [];
+      
+      for (const item of currentItems) {
+        // Use description field for matching
+        const price = await this.findPriceForItem(item.description || '', pricingData.items);
+        const itemTotal = price * parseFloat(item.quantity);
+        totalAmount += itemTotal;
+        
+        const updatedItem = {
+          ...item,
+          unitPrice: price,
+          totalPrice: itemTotal
+        };
+        
+        await userContext.storage.updateInvoiceItem(item.id, {
+          unitPrice: price.toString(),
+          total: itemTotal.toString()
+        });
+        
+        updatedItems.push(updatedItem);
+      }
+      
+      // Update invoice total
+      await userContext.storage.updateInvoice(targetInvoice.id, {
+        totalAmount,
+        subtotal: totalAmount,
+        vatAmount: totalAmount * 0.21, // 21% VAT
+        finalAmount: totalAmount * 1.21
+      }, userContext.companyId);
+      
+      const itemsText = updatedItems.map(item => 
+        `• ${item.quantity} ks ${item.description} - ${item.unitPrice.toLocaleString('cs-CZ')} Kč/ks = ${item.totalPrice.toLocaleString('cs-CZ')} Kč`
+      ).join('\n');
+      
+      return {
+        content: `Faktura ${targetInvoice.invoiceNumber} byla aktualizována s cenami!\n\n${itemsText}\n\nCelková částka: ${totalAmount.toLocaleString('cs-CZ')} Kč (bez DPH)\nS DPH (21%): ${(totalAmount * 1.21).toLocaleString('cs-CZ')} Kč`,
+        action: { type: 'navigate', data: { path: `/invoices/${targetInvoice.id}/edit` } }
+      };
+      
+    } catch (error) {
+      console.error('Invoice pricing update error:', error);
+      return {
+        content: "Nepodařilo se aktualizovat fakturu s cenami. Zkuste to prosím znovu.",
+        action: { type: 'navigate', data: { path: '/invoices' } }
+      };
+    }
+  }
+
+  private async findPriceForItem(productName: string, pricingItems: any[]): Promise<number> {
+    console.log('Finding price for product:', productName);
+    console.log('Available pricing items:', pricingItems);
+    
+    if (!pricingItems || !Array.isArray(pricingItems)) {
+      console.error('Invalid pricingItems:', pricingItems);
+      return 0;
+    }
+    
+    if (!productName || typeof productName !== 'string') {
+      console.error('Invalid productName:', productName);
+      return 0;
+    }
+    
+    const normalizedProductName = productName.toLowerCase();
+    console.log('Normalized product name:', normalizedProductName);
+    
+    for (let i = 0; i < pricingItems.length; i++) {
+      const pricingItem = pricingItems[i];
+      console.log(`Checking pricing item ${i}:`, pricingItem);
+      
+      if (!pricingItem) {
+        console.log('Skipping null/undefined pricing item');
+        continue;
+      }
+      
+      if (!pricingItem.productName) {
+        console.log('Skipping pricing item without productName');
+        continue;
+      }
+      
+      if (typeof pricingItem.productName !== 'string') {
+        console.log('Skipping pricing item with non-string productName:', typeof pricingItem.productName);
+        continue;
+      }
+      
+      const normalizedPricingName = pricingItem.productName.toLowerCase();
+      console.log('Normalized pricing name:', normalizedPricingName);
+      
+      // Enhanced matching for Czech products
+      const isMatch = await this.matchesProduct(normalizedProductName, normalizedPricingName);
+      console.log(`Match result for "${normalizedProductName}" vs "${normalizedPricingName}": ${isMatch}`);
+      
+      if (isMatch) {
+        console.log('Found match! Price:', pricingItem.unitPrice);
+        return pricingItem.unitPrice || 0;
+      }
+    }
+    
+    console.log('No price found for product:', productName);
+    return 0; // Default price if not found
+  }
+
+  private async matchesProduct(productName: string, pricingName: string): Promise<boolean> {
+    console.log(`AI matching "${productName}" vs "${pricingName}"`);
+    
+    // Direct match first (fast path)
+    if (productName.includes(pricingName) || pricingName.includes(productName)) {
+      console.log('Direct match found');
+      return true;
+    }
+    
+    // Use AI for intelligent product matching
+    try {
+      const prompt = `Rozhodní jestli tyto dva české texty popisují stejný produkt nebo službu:
+
+Text 1: "${productName}"
+Text 2: "${pricingName}"
+
+Pravidla:
+- Ignoruj slova jako "prodávám", "nabízím", "za", čísla a jednotky
+- Zaměř se pouze na hlavní produkt/službu
+- Zohledni české tvary slov (drtička = drtičky)
+- Zohledni synonyma a podobné produkty
+
+Odpověz pouze "ANO" nebo "NE".`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 5,
+        temperature: 0.1
+      });
+
+      const result = response.choices[0].message.content?.trim() || '';
+      const match = result.toUpperCase() === 'ANO';
+      console.log(`AI match result: ${match} (response: "${result}")`);
+      return match;
+    } catch (error) {
+      console.error('AI matching failed:', error);
+      // Simple fallback only if AI fails
+      return productName.includes(pricingName) || pricingName.includes(productName);
     }
   }
 

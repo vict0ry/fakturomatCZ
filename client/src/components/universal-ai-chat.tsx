@@ -66,7 +66,11 @@ export function UniversalAIChat() {
         body: JSON.stringify({ 
           message: messageText,
           context: '',
-          currentPath: window.location.pathname
+          currentPath: window.location.pathname,
+          chatHistory: messages.slice(-6).map(msg => ({
+            role: msg.type === 'user' ? 'user' : 'assistant',
+            content: msg.content
+          }))
         }),
       });
 

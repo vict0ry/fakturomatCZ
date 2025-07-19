@@ -7,6 +7,7 @@ This is a modern, full-stack invoice management system built for Czech businesse
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Technical preference: Always use AI for intelligent text/product matching instead of manual word searching or pattern matching.
 
 ## Recent Changes
 

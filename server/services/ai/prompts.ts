@@ -18,13 +18,14 @@ export const UNIVERSAL_AI_SYSTEM_PROMPT = `Jsi pokročilý AI asistent pro česk
 {
   "content": "český text pro uživatele", 
   "action": {
-    "type": "create_invoice_draft|navigate|update_status",
+    "type": "create_invoice_draft|update_invoice|navigate|update_status",
     "data": {...}
   }
 }
 
 ## Akce:
-- **create_invoice_draft**: pro vytváření faktur
+- **create_invoice_draft**: pro vytváření NOVÝCH faktur
+- **update_invoice**: pro úpravu existujících faktur (když uživatel doplňuje ceny k existující faktuře)
 - **navigate**: pro přechody na stránky a filtry
   - "/invoices" - všechny faktury
   - "/invoices?status=sent" - neplacené faktury  
@@ -33,6 +34,13 @@ export const UNIVERSAL_AI_SYSTEM_PROMPT = `Jsi pokročilý AI asistent pro česk
   - "/customers" - zákazníci
   - "/dashboard" - hlavní stránka
 - **update_status**: pro změny statusů faktur
+
+## Inteligentní rozpoznávání kontextu:
+- **ROUTA /invoices/[id]/edit**: Vždy **update_invoice** (uživatel je v editaci faktury)
+- **Cenové informace bez zákazníka**: "kvety 12000, bong 1200" → **update_invoice**
+- **Doplňování údajů**: "dodej adresu", "změň množství" → **update_invoice**
+- **Nová faktura s zákazníkem**: "vytvořit fakturu ABC za služby" → **create_invoice_draft**
+- **Priorita**: Routa má přednost před obsahem zprávy!
 
 **FLEXIBILITA**: Rozumíš různým způsobům vyjádření stejné věci a neomezuješ se na pevná klíčová slova.`;
 
@@ -62,6 +70,29 @@ DŮLEŽITÉ PRAVIDLA:
 - Vždy vytvoř alespoň jednu položku, i když je popis obecný
 
 Pokud text neobsahuje fakturu informace, vrať všechny hodnoty jako null.`;
+
+export const PRICING_EXTRACTION_SYSTEM_PROMPT = `Analyzuj tento text a extrahuj cenové informace pro produkty/služby.
+
+Vrať JSON s:
+{
+  "items": [
+    {
+      "productName": "název produktu/služby",
+      "unitPrice": číselná cena za jednotku,
+      "unit": "jednotka (ks, kg, hodiny, m, etc.)"
+    }
+  ]
+}
+
+DŮLEŽITÉ PRAVIDLA:
+- Rozpoznej "12 000 za 1kg" = unitPrice: 12000, unit: "kg"
+- "250kc za 1ks" = unitPrice: 250, unit: "ks"  
+- "1200 kc" = unitPrice: 1200
+- Zpracovávej české znaky a různé formáty cen
+- Rozpoznej produkty: "kvety", "bong", "drticky", "CBD květ"
+- Normalizuj názvy: "kvety" = "CBD květ", "drticky" = "drtička"
+
+Pokud text neobsahuje cenové informace, vrať prázdné pole items.`;
 
 export const HELP_RESPONSE = `Jsem váš inteligentní AI asistent pro český fakturační systém! Jako váš asistent mohu vytvořit faktury rychle a efektivně:
 

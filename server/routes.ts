@@ -617,13 +617,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Universal AI Chat - for authenticated users
   app.post("/api/chat/universal", requireAuth, async (req: any, res) => {
     try {
-      const { message, context, currentPath } = req.body;
+      const { message, context, currentPath, chatHistory } = req.body;
       
       const aiResponse = await processUniversalAICommand(message, context, currentPath, {
         companyId: req.user.companyId,
         userId: req.user.userId,
         storage
-      });
+      }, chatHistory);
       
       // Save chat message to history
       await storage.createChatMessage({
@@ -731,6 +731,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   } catch (error) {
     console.error("Error loading additional routes:", error);
   }
+
+  // Simple OpenAI endpoint for AI matching  
+  app.post('/api/openai/simple', async (req, res) => {
+    try {
+      const { prompt, maxTokens = 100 } = req.body;
+      
+      // Import OpenAI here to avoid circular dependency
+      const OpenAI = (await import('openai')).default;
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: maxTokens,
+        temperature: 0.1 // Low temperature for consistent results
+      });
+
+      const result = response.choices[0].message.content?.trim() || '';
+      res.send(result);
+    } catch (error) {
+      console.error('OpenAI simple request failed:', error);
+      res.status(500).send('AI request failed');
+    }
+  });
 
   return server;
 }
