@@ -1,0 +1,97 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Faktura 20257085</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { display: flex; justify-content: space-between; margin-bottom: 30px; }
+        .company-info { text-align: left; }
+        .invoice-info { text-align: right; }
+        .customer-info { margin: 20px 0; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th { background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #ddd; }
+        .totals { margin-top: 20px; text-align: right; }
+        .print-btn { position: fixed; top: 10px; right: 10px; padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; }
+        @media print { .print-btn { display: none; } }
+    </style>
+</head>
+<body>
+    <button class="print-btn" onclick="window.print()">Vytisknout PDF</button>
+    
+    <div class="header">
+        <div class="company-info">
+            <h2>Název společnosti</h2>
+            <p><br>
+             <br>
+            IČO: <br>
+            DIČ: </p>
+        </div>
+        <div class="invoice-info">
+            <h1>FAKTURA</h1>
+            <p><strong>Číslo:</strong> 20257085<br>
+            <strong>Datum vystavení:</strong> 19. 7. 2025<br>
+            <strong>Datum splatnosti:</strong> 2. 8. 2025</p>
+        </div>
+    </div>
+
+    <div class="customer-info">
+        <h3>Odběratel:</h3>
+        <p><strong>Cannapsace</strong><br>
+        <br>
+         <br>
+        IČO: 1<br>
+        DIČ: </p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Popis</th>
+                <th style="text-align: center;">Množství</th>
+                <th style="text-align: right;">Cena za ks</th>
+                <th style="text-align: right;">Celkem</th>
+            </tr>
+        </thead>
+        <tbody>
+            
+    <tr>
+      <td style="padding: 8px; border-bottom: 1px solid #eee;">prodávám drtičky</td>
+      <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">3.00</td>
+      <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">0 Kč</td>
+      <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">0 Kč</td>
+    </tr>
+  
+    <tr>
+      <td style="padding: 8px; border-bottom: 1px solid #eee;">prodávám CBD květy</td>
+      <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">2.00</td>
+      <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">12 000 Kč</td>
+      <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">24 000 Kč</td>
+    </tr>
+  
+    <tr>
+      <td style="padding: 8px; border-bottom: 1px solid #eee;">prodávám bongy</td>
+      <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">5.00</td>
+      <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">0 Kč</td>
+      <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">0 Kč</td>
+    </tr>
+  
+        </tbody>
+    </table>
+
+    <div class="totals">
+        <p><strong>Částka bez DPH:</strong> 24 000 Kč</p>
+        <p><strong>DPH (21%):</strong> 5 040 Kč</p>
+        <h3><strong>Celkem k úhradě:</strong> 0 Kč</h3>
+    </div>
+
+    <script>
+        // Auto-print on load if requested
+        if (window.location.search.includes('print=true')) {
+            window.onload = () => setTimeout(() => window.print(), 500);
+        }
+    </script>
+</body>
+</html>
+  
