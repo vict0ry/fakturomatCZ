@@ -93,54 +93,50 @@ export async function processUniversalAICommand(
       messages: [
         {
           role: "system",
-          content: `Jste pokročilý AI asistent pro český fakturační systém. Umíte vše - od vytváření faktur po analýzu neplatičů. Analyzujte uživatelský požadavek a:
+          content: `Jste pokročilý AI asistent pro český fakturační systém. Umíte vše - od vytváření faktur po analýzu neplatičů. 
 
-1. ANALÝZA A REPORTING:
-   - "největší neplatiči", "kdo mi dluží", "přehled pohledávek"
-   - "nejvíce faktur", "nejlepší zákazníci", "statistiky"
-   - "faktury za měsíc/rok", "tržby", "DPH přehledy"
+DŮLEŽITÉ: Při vytváření faktury VŽDY extrahujte přesné údaje z uživatelské zprávy:
+- Název zákazníka/firmy
+- Popis produktu/služby  
+- Množství a jednotka (kg, ks, hodiny)
+- Celková částka
 
-2. VYHLEDÁVÁNÍ A FILTRY:
-   - "najdi faktury od CreativeLand", "zobraz neplacené faktury"
-   - "faktury po splatnosti", "faktury z prosince"
-   - "hledej podle IČO", "najdi zákazníka XYZ"
+Příklady extrakce:
+"vytvor fakturu cbdsvet, prodal jsem kvety 5kg za 30000" 
+→ zákazník: "cbdsvet", produkt: "kvety", množství: "5", jednotka: "kg", částka: 30000
 
-3. VYTVÁŘENÍ DOKUMENTŮ:
-   - "vytvoř fakturu pro XYZ za 5000 Kč"
-   - "nová proforma", "vytvořit dobropis"
-   - "přidej zákazníka s IČO", "nový zákazník"
+"faktura pro Apple, software za 25k"
+→ zákazník: "Apple", produkt: "software", množství: "1", jednotka: "ks", částka: 25000
 
-4. SPRÁVA A AKCE:
-   - "označ jako zaplaceno", "pošli připomínku"
-   - "stáhni PDF", "duplikuj fakturu"
-   - "změň stav na", "aktualizuj údaje"
+Analyzujte uživatelský požadavek a odpovězte JSON ve formátu:
 
-5. SPRÁVA DOKUMENTŮ:
-   - "stáhni PDF faktury", "duplikuj fakturu 123"
-   - "označ fakturu jako zaplacenou", "edituj fakturu"
-   - "smaž fakturu", "exportuj data"
+Pro VYTVOŘENÍ FAKTURY:
+{
+  "content": "Vytvářím fakturu...",
+  "action": {
+    "type": "create_invoice_direct",
+    "data": {
+      "customerName": "přesný název zákazníka",
+      "productName": "název produktu/služby", 
+      "quantity": "množství",
+      "unit": "jednotka",
+      "totalAmount": částka_jako_číslo,
+      "description": "popis pro položku faktury"
+    }
+  }
+}
 
-6. NAVIGACE A NÁPOVĚDA:
-   - "jdi na dashboard", "zobraz zákazníky"
-   - "jak funguje systém", "nápověda"
-
-Kontext: ${context}
-Aktuální stránka: ${currentPath}
-
-Odpovězte JSON ve formátu:
+Pro OSTATNÍ AKCE:
 {
   "content": "lidsky čitelná odpověď česky",
   "action": {
-    "type": "navigate|search|create_invoice|create_customer|analytics|update_status|send_reminder|download_pdf|mark_paid|duplicate_invoice|send_email|edit_invoice|delete_invoice|export_data",
-    "data": {
-      "path": "/cílová/cesta",
-      "filters": {"parametr": "hodnota"},
-      "formData": {"pole": "hodnota"},
-      "query": "vyhledávací dotaz",
-      "reportType": "typ reportu"
-    }
+    "type": "navigate|search|analytics|update_status|send_reminder|download_pdf|mark_paid|duplicate_invoice|export_data",
+    "data": { "path": "/cesta", "filters": {...}, "query": "...", "reportType": "..." }
   }
-}`
+}
+
+Kontext: ${context}
+Aktuální stránka: ${currentPath}`
         },
         {
           role: "user",
@@ -382,26 +378,17 @@ Odpovězte JSON ve formátu:
       }
     }
 
-    // Handle invoice creation with AI assistance
-    if ((result.action?.type === 'create_invoice' || message.toLowerCase().includes('vytvoř fakturu') || message.toLowerCase().includes('vytvořit fakturu')) && (message.toLowerCase().includes('faktur') || message.toLowerCase().includes('pro '))) {
+    // Handle DIRECT invoice creation using AI-extracted data
+    if (result.action?.type === 'create_invoice_direct') {
       try {
-        // Extract company/customer info from message
-        const companyMatch = message.match(/pro\s+([\w\s\.&,]+?)(?:\s+za|\s+s\.r\.o\.|\s+s\.p\.|\s+a\.s\.|\s+\d+)/i);
-        const amountMatch = message.match(/za\s+(\d+(?:\s?\d{3})*)\s*(?:kč|czk|korun)?/i) || message.match(/(\d+(?:\s?\d{3})*)\s*(?:kč|czk|korun)/i);
-        const serviceMatch = message.match(/za\s+([\w\s]+?)(?:\s+za\s+\d+|\s+\d+|$)/i);
+        const invoiceData = result.action.data;
+        console.log('AI Direct Invoice Creation:', invoiceData);
 
-        if (companyMatch && amountMatch) {
-          const companyName = companyMatch[1].trim();
-          const amount = parseInt(amountMatch[1].replace(/\s/g, ''));
-          const service = serviceMatch ? serviceMatch[1].trim() : 'Konzultace';
-          
-          console.log('AI Invoice Creation:', { companyName, amount, service });
-
-          // Try to find existing customer first
-          const customers = await userContext.storage.searchCustomers(companyName, userContext.companyId);
-          let customerId;
-          
-          console.log('Found existing customers:', customers.length);
+        // Try to find existing customer first
+        const customers = await userContext.storage.searchCustomers(invoiceData.customerName, userContext.companyId);
+        let customerId;
+        
+        console.log('Found existing customers:', customers.length);
 
           if (customers.length > 0) {
             customerId = customers[0].id;
@@ -411,12 +398,12 @@ Odpovězte JSON ve formátu:
             let aresData = null;
             
             // Try to extract ICO from company name or search by name
-            const icoMatch = companyName.match(/\d{8}/);
+            const icoMatch = invoiceData.customerName.match(/\d{8}/);
             if (icoMatch) {
               aresData = await fetchCompanyFromAres(icoMatch[0]);
             } else {
               // Search by company name
-              const aresResults = await searchCompaniesByName(companyName);
+              const aresResults = await searchCompaniesByName(invoiceData.customerName);
               if (aresResults.length > 0) {
                 aresData = aresResults[0];
               }
@@ -440,7 +427,7 @@ Odpovězte JSON ve formátu:
             } else {
               // Create basic customer
               const newCustomer = await userContext.storage.createCustomer({
-                name: companyName,
+                name: invoiceData.customerName,
                 ico: '',
                 dic: '',
                 email: '',
@@ -462,10 +449,11 @@ Odpovězte JSON ve formátu:
           const dueDate = new Date();
           dueDate.setDate(dueDate.getDate() + 14);
 
-          // Calculate VAT
-          const vatRate = 21;
-          const subtotalAmount = Math.round(amount / (1 + vatRate/100));
-          const vatAmount = amount - subtotalAmount;
+        // Calculate VAT
+        const vatRate = 21;
+        const amount = invoiceData.totalAmount;
+        const subtotalAmount = Math.round(amount / (1 + vatRate/100));
+        const vatAmount = amount - subtotalAmount;
 
           // Create invoice
           const newInvoice = await userContext.storage.createInvoice({
@@ -482,24 +470,28 @@ Odpovězte JSON ve formátu:
             notes: ''
           });
 
-          // Create invoice item
-          await userContext.storage.createInvoiceItem({
-            invoiceId: newInvoice.id,
-            description: service,
-            quantity: '1',
-            unitPrice: subtotalAmount.toString(),
-            vatRate: vatRate.toString(),
-            total: subtotalAmount.toString()
-          });
+        // Create invoice item with AI-extracted data
+        const itemDescription = invoiceData.description || 
+          (invoiceData.quantity && invoiceData.unit && invoiceData.quantity !== '1' ? 
+            `${invoiceData.productName} (${invoiceData.quantity} ${invoiceData.unit})` : 
+            invoiceData.productName);
+            
+        await userContext.storage.createInvoiceItem({
+          invoiceId: newInvoice.id,
+          description: itemDescription,
+          quantity: invoiceData.quantity || '1',
+          unitPrice: subtotalAmount.toString(),
+          vatRate: vatRate.toString(),
+          total: subtotalAmount.toString()
+        });
 
-          return {
-            content: `Faktura byla úspěšně vytvořena! 📄\n\n• Číslo faktury: ${invoiceNumber}\n• Zákazník: ${companyName}\n• Částka: ${amount.toLocaleString('cs-CZ')} Kč\n• Služba: ${service}\n\nFaktura je uložena jako koncept a můžete ji upravit nebo odeslat zákazníkovi.`,
-            action: {
-              type: 'navigate',
-              data: { path: `/invoices/${newInvoice.id}` }
-            }
-          };
-        }
+        return {
+          content: `Faktura byla úspěšně vytvořena! 📄\n\n• Číslo faktury: ${invoiceNumber}\n• Zákazník: ${invoiceData.customerName}\n• Služba: ${itemDescription}\n• Částka: ${amount.toLocaleString('cs-CZ')} Kč\n\nFaktura je uložena jako koncept a můžete ji upravit nebo odeslat zákazníkovi.`,
+          action: {
+            type: 'navigate',
+            data: { path: `/invoices/${newInvoice.id}` }
+          }
+        };
       } catch (error) {
         console.error('Error creating invoice via AI:', error);
         return {

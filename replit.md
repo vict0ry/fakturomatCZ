@@ -48,6 +48,18 @@ Preferred communication style: Simple, everyday language.
 - ✓ Enhanced AI with real-time data analysis and customer insights
 - ✓ Created intelligent help system with comprehensive command examples
 
+### AI-Powered Invoice Creation (2025-07-19)
+- ✓ Replaced rigid regex patterns with intelligent AI understanding
+- ✓ AI now automatically extracts precise data from Czech language commands:
+  - Customer/company names (with ARES integration)
+  - Product/service descriptions
+  - Quantities and units (kg, ks, hodiny)
+  - Total amounts (supporting shorthand like "25k" = 25000)
+- ✓ System creates complete invoices directly in database
+- ✓ Enhanced natural language processing for better command recognition
+- ✓ Automatic customer lookup and creation via ARES API
+- ✓ Smart VAT calculation and invoice item generation
+
 ## System Architecture
 
 ### Frontend Architecture
