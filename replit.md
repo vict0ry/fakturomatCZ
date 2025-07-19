@@ -60,6 +60,16 @@ Preferred communication style: Simple, everyday language.
 - ✓ Automatic customer lookup and creation via ARES API
 - ✓ Smart VAT calculation and invoice item generation
 
+### ChatGPT-Style Bottom AI Interface (2025-07-19)
+- ✓ Implemented persistent bottom chat bar similar to OpenAI's interface
+- ✓ Replaced floating widget with expandable bottom panel design
+- ✓ Added persistent chat history saved in localStorage
+- ✓ Chat no longer resets when navigating between pages
+- ✓ Smooth expand/collapse animations with proper mobile responsive design
+- ✓ Enhanced dark mode support throughout chat interface
+- ✓ Improved UX with message timestamps and loading indicators
+- ✓ AI-first approach - chat input always visible and accessible
+
 ## System Architecture
 
 ### Frontend Architecture
