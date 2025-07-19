@@ -178,6 +178,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Company settings endpoint (alias for frontend compatibility)
+  app.get("/api/company/settings", requireAuth, async (req: any, res) => {
+    try {
+      const company = await storage.getCompany(req.user.companyId);
+      res.json(company);
+    } catch (error) {
+      console.error("Error fetching company settings:", error);
+      res.status(500).json({ message: "Failed to fetch company settings" });
+    }
+  });
+
+  app.post("/api/company/settings", requireAuth, async (req: any, res) => {
+    try {
+      const companyData = insertCompanySchema.partial().parse(req.body);
+      const updatedCompany = await storage.updateCompany(req.user.companyId, companyData);
+      res.json(updatedCompany);
+    } catch (error) {
+      console.error("Error updating company settings:", error);
+      res.status(500).json({ message: "Failed to update company settings" });
+    }
+  });
+
+  // Company users management
+  app.get("/api/company/users", requireAuth, async (req: any, res) => {
+    try {
+      const users = await storage.getCompanyUsers(req.user.companyId);
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching company users:", error);
+      res.status(500).json({ message: "Failed to fetch company users" });
+    }
+  });
+
+  app.post("/api/company/users/invite", requireAuth, async (req: any, res) => {
+    try {
+      const { email, role, firstName, lastName } = req.body;
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByUsername(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "User with this email already exists" });
+      }
+      
+      // For now, create the user directly (in production, this would send an email invitation)
+      const hashedPassword = await bcrypt.hash('temppassword123', 10); // Temporary password
+      
+      const userData = {
+        username: email,
+        email,
+        firstName,
+        lastName,
+        password: hashedPassword,
+        role,
+        companyId: req.user.companyId,
+        isActive: true
+      };
+      
+      const newUser = await storage.createUser(userData);
+      
+      res.json({ 
+        message: "User created successfully", 
+        user: { ...newUser, password: undefined },
+        tempPassword: 'temppassword123' // In production, this would be sent via email
+      });
+    } catch (error) {
+      console.error("Error inviting user:", error);
+      res.status(500).json({ message: "Failed to invite user" });
+    }
+  });
+
   // Customer routes
   app.get("/api/customers", requireAuth, async (req: any, res) => {
     try {

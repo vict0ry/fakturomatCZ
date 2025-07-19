@@ -74,6 +74,9 @@ export interface IStorage {
   getInvoiceReminders(invoiceId: number): Promise<Reminder[]>;
   getCompanyReminders(companyId: number): Promise<Reminder[]>;
   
+  // Company users
+  getCompanyUsers(companyId: number): Promise<User[]>;
+
   // Statistics
   getCompanyStats(companyId: number, dateFrom?: Date, dateTo?: Date): Promise<{
     revenue: number;
