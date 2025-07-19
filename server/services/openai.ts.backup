@@ -383,7 +383,7 @@ Aktuální stránka: ${currentPath}`
       }
     }
 
-    // Handle DRAFT invoice creation with pre-filled data  
+    // Handle DRAFT invoice creation with pre-filled data
     if (result.action?.type === 'create_invoice_draft') {
       try {
         let invoiceData = result.action.data;

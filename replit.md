@@ -70,6 +70,15 @@ Preferred communication style: Simple, everyday language.
 - ✓ Improved UX with message timestamps and loading indicators
 - ✓ AI-first approach - chat input always visible and accessible
 
+### Smart Invoice Draft Creation (2025-07-19)
+- ✓ Replaced complete invoice creation with intelligent draft approach
+- ✓ AI now creates pre-filled invoices that can be completed manually or via AI
+- ✓ Perfect handling of multi-item invoices (e.g., "5kg květy, 10kg hašiš, 30kg biomassa")
+- ✓ Flexible amount handling - works with or without specified total price
+- ✓ Automatic navigation to edit form for further customization
+- ✓ Users can choose between: manual form completion or continued AI assistance
+- ✓ Maintains full customer integration with ARES database lookup
+
 ## System Architecture
 
 ### Frontend Architecture
