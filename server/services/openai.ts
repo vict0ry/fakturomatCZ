@@ -115,7 +115,12 @@ export async function processUniversalAICommand(
    - "stáhni PDF", "duplikuj fakturu"
    - "změň stav na", "aktualizuj údaje"
 
-5. NAVIGACE A NÁPOVĚDA:
+5. SPRÁVA DOKUMENTŮ:
+   - "stáhni PDF faktury", "duplikuj fakturu 123"
+   - "označ fakturu jako zaplacenou", "edituj fakturu"
+   - "smaž fakturu", "exportuj data"
+
+6. NAVIGACE A NÁPOVĚDA:
    - "jdi na dashboard", "zobraz zákazníky"
    - "jak funguje systém", "nápověda"
 
@@ -126,7 +131,7 @@ Odpovězte JSON ve formátu:
 {
   "content": "lidsky čitelná odpověď česky",
   "action": {
-    "type": "navigate|search|create_invoice|create_customer|analytics|update_status|send_reminder",
+    "type": "navigate|search|create_invoice|create_customer|analytics|update_status|send_reminder|download_pdf|mark_paid|duplicate_invoice|send_email|edit_invoice|delete_invoice|export_data",
     "data": {
       "path": "/cílová/cesta",
       "filters": {"parametr": "hodnota"},
@@ -591,7 +596,7 @@ Odpovězte JSON ve formátu:
         message.toLowerCase().includes('jak funguje')) {
       
       return {
-        content: `🤖 Jsem váš AI asistent pro fakturační systém. Umím:\n\n📊 ANALÝZY:\n• "největší neplatiči" - analýza dlužníků\n• "nejlepší zákazníci" - TOP zákazníci\n• "statistiky" - přehled tržeb\n\n📝 VYTVÁŘENÍ:\n• "vytvoř fakturu pro XYZ za 5000 Kč"\n• "nový zákazník s IČO 12345678"\n• "přidej zákazníka Apple Inc."\n\n🔍 VYHLEDÁVÁNÍ:\n• "najdi faktury od CreativeLand"\n• "zobraz neplacené faktury"\n• "faktury po splatnosti"\n\n⚙️ SPRÁVA:\n• "označ fakturu jako zaplacenou"\n• "jdi na dashboard"\n• "zobraz zákazníky"\n\nStačí mi napsat, co potřebujete!`,
+        content: `🤖 Jsem váš AI asistent pro fakturační systém. Umím vše!\n\n📊 ANALÝZY A REPORTY:\n• "největší neplatiči" - analýza dlužníků\n• "nejlepší zákazníci" - TOP zákazníci\n• "statistiky" - přehled tržeb\n• "faktury za prosinec" - měsíční přehledy\n• "tržby za rok" - roční analýza\n\n📝 VYTVÁŘENÍ DOKUMENTŮ:\n• "vytvoř fakturu pro XYZ za 5000 Kč"\n• "nový zákazník s IČO 12345678"\n• "přidej zákazníka Apple Inc."\n• "duplikuj fakturu 20250005"\n\n🔍 VYHLEDÁVÁNÍ A FILTRY:\n• "najdi faktury od CreativeLand"\n• "zobraz neplacené faktury"\n• "faktury po splatnosti"\n• "hledej podle IČO 12345678"\n\n⚙️ SPRÁVA A AKCE:\n• "označ fakturu 20250005 jako zaplacenou"\n• "stáhni PDF faktury 20250003"\n• "pošli připomínku dlužníkům"\n• "změň stav faktury na zaplaceno"\n\n🧭 NAVIGACE:\n• "jdi na dashboard"\n• "zobraz zákazníky"\n• "přejdi na faktury"\n• "nastaven systému"\n\n💡 TIPY: Můžete kombinovat příkazy, např.:\n• "najdi neplacené faktury od CreativeLand a označ je jako zaplacené"\n• "vytvoř fakturu pro nového zákazníka Apple za 10000 Kč"\n\nStačí napsat přirozeným jazykem, co potřebujete!`,
         action: { type: 'navigate', data: { path: '/dashboard' } }
       };
     }
@@ -642,6 +647,124 @@ Odpovězte JSON ve formátu:
           action: { type: 'navigate', data: { path: '/dashboard' } }
         };
       }
+    }
+
+    // PDF DOWNLOAD ACTIONS
+    if (result.action?.type === 'download_pdf' || 
+        message.toLowerCase().includes('stáhni pdf') ||
+        message.toLowerCase().includes('stažení pdf') ||
+        message.toLowerCase().includes('pdf faktury')) {
+      
+      const invoiceNumberMatch = message.match(/faktury?\s*(\d+|20\d+)/i);
+      if (invoiceNumberMatch) {
+        const invoiceNumber = invoiceNumberMatch[1];
+        
+        try {
+          const allInvoices = await userContext.storage.getCompanyInvoices(userContext.companyId);
+          const invoice = allInvoices.find(inv => inv.invoiceNumber.includes(invoiceNumber));
+          
+          if (invoice) {
+            return {
+              content: `📄 Připravuji PDF faktury ${invoice.invoiceNumber} ke stažení...`,
+              action: {
+                type: 'download_pdf',
+                data: {
+                  invoiceId: invoice.id,
+                  url: `/api/invoices/${invoice.id}/pdf`,
+                  filename: `Faktura_${invoice.invoiceNumber}.pdf`
+                }
+              }
+            };
+          } else {
+            return {
+              content: `❌ Faktura číslo ${invoiceNumber} nebyla nalezena.`,
+              action: {
+                type: 'navigate',
+                data: { path: '/invoices' }
+              }
+            };
+          }
+        } catch (error) {
+          console.error('Error finding invoice for PDF:', error);
+        }
+      }
+    }
+
+    // MARK AS PAID ACTIONS
+    if (result.action?.type === 'mark_paid' || 
+        message.toLowerCase().includes('označ jako zaplaceno') ||
+        message.toLowerCase().includes('označit za zaplacené') ||
+        message.toLowerCase().includes('zaplaceno')) {
+      
+      const invoiceNumberMatch = message.match(/fakturu?\s*(\d+|20\d+)/i);
+      if (invoiceNumberMatch) {
+        const invoiceNumber = invoiceNumberMatch[1];
+        
+        try {
+          const allInvoices = await userContext.storage.getCompanyInvoices(userContext.companyId);
+          const invoice = allInvoices.find(inv => inv.invoiceNumber.includes(invoiceNumber));
+          
+          if (invoice) {
+            return {
+              content: `✅ Označuji fakturu ${invoice.invoiceNumber} jako zaplacenou...`,
+              action: {
+                type: 'mark_paid',
+                data: {
+                  invoiceId: invoice.id,
+                  status: 'paid'
+                }
+              }
+            };
+          }
+        } catch (error) {
+          console.error('Error finding invoice to mark as paid:', error);
+        }
+      }
+    }
+
+    // EXPORT DATA ACTIONS
+    if (result.action?.type === 'export_data' || 
+        message.toLowerCase().includes('exportuj') ||
+        message.toLowerCase().includes('stáhni data') ||
+        message.toLowerCase().includes('csv') ||
+        message.toLowerCase().includes('excel')) {
+      
+      return {
+        content: `📊 Připravuji export dat do CSV souboru...`,
+        action: {
+          type: 'export_data',
+          data: {
+            format: 'csv',
+            type: 'invoices',
+            url: '/api/export/invoices/csv',
+            filename: 'faktury_export.csv'
+          }
+        }
+      };
+    }
+
+    // SETTINGS AND CONFIGURATION
+    if (message.toLowerCase().includes('nastavení') || 
+        message.toLowerCase().includes('settings') ||
+        message.toLowerCase().includes('konfigurace') ||
+        message.toLowerCase().includes('upravit profil')) {
+      
+      return {
+        content: `⚙️ Přesměrovávám na nastavení systému...`,
+        action: { type: 'navigate', data: { path: '/settings' } }
+      };
+    }
+
+    // ANALYTICS PAGE
+    if (message.toLowerCase().includes('analýzy') || 
+        message.toLowerCase().includes('grafy') ||
+        message.toLowerCase().includes('analytics') ||
+        message.toLowerCase().includes('přehledy')) {
+      
+      return {
+        content: `📊 Zobrazuji pokročilé analýzy a přehledy...`,
+        action: { type: 'navigate', data: { path: '/analytics' } }
+      };
     }
 
     return {
