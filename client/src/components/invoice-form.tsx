@@ -252,7 +252,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
   };
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-8">
         {/* Header Section with Progress */}
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl p-6 border border-blue-100 dark:border-blue-900/20">
@@ -301,9 +301,9 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8 invoice-form-container">
+        <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 lg:gap-8 invoice-form-container">
           {/* Main Content */}
-          <div className="xl:col-span-3 space-y-8">
+          <div className="lg:col-span-2 xl:col-span-3 space-y-4 md:space-y-6 lg:space-y-8">
             {/* Document Settings */}
             <Card className="shadow-lg border-0 bg-white dark:bg-gray-800">
               <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-t-lg">
@@ -314,8 +314,8 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                   <span>Nastavení dokumentu</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <CardContent className="p-4 md:p-6 space-y-4 md:space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="type" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                       Typ dokumentu *
@@ -447,8 +447,8 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                   <span>Výběr zákazníka</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
-                <div className="space-y-6">
+              <CardContent className="p-4 md:p-6">
+                <div className="space-y-4 md:space-y-6">
                   <div className="space-y-2">
                     <Label htmlFor="customer" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                       Vyhledat zákazníka *
@@ -461,13 +461,13 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                           searchCustomers(e.target.value);
                         }}
                         placeholder="🔍 Začněte psát název firmy nebo IČO..."
-                        className={`h-14 pl-12 text-lg border-2 transition-colors ${
+                        className={`h-12 md:h-14 pl-10 md:pl-12 text-base md:text-lg border-2 transition-colors ${
                           errors.customerId 
                             ? "border-red-500 focus:border-red-500" 
                             : "border-gray-200 dark:border-gray-600 hover:border-green-300 focus:border-green-500"
                         }`}
                       />
-                      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                      <Search className="absolute left-3 md:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 md:h-5 md:w-5" />
                     </div>
                     {errors.customerId && (
                       <p className="text-sm text-red-600 flex items-center space-x-1">
@@ -609,12 +609,12 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                   <span>Položky faktury</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
+              <CardContent className="p-4 md:p-6">
                 <div className="space-y-4">
                   {fields.map((item, index) => (
                     <div key={`item-${index}`} className="p-4 border-2 border-gray-100 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-700/50">
-                      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                        <div className="md:col-span-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 md:gap-4 items-end">
+                        <div className="sm:col-span-2 lg:col-span-4">
                           <Label className="text-sm font-semibold">Popis služby/produktu</Label>
                           <Input
                             {...register(`items.${index}.description`)}
@@ -622,7 +622,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                             className="mt-1 h-11 border-2 border-gray-200 dark:border-gray-600"
                           />
                         </div>
-                        <div className="md:col-span-2">
+                        <div className="sm:col-span-1 lg:col-span-2">
                           <Label className="text-sm font-semibold">Množství</Label>
                           <Input
                             type="number"
@@ -633,7 +633,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                             className="mt-1 h-11 border-2 border-gray-200 dark:border-gray-600"
                           />
                         </div>
-                        <div className="md:col-span-2">
+                        <div className="sm:col-span-1 lg:col-span-2">
                           <Label className="text-sm font-semibold">Jednotka</Label>
                           <Input
                             defaultValue="ks"
@@ -642,7 +642,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                             disabled
                           />
                         </div>
-                        <div className="md:col-span-2">
+                        <div className="sm:col-span-1 lg:col-span-2">
                           <Label className="text-sm font-semibold">Cena za jednotku</Label>
                           <Input
                             type="number"
@@ -653,7 +653,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                             className="mt-1 h-11 border-2 border-gray-200 dark:border-gray-600"
                           />
                         </div>
-                        <div className="md:col-span-1">
+                        <div className="sm:col-span-1 lg:col-span-1">
                           <Label className="text-sm font-semibold">VAT %</Label>
                           <Select
                             value={watchedItems[index]?.vatRate?.toString() || "21"}
@@ -670,7 +670,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                             </SelectContent>
                           </Select>
                         </div>
-                        <div className="md:col-span-1">
+                        <div className="sm:col-span-1 lg:col-span-1">
                           <Button
                             type="button"
                             variant="outline"
@@ -741,13 +741,13 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
           </div>
 
           {/* Sidebar */}
-          <div className="xl:col-span-1 space-y-6 invoice-sidebar">
+          <div className="lg:col-span-1 xl:col-span-1 space-y-4 md:space-y-6 invoice-sidebar">
             {/* Invoice Summary */}
             <Card className="shadow-lg border-0 bg-white dark:bg-gray-800">
               <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-t-lg">
                 <CardTitle className="text-lg text-blue-700 dark:text-blue-300">💰 Přehled faktury</CardTitle>
               </CardHeader>
-              <CardContent className="p-6 space-y-4">
+              <CardContent className="p-4 md:p-6 space-y-4">
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600 dark:text-gray-400">Celkem bez DPH:</span>
@@ -906,18 +906,18 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
               <CardHeader>
                 <CardTitle className="text-lg text-green-700 dark:text-green-300">✅ Přehled faktury</CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
+              <CardContent className="p-4 md:p-6">
                 <div className="text-center space-y-2">
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     Zkontrolujte údaje faktury před vytvořením
                   </p>
-                  <div className="text-2xl font-bold text-green-700 dark:text-green-300">
+                  <div className="text-xl md:text-2xl font-bold text-green-700 dark:text-green-300">
                     {formatCurrency(watch("total"))}
                   </div>
                   <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <p className="text-xs text-blue-600 dark:text-blue-400 flex items-center justify-center gap-2">
+                    <p className="text-xs md:text-sm text-blue-600 dark:text-blue-400 flex items-center justify-center gap-2">
                       <span>💡</span>
-                      <span>Tlačítko "Vytvořit fakturu" najdete v pravém dolním rohu obrazovky</span>
+                      <span className="text-center">Tlačítko "Vytvořit fakturu" najdete v pravém dolním rohu obrazovky</span>
                     </p>
                   </div>
                 </div>

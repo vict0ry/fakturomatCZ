@@ -210,11 +210,28 @@
 /* Mobile responsive adjustments */
 @media (max-width: 768px) {
   .fixed-action-buttons {
-    @apply bottom-4 right-4 flex-col;
+    @apply bottom-4 left-4 right-4 flex-col;
+    position: fixed;
+    gap: 0.75rem;
   }
   
   .fixed-action-buttons .btn {
-    @apply w-full;
+    @apply w-full text-base;
+    min-height: 48px;
+  }
+  
+  .invoice-form-container {
+    @apply pb-40;
+  }
+}
+
+@media (max-width: 640px) {
+  .fixed-action-buttons {
+    @apply bottom-3 left-3 right-3;
+  }
+  
+  .invoice-form-container {
+    @apply pb-44;
   }
 }
 
