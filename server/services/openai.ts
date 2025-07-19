@@ -110,7 +110,7 @@ Příklady extrakce:
 
 Analyzujte uživatelský požadavek a odpovězte JSON ve formátu:
 
-Pro VYTVOŘENÍ FAKTURY:
+Pro VYTVOŘENÍ FAKTURY (jeden produkt):
 {
   "content": "Vytvářím fakturu...",
   "action": {
@@ -123,6 +123,32 @@ Pro VYTVOŘENÍ FAKTURY:
       "totalAmount": částka_jako_číslo,
       "description": "popis pro položku faktury"
     }
+  }
+}
+
+Pro VYTVOŘENÍ FAKTURY (více produktů):
+{
+  "content": "Vytvářím fakturu s více položkami...",
+  "action": {
+    "type": "create_invoice_direct",
+    "data": [
+      {
+        "customerName": "název zákazníka",
+        "productName": "produkt1",
+        "quantity": "množství1",
+        "unit": "jednotka1",
+        "totalAmount": díl_celkové_částky,
+        "description": "popis1"
+      },
+      {
+        "customerName": "název zákazníka", 
+        "productName": "produkt2",
+        "quantity": "množství2",
+        "unit": "jednotka2",
+        "totalAmount": díl_celkové_částky,
+        "description": "popis2"
+      }
+    ]
   }
 }
 
@@ -470,20 +496,36 @@ Aktuální stránka: ${currentPath}`
             notes: ''
           });
 
-        // Create invoice item with AI-extracted data
-        const itemDescription = invoiceData.description || 
-          (invoiceData.quantity && invoiceData.unit && invoiceData.quantity !== '1' ? 
-            `${invoiceData.productName} (${invoiceData.quantity} ${invoiceData.unit})` : 
-            invoiceData.productName);
-            
-        await userContext.storage.createInvoiceItem({
-          invoiceId: newInvoice.id,
-          description: itemDescription,
-          quantity: invoiceData.quantity || '1',
-          unitPrice: subtotalAmount.toString(),
-          vatRate: vatRate.toString(),
-          total: subtotalAmount.toString()
-        });
+        // Create invoice items with AI-extracted data
+        if (invoiceData.items && Array.isArray(invoiceData.items)) {
+          // Multiple items
+          for (const item of invoiceData.items) {
+            const itemSubtotal = Math.round((invoiceData.totalAmount / invoiceData.items.length) / (1 + vatRate/100));
+            await userContext.storage.createInvoiceItem({
+              invoiceId: newInvoice.id,
+              description: `${item.quantity} ${item.unit} ${item.productName}`,
+              quantity: item.quantity || '1',
+              unitPrice: itemSubtotal.toString(),
+              vatRate: vatRate.toString(),
+              total: itemSubtotal.toString()
+            });
+          }
+        } else {
+          // Single item
+          const itemDescription = invoiceData.description || 
+            (invoiceData.quantity && invoiceData.unit && invoiceData.quantity !== '1' ? 
+              `${invoiceData.productName} (${invoiceData.quantity} ${invoiceData.unit})` : 
+              invoiceData.productName);
+              
+          await userContext.storage.createInvoiceItem({
+            invoiceId: newInvoice.id,
+            description: itemDescription,
+            quantity: invoiceData.quantity || '1',
+            unitPrice: subtotalAmount.toString(),
+            vatRate: vatRate.toString(),
+            total: subtotalAmount.toString()
+          });
+        }
 
         return {
           content: `Faktura byla úspěšně vytvořena! 📄\n\n• Číslo faktury: ${invoiceNumber}\n• Zákazník: ${invoiceData.customerName}\n• Služba: ${itemDescription}\n• Částka: ${amount.toLocaleString('cs-CZ')} Kč\n\nFaktura je uložena jako koncept a můžete ji upravit nebo odeslat zákazníkovi.`,
