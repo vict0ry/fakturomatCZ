@@ -63,7 +63,11 @@ export function UniversalAIChat() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('sessionId')}`,
         },
-        body: JSON.stringify({ message: messageText }),
+        body: JSON.stringify({ 
+          message: messageText,
+          context: '',
+          currentPath: window.location.pathname
+        }),
       });
 
       if (!response.ok) {
@@ -76,24 +80,32 @@ export function UniversalAIChat() {
       const assistantMessage: Message = {
         id: Date.now().toString(),
         type: 'assistant',
-        content: data.response,
+        content: data.content || data.response, // Support both new and old format
         timestamp: new Date(),
-        command: data.command,
+        command: data.action || data.command, // Support both new and old format
       };
 
       setMessages(prev => [...prev, assistantMessage]);
 
-      // If there's a command, handle it
-      if (data.command) {
+      // If there's an action, handle it
+      if (data.action) {
+        handleCommand(data.action);
+      } else if (data.command) {
         handleCommand(data.command);
       }
 
       // Invalidate relevant queries if AI performed actions
-      if (data.command?.action === 'create_invoice' || data.command?.action === 'update_invoice') {
+      const actionType = data.action?.type || data.command?.action;
+      if (actionType === 'create_invoice' || actionType === 'update_invoice') {
         queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
       }
-      if (data.command?.action === 'create_customer') {
+      if (actionType === 'create_customer') {
         queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+      }
+      if (actionType === 'mark_paid' || actionType === 'update_status') {
+        queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
       }
     },
     onError: (error: any) => {
@@ -106,7 +118,15 @@ export function UniversalAIChat() {
   });
 
   const handleCommand = (command: any) => {
-    switch (command.action) {
+    const actionType = command.type || command.action;
+    const actionData = command.data || command;
+    
+    switch (actionType) {
+      case 'navigate':
+        if (actionData.path) {
+          window.location.href = actionData.path;
+        }
+        break;
       case 'navigate_to_invoices':
         window.location.href = '/invoices';
         break;
@@ -120,14 +140,51 @@ export function UniversalAIChat() {
         window.location.href = '/settings';
         break;
       case 'create_invoice':
-        if (command.data?.customerId) {
-          window.location.href = `/invoices/new?customer=${command.data.customerId}`;
+        if (actionData?.customerId) {
+          window.location.href = `/invoices/new?customer=${actionData.customerId}`;
         } else {
           window.location.href = '/invoices/new';
         }
         break;
+      case 'download_pdf':
+        if (actionData?.url) {
+          window.open(actionData.url, '_blank');
+        }
+        break;
+      case 'mark_paid':
+        if (actionData?.invoiceId) {
+          // Update invoice status via API
+          fetch(`/api/invoices/${actionData.invoiceId}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('sessionId')}`,
+            },
+            body: JSON.stringify({ status: 'paid' }),
+          }).then(() => {
+            queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
+            toast({
+              title: "Úspěch",
+              description: "Faktura byla označena jako zaplacená.",
+            });
+          });
+        }
+        break;
+      case 'export_data':
+        if (actionData?.url) {
+          window.open(actionData.url, '_blank');
+        }
+        break;
+      case 'send_reminder':
+        toast({
+          title: "Odesílání připomínek",
+          description: "Připomínky jsou odesílány dlužníkům.",
+        });
+        break;
       default:
         // No specific action needed
+        console.log('Unhandled action:', actionType, actionData);
         break;
     }
   };
