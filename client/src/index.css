@@ -240,11 +240,9 @@
   @apply pb-32 md:pb-24;
 }
 
-/* Sticky sidebar fix */
-.invoice-sidebar {
-  @apply lg:sticky lg:top-6;
-  max-height: calc(100vh - 3rem);
-  overflow-y: auto;
+/* Remove any extra margins/padding from main content */
+.invoice-form-container {
+  min-height: auto;
 }
 
 /* Form focus styles */
