@@ -10,14 +10,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-### AI Functionality Completely Restored (2025-07-19)
-- ✅ Opraveny všechny AI funkce - všech 14/14 testů prochází úspěšně
-- ✅ Prioritizace invoice creation před navigation handlery
-- ✅ Oprava userContext a storage objektu v AI processoru  
-- ✅ Správné fungování filtrů neplacených/zaplacených faktur
-- ✅ Detekce multi-item faktur s detailními zprávami
-- ✅ Oprava help request a error handling funkcí
-- ✅ Plně funkční modulární AI architektura všech 5 služeb
+### AI-First Architecture Implementation (2025-07-19)
+- ✅ Přechod na AI-first přístup - odstraněny pevné includes() podmínky
+- ✅ AI nyní řeší téměř všechny požadavky flexibilně a inteligentně
+- ✅ Rozumí různým formulacím téhož příkazu bez omezení
+- ✅ Kontextově chytré interpretace záměrů uživatele
+- ✅ Všech 14/14 AI testů stále prochází úspěšně
+- ✅ Významně vyšší flexibilita bez ztráty funkcionality
 
 ### Major Architecture Refactoring (2025-07-19)
 - ✓ Rozdělil obrovský openai.ts soubor (889 řádků → 3 řádky hlavní + 5 modulů)

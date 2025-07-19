@@ -1,7 +1,6 @@
-// Main AI Service Coordinator
+// Main AI Service Coordinator - AI-First Approach
 import OpenAI from "openai";
 import { InvoiceProcessor } from "./invoice-processor.js";
-import { NavigationHandler } from "./navigation-handler.js";
 import { UNIVERSAL_AI_SYSTEM_PROMPT } from "./prompts.js";
 import type { UniversalAIResponse, UserContext } from "./types.js";
 
@@ -11,7 +10,6 @@ const openai = new OpenAI({
 
 export class UniversalAIService {
   private invoiceProcessor = new InvoiceProcessor();
-  private navigationHandler = new NavigationHandler();
 
   async processMessage(
     message: string, 
@@ -21,22 +19,10 @@ export class UniversalAIService {
   ): Promise<UniversalAIResponse> {
     
     try {
-
-      
-      // Check for invoice creation FIRST before any handlers
-      if (message.toLowerCase().includes('vytvoř fakturu') || message.toLowerCase().includes('vytvořte fakturu')) {
-
-        return await this.handleInvoiceCreation(message, userContext);
-      }
-
-      // Then try specific handlers for common actions
-      const quickResponse = this.tryQuickHandlers(message, currentPath);
-      if (quickResponse) return quickResponse;
-
-      // Use OpenAI for complex processing
+      // Use OpenAI for ALL processing - AI-first approach
       const aiResponse = await this.processWithOpenAI(message, context, currentPath);
       
-      // Handle specific actions
+      // Handle specific actions based on AI decision
       if (aiResponse.action?.type === 'create_invoice_draft') {
         return await this.handleInvoiceCreation(message, userContext);
       }
@@ -51,47 +37,9 @@ export class UniversalAIService {
     }
   }
 
+  // Removed all includes() handlers - AI handles everything now
   private tryQuickHandlers(message: string, currentPath: string): UniversalAIResponse | null {
-    const msg = message.toLowerCase();
-
-    // Handle incomplete invoice requests FIRST (before search handlers)
-    if ((msg.includes('vytvoř fakturu') || msg.includes('vytvořte fakturu')) && message.trim().split(' ').length <= 2) {
-      return {
-        content: "Pro vytvoření faktury potřebuji alespoň název zákazníka a popis služby. Zkuste například: 'vytvoř fakturu TestCompany za služby 15000 Kč'"
-      };
-    }
-
-    // Skip quick handlers for invoice creation - let OpenAI handle it
-    if (msg.includes('vytvoř fakturu') || msg.includes('vytvořte fakturu')) {
-      return null; // Let OpenAI process
-    }
-
-    // Try help first
-    const helpResponse = this.navigationHandler.handleHelp(message);
-    if (helpResponse) return helpResponse;
-
-    // Try status updates
-    const statusResponse = this.navigationHandler.handleStatusUpdate(message);
-    if (statusResponse) return statusResponse;
-
-    // Try navigation (but not for invoice-related commands)
-    if (!msg.includes('fakturu') && !msg.includes('invoice')) {
-      const navResponse = this.navigationHandler.handleNavigation(message);
-      if (navResponse) return navResponse;
-    }
-
-    // Try search and status filters FIRST before navigation
-    const searchResponse = this.navigationHandler.handleSearch(message);
-    if (searchResponse) return searchResponse;
-
-    // Try context-specific responses
-    if (msg.includes('co je') || msg.includes('kde jsem')) {
-      return {
-        content: this.navigationHandler.getContextualResponse(currentPath)
-      };
-    }
-
-    return null;
+    return null; // Let AI handle all requests
   }
 
   private async processWithOpenAI(
