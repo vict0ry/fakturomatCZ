@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer";
-import { Invoice, Customer, InvoiceItem } from '@shared/schema';
+import type { Invoice, Customer, InvoiceItem } from "@shared/schema";
 
 export async function generateInvoicePDF(
   invoice: Invoice & { customer: Customer; items: InvoiceItem[] }
@@ -8,7 +8,7 @@ export async function generateInvoicePDF(
   
   // Launch headless browser with fallback options
   const browser = await puppeteer.launch({
-    headless: true,
+    headless: 'new',
     args: [
       '--no-sandbox', 
       '--disable-setuid-sandbox',
@@ -17,11 +17,15 @@ export async function generateInvoicePDF(
       '--no-first-run',
       '--no-zygote',
       '--single-process',
-      '--disable-gpu'
-    ],
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined
+      '--disable-gpu',
+      '--disable-extensions',
+      '--disable-default-apps',
+      '--disable-background-timer-throttling',
+      '--disable-backgrounding-occluded-windows',
+      '--disable-renderer-backgrounding'
+    ]
   });
-  
+
   try {
     const page = await browser.newPage();
     await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
@@ -35,9 +39,11 @@ export async function generateInvoicePDF(
         bottom: '20mm',
         left: '15mm'
       },
-      printBackground: true
+      printBackground: true,
+      preferCSSPageSize: true,
+      displayHeaderFooter: false
     });
-    
+
     return pdfBuffer;
   } finally {
     await browser.close();
@@ -56,6 +62,31 @@ function generateInvoiceHTML(invoice: Invoice & { customer: Customer; items: Inv
     }).format(Number(amount));
   };
 
+  const calculateItemTotal = (quantity: string, unitPrice: string) => {
+    return (parseFloat(quantity || '0') * parseFloat(unitPrice || '0')).toFixed(2);
+  };
+
+  const getPaymentMethodLabel = (method: string | null) => {
+    const methods = {
+      bank_transfer: "Bankovní převod",
+      card: "Platební karta",
+      cash: "Hotovost",
+      online: "Online platba",
+      cheque: "Šek"
+    };
+    return methods[method as keyof typeof methods] || "Bankovní převod";
+  };
+
+  const getDeliveryMethodLabel = (method: string | null) => {
+    const methods = {
+      email: "E-mail",
+      post: "Poštou",
+      pickup: "Osobní odběr",
+      courier: "Kurýr"
+    };
+    return methods[method as keyof typeof methods] || "E-mail";
+  };
+
   return `
     <!DOCTYPE html>
     <html lang="cs">
@@ -64,199 +95,512 @@ function generateInvoiceHTML(invoice: Invoice & { customer: Customer; items: Inv
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Faktura ${invoice.invoiceNumber}</title>
       <style>
-        body {
-          font-family: Arial, sans-serif;
+        @page {
+          size: A4;
           margin: 0;
-          padding: 20px;
-          font-size: 14px;
-          line-height: 1.4;
-          color: #333;
+        }
+        * {
+          box-sizing: border-box;
+        }
+        body {
+          font-family: 'Arial', 'Helvetica', sans-serif;
+          margin: 0;
+          padding: 40px;
+          font-size: 12px;
+          line-height: 1.5;
+          color: #2d3748;
+          background: white;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .invoice-container {
+          max-width: 210mm;
+          margin: 0 auto;
+          background: white;
         }
         .header {
-          text-align: center;
-          margin-bottom: 30px;
-          border-bottom: 2px solid #2563EB;
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 40px;
           padding-bottom: 20px;
+          border-bottom: 3px solid #3182ce;
+        }
+        .logo-section {
+          flex: 1;
+        }
+        .company-name {
+          font-size: 24px;
+          font-weight: bold;
+          color: #3182ce;
+          margin-bottom: 5px;
+        }
+        .company-details {
+          font-size: 11px;
+          color: #718096;
+          line-height: 1.4;
+        }
+        .invoice-details {
+          text-align: right;
+          flex: 1;
         }
         .invoice-title {
-          font-size: 28px;
+          font-size: 32px;
           font-weight: bold;
-          color: #2563EB;
+          color: #3182ce;
           margin-bottom: 10px;
         }
         .invoice-number {
-          font-size: 18px;
-          color: #666;
+          font-size: 14px;
+          color: #4a5568;
+          margin-bottom: 5px;
         }
-        .info-section {
+        .invoice-date {
+          font-size: 12px;
+          color: #718096;
+        }
+        .parties-section {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 40px;
+          gap: 40px;
+        }
+        .party-block {
+          flex: 1;
+          background: #f7fafc;
+          padding: 20px;
+          border-radius: 8px;
+          border-left: 4px solid #3182ce;
+        }
+        .party-title {
+          font-size: 14px;
+          font-weight: bold;
+          color: #3182ce;
+          margin-bottom: 10px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .party-name {
+          font-size: 16px;
+          font-weight: bold;
+          color: #2d3748;
+          margin-bottom: 8px;
+        }
+        .party-details {
+          font-size: 12px;
+          color: #4a5568;
+          line-height: 1.6;
+        }
+        .dates-section {
           display: flex;
           justify-content: space-between;
           margin-bottom: 30px;
+          background: #edf2f7;
+          padding: 15px 20px;
+          border-radius: 8px;
         }
-        .info-block {
-          width: 45%;
+        .date-item {
+          text-align: center;
         }
-        .info-block h3 {
-          margin: 0 0 10px 0;
-          font-size: 16px;
-          color: #2563EB;
-          border-bottom: 1px solid #e2e8f0;
-          padding-bottom: 5px;
+        .date-label {
+          font-size: 11px;
+          color: #718096;
+          margin-bottom: 5px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
-        .info-block p {
-          margin: 5px 0;
+        .date-value {
+          font-size: 14px;
+          font-weight: bold;
+          color: #2d3748;
         }
         .items-table {
           width: 100%;
           border-collapse: collapse;
           margin-bottom: 30px;
-        }
-        .items-table th,
-        .items-table td {
           border: 1px solid #e2e8f0;
-          padding: 12px;
-          text-align: left;
+          border-radius: 8px;
+          overflow: hidden;
         }
         .items-table th {
-          background-color: #f8fafc;
+          background: linear-gradient(135deg, #3182ce 0%, #2c5aa0 100%);
+          color: white;
+          padding: 15px 12px;
           font-weight: bold;
-          color: #2563EB;
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          border: none;
+        }
+        .items-table td {
+          padding: 12px;
+          border-bottom: 1px solid #e2e8f0;
+          border-right: 1px solid #e2e8f0;
+          vertical-align: top;
+        }
+        .items-table td:last-child {
+          border-right: none;
+        }
+        .items-table tbody tr:last-child td {
+          border-bottom: none;
+        }
+        .items-table tbody tr:nth-child(even) {
+          background-color: #f8fafc;
         }
         .items-table .amount {
           text-align: right;
+          font-weight: 600;
+        }
+        .items-table .description {
+          font-weight: 500;
+          color: #2d3748;
+        }
+        .summary-section {
+          display: flex;
+          justify-content: flex-end;
+          margin-bottom: 40px;
         }
         .totals {
-          margin-left: auto;
-          width: 300px;
-          margin-bottom: 30px;
+          width: 350px;
+          background: #f7fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          overflow: hidden;
         }
         .total-row {
           display: flex;
           justify-content: space-between;
-          padding: 8px 0;
+          padding: 12px 20px;
           border-bottom: 1px solid #e2e8f0;
         }
+        .total-row:last-child {
+          border-bottom: none;
+        }
+        .total-row.subtotal {
+          background: white;
+        }
+        .total-row.tax {
+          background: #edf2f7;
+        }
         .total-row.final {
+          background: linear-gradient(135deg, #3182ce 0%, #2c5aa0 100%);
+          color: white;
           font-weight: bold;
           font-size: 16px;
-          border-bottom: 2px solid #2563EB;
-          color: #2563EB;
+        }
+        .total-label {
+          font-weight: 600;
+        }
+        .total-amount {
+          font-weight: bold;
         }
         .payment-info {
-          background-color: #f8fafc;
-          padding: 20px;
+          background: #f0fff4;
+          border: 1px solid #9ae6b4;
           border-radius: 8px;
-          margin-bottom: 20px;
+          padding: 20px;
+          margin-bottom: 30px;
         }
-        .payment-info h3 {
-          margin: 0 0 15px 0;
-          color: #2563EB;
+        .payment-title {
+          font-size: 14px;
+          font-weight: bold;
+          color: #22543d;
+          margin-bottom: 15px;
+          display: flex;
+          align-items: center;
+        }
+        .payment-details {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 15px;
+        }
+        .payment-item {
+          display: flex;
+          justify-content: space-between;
+          font-size: 12px;
+        }
+        .payment-label {
+          color: #22543d;
+          font-weight: 600;
+        }
+        .payment-value {
+          color: #2d3748;
+          font-weight: bold;
+        }
+        .notes-section {
+          background: #fffaf0;
+          border: 1px solid #fbd38d;
+          border-radius: 8px;
+          padding: 20px;
+          margin-bottom: 30px;
+        }
+        .notes-title {
+          font-size: 14px;
+          font-weight: bold;
+          color: #9c4221;
+          margin-bottom: 10px;
+        }
+        .notes-content {
+          color: #2d3748;
+          line-height: 1.6;
         }
         .footer {
           text-align: center;
-          color: #666;
-          font-size: 12px;
-          border-top: 1px solid #e2e8f0;
+          margin-top: 50px;
           padding-top: 20px;
+          border-top: 1px solid #e2e8f0;
+          color: #718096;
+          font-size: 11px;
         }
-        @media print {
-          body { margin: 0; }
-          .info-section { display: block; }
-          .info-block { width: 100%; margin-bottom: 20px; }
+        .status-badge {
+          display: inline-block;
+          padding: 4px 12px;
+          border-radius: 20px;
+          font-size: 11px;
+          font-weight: bold;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-top: 10px;
+        }
+        .status-paid {
+          background: #c6f6d5;
+          color: #22543d;
+        }
+        .status-sent {
+          background: #bee3f8;
+          color: #2a69ac;
+        }
+        .status-draft {
+          background: #fed7d7;
+          color: #9b2c2c;
+        }
+        .status-overdue {
+          background: #fbb6ce;
+          color: #97266d;
         }
       </style>
     </head>
     <body>
-      <div class="header">
-        <div class="invoice-title">FAKTURA</div>
-        <div class="invoice-number">${invoice.invoiceNumber}</div>
-      </div>
+      <div class="invoice-container">
+        <!-- Header Section -->
+        <div class="header">
+          <div class="logo-section">
+            <div class="company-name">FakturaAI s.r.o.</div>
+            <div class="company-details">
+              Václavské náměstí 1<br>
+              110 00 Praha 1<br>
+              IČO: 12345678 | DIČ: CZ12345678<br>
+              Tel: +420 123 456 789<br>
+              Email: info@fakturaai.cz
+            </div>
+          </div>
+          <div class="invoice-details">
+            <div class="invoice-title">FAKTURA</div>
+            <div class="invoice-number">Číslo: ${invoice.invoiceNumber}</div>
+            <div class="invoice-date">Vystaveno: ${formatDate(invoice.issueDate)}</div>
+            <div class="status-badge status-${invoice.status}">
+              ${invoice.status === 'paid' ? 'ZAPLACENO' : 
+                invoice.status === 'sent' ? 'ODESLÁNO' :
+                invoice.status === 'draft' ? 'KONCEPT' :
+                invoice.status === 'overdue' ? 'PO SPLATNOSTI' : invoice.status.toUpperCase()}
+            </div>
+          </div>
+        </div>
 
-      <div class="info-section">
-        <div class="info-block">
-          <h3>Dodavatel</h3>
-          <p><strong>Test s.r.o.</strong></p>
-          <p>Testovací 123</p>
-          <p>110 00 Praha 1</p>
-          <p>IČO: 12345678</p>
-          <p>DIČ: CZ12345678</p>
+        <!-- Parties Section -->
+        <div class="parties-section">
+          <div class="party-block">
+            <div class="party-title">Dodavatel</div>
+            <div class="party-name">FakturaAI s.r.o.</div>
+            <div class="party-details">
+              Václavské náměstí 1<br>
+              110 00 Praha 1<br>
+              <strong>IČO:</strong> 12345678<br>
+              <strong>DIČ:</strong> CZ12345678<br>
+              <strong>Tel:</strong> +420 123 456 789<br>
+              <strong>Email:</strong> info@fakturaai.cz
+            </div>
+          </div>
+          
+          <div class="party-block">
+            <div class="party-title">Odběratel</div>
+            <div class="party-name">${invoice.customer.name}</div>
+            <div class="party-details">
+              ${invoice.customer.address || ''}<br>
+              ${invoice.customer.city ? `${invoice.customer.city}${invoice.customer.postalCode ? ` ${invoice.customer.postalCode}` : ''}` : ''}<br>
+              ${invoice.customer.ico ? `<strong>IČO:</strong> ${invoice.customer.ico}<br>` : ''}
+              ${invoice.customer.dic ? `<strong>DIČ:</strong> ${invoice.customer.dic}<br>` : ''}
+              ${invoice.customer.phone ? `<strong>Tel:</strong> ${invoice.customer.phone}<br>` : ''}
+              ${invoice.customer.email ? `<strong>Email:</strong> ${invoice.customer.email}` : ''}
+            </div>
+          </div>
         </div>
-        
-        <div class="info-block">
-          <h3>Odběratel</h3>
-          <p><strong>${invoice.customer.name}</strong></p>
-          ${invoice.customer.address ? `<p>${invoice.customer.address}</p>` : ''}
-          ${invoice.customer.city ? `<p>${invoice.customer.postalCode} ${invoice.customer.city}</p>` : ''}
-          ${invoice.customer.ico ? `<p>IČO: ${invoice.customer.ico}</p>` : ''}
-          ${invoice.customer.dic ? `<p>DIČ: ${invoice.customer.dic}</p>` : ''}
-        </div>
-      </div>
 
-      <div class="info-section">
-        <div class="info-block">
-          <p><strong>Datum vystavení:</strong> ${formatDate(invoice.issueDate)}</p>
-          <p><strong>Datum splatnosti:</strong> ${formatDate(invoice.dueDate)}</p>
+        <!-- Dates Section -->
+        <div class="dates-section">
+          <div class="date-item">
+            <div class="date-label">Datum vystavení</div>
+            <div class="date-value">${formatDate(invoice.issueDate)}</div>
+          </div>
+          <div class="date-item">
+            <div class="date-label">Datum splatnosti</div>
+            <div class="date-value">${formatDate(invoice.dueDate)}</div>
+          </div>
+          <div class="date-item">
+            <div class="date-label">Způsob platby</div>
+            <div class="date-value">${getPaymentMethodLabel((invoice as any).paymentMethod)}</div>
+          </div>
+          <div class="date-item">
+            <div class="date-label">Měna</div>
+            <div class="date-value">${invoice.currency || 'CZK'}</div>
+          </div>
         </div>
-        <div class="info-block">
-          <p><strong>Způsob platby:</strong> Bankovní převod</p>
-          <p><strong>Variabilní symbol:</strong> ${invoice.invoiceNumber.replace(/\D/g, '')}</p>
-        </div>
-      </div>
 
-      <table class="items-table">
-        <thead>
-          <tr>
-            <th>Popis</th>
-            <th>Množství</th>
-            <th>Jednotková cena</th>
-            <th>DPH %</th>
-            <th class="amount">Celkem bez DPH</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${invoice.items.map(item => `
+        <!-- Items Table -->
+        <table class="items-table">
+          <thead>
             <tr>
-              <td>${item.description}</td>
-              <td>${item.quantity}</td>
-              <td class="amount">${formatCurrency(item.unitPrice)}</td>
-              <td>${item.vatRate}%</td>
-              <td class="amount">${formatCurrency(Number(item.unitPrice) * Number(item.quantity))}</td>
+              <th>Popis služby/produktu</th>
+              <th style="width: 80px;">Množství</th>
+              <th style="width: 60px;">Jednotka</th>
+              <th style="width: 100px;">Cena/jednotka</th>
+              <th style="width: 80px;">DPH %</th>
+              <th style="width: 120px;">Celkem bez DPH</th>
             </tr>
-          `).join('')}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            ${invoice.items.map(item => `
+              <tr>
+                <td class="description">${item.description || 'Služba'}</td>
+                <td class="amount">${Number(item.quantity).toLocaleString('cs-CZ')}</td>
+                <td>ks</td>
+                <td class="amount">${formatCurrency(item.unitPrice)}</td>
+                <td class="amount">${item.vatRate}%</td>
+                <td class="amount">${formatCurrency(calculateItemTotal(item.quantity, item.unitPrice))}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
 
-      <div class="totals">
-        <div class="total-row">
-          <span>Celkem bez DPH:</span>
-          <span>${formatCurrency(invoice.subtotal)}</span>
+        <!-- Summary Section -->
+        <div class="summary-section">
+          <div class="totals">
+            <div class="total-row subtotal">
+              <span class="total-label">Základ DPH 21%:</span>
+              <span class="total-amount">${formatCurrency(invoice.subtotal)}</span>
+            </div>
+            <div class="total-row tax">
+              <span class="total-label">DPH 21%:</span>
+              <span class="total-amount">${formatCurrency(invoice.vatAmount)}</span>
+            </div>
+            <div class="total-row final">
+              <span class="total-label">Celkem k úhradě:</span>
+              <span class="total-amount">${formatCurrency(invoice.total)}</span>
+            </div>
+          </div>
         </div>
-        <div class="total-row">
-          <span>DPH 21%:</span>
-          <span>${formatCurrency(invoice.vatAmount)}</span>
-        </div>
-        <div class="total-row final">
-          <span>Celkem k úhradě:</span>
-          <span>${formatCurrency(invoice.total)}</span>
-        </div>
-      </div>
 
-      <div class="payment-info">
-        <h3>Platební údaje</h3>
-        <p><strong>Číslo účtu:</strong> 123456789/0100</p>
-        <p><strong>Variabilní symbol:</strong> ${invoice.invoiceNumber.replace(/\D/g, '')}</p>
-        <p><strong>Částka k úhradě:</strong> ${formatCurrency(invoice.total)}</p>
-      </div>
-
-      ${invoice.notes ? `
+        <!-- Payment Information -->
         <div class="payment-info">
-          <h3>Poznámky</h3>
-          <p>${invoice.notes}</p>
+          <div class="payment-title">💳 Platební údaje</div>
+          <div class="payment-details">
+            <div class="payment-item">
+              <span class="payment-label">Způsob platby:</span>
+              <span class="payment-value">${getPaymentMethodLabel((invoice as any).paymentMethod)}</span>
+            </div>
+            ${((invoice as any).paymentMethod === 'bank_transfer' || !(invoice as any).paymentMethod) ? `
+            <div class="payment-item">
+              <span class="payment-label">Číslo účtu:</span>
+              <span class="payment-value">${(invoice as any).bankAccount || '123456789/0100'}</span>
+            </div>
+            <div class="payment-item">
+              <span class="payment-label">IBAN:</span>
+              <span class="payment-value">CZ6508000000192000145399</span>
+            </div>
+            <div class="payment-item">
+              <span class="payment-label">Variabilní symbol:</span>
+              <span class="payment-value">${(invoice as any).variableSymbol || invoice.invoiceNumber}</span>
+            </div>
+            ${(invoice as any).constantSymbol ? `
+            <div class="payment-item">
+              <span class="payment-label">Konstantní symbol:</span>
+              <span class="payment-value">${(invoice as any).constantSymbol}</span>
+            </div>
+            ` : ''}
+            ${(invoice as any).specificSymbol ? `
+            <div class="payment-item">
+              <span class="payment-label">Specifický symbol:</span>
+              <span class="payment-value">${(invoice as any).specificSymbol}</span>
+            </div>
+            ` : ''}
+            ` : ''}
+            ${(invoice as any).orderNumber ? `
+            <div class="payment-item">
+              <span class="payment-label">Číslo objednávky:</span>
+              <span class="payment-value">${(invoice as any).orderNumber}</span>
+            </div>
+            ` : ''}
+            ${(invoice as any).paymentReference ? `
+            <div class="payment-item">
+              <span class="payment-label">Reference platby:</span>
+              <span class="payment-value">${(invoice as any).paymentReference}</span>
+            </div>
+            ` : ''}
+          </div>
         </div>
-      ` : ''}
 
-      <div class="footer">
-        <p>Děkujeme za spolupráci | FakturaAI s.r.o. | www.fakturaai.cz</p>
+        ${((invoice as any).deliveryMethod && (invoice as any).deliveryMethod !== 'email') ? `
+        <!-- Delivery Information -->
+        <div class="notes-section">
+          <div class="notes-title">🚚 Dodání</div>
+          <div class="notes-content">
+            <strong>Způsob dodání:</strong> ${getDeliveryMethodLabel((invoice as any).deliveryMethod)}<br>
+            ${(invoice as any).deliveryAddress ? `<strong>Adresa dodání:</strong> ${(invoice as any).deliveryAddress}<br>` : ''}
+          </div>
+        </div>
+        ` : ''}
+
+        ${(invoice as any).warranty ? `
+        <!-- Warranty Information -->
+        <div class="notes-section">
+          <div class="notes-title">🛡️ Záruka</div>
+          <div class="notes-content">
+            ${(invoice as any).warranty}
+          </div>
+        </div>
+        ` : ''}
+
+        ${invoice.notes ? `
+        <!-- Notes Section -->
+        <div class="notes-section">
+          <div class="notes-title">📝 Poznámky</div>
+          <div class="notes-content">${invoice.notes}</div>
+        </div>
+        ` : ''}
+
+        ${invoice.isReverseCharge ? `
+        <!-- Reverse Charge Notice -->
+        <div class="notes-section">
+          <div class="notes-title">⚠️ Režim přenesení daňové povinnosti</div>
+          <div class="notes-content">
+            Tato faktura je vystavena v režimu přenesení daňové povinnosti podle § 92e zákona o DPH.
+            DPH odvede příjemce plnění.
+          </div>
+        </div>
+        ` : ''}
+
+        <!-- Footer -->
+        <div class="footer">
+          <p>
+            <strong>FakturaAI s.r.o.</strong> | 
+            Václavské náměstí 1, 110 00 Praha 1 | 
+            IČO: 12345678 | DIČ: CZ12345678<br>
+            www.fakturaai.cz | info@fakturaai.cz | +420 123 456 789
+          </p>
+          <p style="margin-top: 10px; font-size: 10px;">
+            Děkujeme za spolupráci a těšíme se na další obchodní vztahy.
+          </p>
+        </div>
       </div>
     </body>
     </html>

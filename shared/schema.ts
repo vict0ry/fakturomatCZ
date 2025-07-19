@@ -30,6 +30,7 @@ export const users = pgTable("users", {
   firstName: text("first_name"),
   lastName: text("last_name"),
   role: text("role").notNull().default("user"), // admin, user, viewer
+  accessLevel: text("access_level").notNull().default("read"), // read, create, accounting, admin
   isActive: boolean("is_active").default(true),
   lastLogin: timestamp("last_login"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -67,7 +68,21 @@ export const invoices = pgTable("invoices", {
   vatAmount: decimal("vat_amount", { precision: 10, scale: 2 }).notNull(),
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
   status: text("status").notNull().default("draft"), // draft, sent, paid, overdue, cancelled
+  // Payment details
+  paymentMethod: text("payment_method").default("bank_transfer"), // bank_transfer, card, cash, online, cheque
+  bankAccount: text("bank_account"),
+  variableSymbol: text("variable_symbol"),
+  constantSymbol: text("constant_symbol"),
+  specificSymbol: text("specific_symbol"),
+  paymentReference: text("payment_reference"), // payment reference/transaction ID
   paidAt: timestamp("paid_at"),
+  // Delivery and other details
+  deliveryMethod: text("delivery_method").default("email"), // email, post, pickup, courier
+  deliveryAddress: text("delivery_address"), // different delivery address if needed
+  warranty: text("warranty"), // warranty period description
+  validUntil: timestamp("valid_until"), // for quotes/proformas
+  orderNumber: text("order_number"), // customer's order number
+  // Standard fields
   notes: text("notes"),
   isReverseCharge: boolean("is_reverse_charge").default(false),
   currency: text("currency").default("CZK"),
@@ -134,6 +149,67 @@ export const sessions = pgTable("sessions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Company settings for banking and invoice appearance
+export const companySettings = pgTable("company_settings", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").references(() => companies.id).unique(),
+  // Banking settings
+  bankName: text("bank_name"),
+  bankAccount: text("bank_account"),
+  iban: text("iban"),
+  swift: text("swift"),
+  autoPaymentMatching: boolean("auto_payment_matching").default(false),
+  // Invoice appearance
+  logoUrl: text("logo_url"),
+  stampUrl: text("stamp_url"),
+  enableQrCode: boolean("enable_qr_code").default(true),
+  invoiceTemplate: text("invoice_template").default("default"), // default, modern, minimal
+  primaryColor: text("primary_color").default("#2563EB"),
+  secondaryColor: text("secondary_color").default("#64748B"),
+  // Email settings
+  smtpHost: text("smtp_host"),
+  smtpPort: integer("smtp_port"),
+  smtpUser: text("smtp_user"),
+  smtpPassword: text("smtp_password"),
+  smtpSecure: boolean("smtp_secure").default(true),
+  emailFromName: text("email_from_name"),
+  emailFromAddress: text("email_from_address"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Bank transactions for payment matching
+export const bankTransactions = pgTable("bank_transactions", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").references(() => companies.id),
+  transactionId: text("transaction_id").unique(), // Bank's transaction ID
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  currency: text("currency").default("CZK"),
+  description: text("description"),
+  variableSymbol: text("variable_symbol"),
+  constantSymbol: text("constant_symbol"),
+  specificSymbol: text("specific_symbol"),
+  counterpartyAccount: text("counterparty_account"),
+  counterpartyName: text("counterparty_name"),
+  transactionDate: timestamp("transaction_date").notNull(),
+  isMatched: boolean("is_matched").default(false),
+  matchedInvoiceId: integer("matched_invoice_id").references(() => invoices.id),
+  importedAt: timestamp("imported_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Payment matching rules
+export const paymentMatchingRules = pgTable("payment_matching_rules", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").references(() => companies.id),
+  name: text("name").notNull(),
+  matchBy: text("match_by").notNull(), // variable_symbol, amount, description, counterparty
+  isActive: boolean("is_active").default(true),
+  priority: integer("priority").default(1),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const companiesRelations = relations(companies, ({ many }) => ({
   users: many(users),
@@ -198,6 +274,9 @@ export const insertChatMessageSchema = createInsertSchema(chatMessages);
 export const insertReminderSchema = createInsertSchema(reminders);
 export const insertInvoiceHistorySchema = createInsertSchema(invoiceHistory);
 export const insertSessionSchema = createInsertSchema(sessions);
+export const insertCompanySettingsSchema = createInsertSchema(companySettings);
+export const insertBankTransactionSchema = createInsertSchema(bankTransactions);
+export const insertPaymentMatchingRuleSchema = createInsertSchema(paymentMatchingRules);
 
 // Types
 export type Company = typeof companies.$inferSelect;
@@ -209,6 +288,9 @@ export type ChatMessage = typeof chatMessages.$inferSelect;
 export type Reminder = typeof reminders.$inferSelect;
 export type InvoiceHistory = typeof invoiceHistory.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
+export type CompanySettings = typeof companySettings.$inferSelect;
+export type BankTransaction = typeof bankTransactions.$inferSelect;
+export type PaymentMatchingRule = typeof paymentMatchingRules.$inferSelect;
 
 export type InsertCompany = z.infer<typeof insertCompanySchema>;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -219,3 +301,6 @@ export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 export type InsertReminder = z.infer<typeof insertReminderSchema>;
 export type InsertInvoiceHistory = z.infer<typeof insertInvoiceHistorySchema>;
 export type InsertSession = z.infer<typeof insertSessionSchema>;
+export type InsertCompanySettings = z.infer<typeof insertCompanySettingsSchema>;
+export type InsertBankTransaction = z.infer<typeof insertBankTransactionSchema>;
+export type InsertPaymentMatchingRule = z.infer<typeof insertPaymentMatchingRuleSchema>;

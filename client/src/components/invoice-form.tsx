@@ -34,6 +34,19 @@ const invoiceSchema = z.object({
   vatAmount: z.string().default("0"),
   total: z.string().default("0"),
   currency: z.string().default("CZK"),
+  // Payment details
+  paymentMethod: z.enum(["bank_transfer", "card", "cash", "online", "cheque"]).default("bank_transfer"),
+  bankAccount: z.string().optional(),
+  variableSymbol: z.string().optional(),
+  constantSymbol: z.string().optional(),
+  specificSymbol: z.string().optional(),
+  paymentReference: z.string().optional(),
+  // Delivery details
+  deliveryMethod: z.enum(["email", "post", "pickup", "courier"]).default("email"),
+  deliveryAddress: z.string().optional(),
+  orderNumber: z.string().optional(),
+  warranty: z.string().optional(),
+  // Standard fields
   isReverseCharge: z.boolean().default(false),
   status: z.enum(["draft", "sent", "paid", "overdue"]).default("draft"),
   notes: z.string().optional(),
@@ -72,6 +85,19 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
       vatAmount: invoice?.vatAmount || "0",
       total: invoice?.total || "0",
       currency: invoice?.currency || "CZK",
+      // Payment details
+      paymentMethod: (invoice as any)?.paymentMethod || "bank_transfer",
+      bankAccount: (invoice as any)?.bankAccount || "",
+      variableSymbol: (invoice as any)?.variableSymbol || "",
+      constantSymbol: (invoice as any)?.constantSymbol || "",
+      specificSymbol: (invoice as any)?.specificSymbol || "",
+      paymentReference: (invoice as any)?.paymentReference || "",
+      // Delivery details
+      deliveryMethod: (invoice as any)?.deliveryMethod || "email",
+      deliveryAddress: (invoice as any)?.deliveryAddress || "",
+      orderNumber: (invoice as any)?.orderNumber || "",
+      warranty: (invoice as any)?.warranty || "",
+      // Standard fields
       isReverseCharge: invoice?.isReverseCharge || false,
       status: invoice?.status || "draft",
       notes: invoice?.notes || "",
@@ -719,6 +745,70 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
 
                 <Separator className="my-4" />
 
+                {/* Payment Method */}
+                <div className="space-y-3">
+                  <Label htmlFor="paymentMethod" className="text-sm font-semibold">Způsob platby</Label>
+                  <Select
+                    value={watch("paymentMethod")}
+                    onValueChange={(value) => setValue("paymentMethod", value as any)}
+                  >
+                    <SelectTrigger className="h-11 border-2 border-gray-200 dark:border-gray-600">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="bank_transfer">🏦 Bankovní převod</SelectItem>
+                      <SelectItem value="card">💳 Platební karta</SelectItem>
+                      <SelectItem value="cash">💵 Hotovost</SelectItem>
+                      <SelectItem value="online">🌐 Online platba</SelectItem>
+                      <SelectItem value="cheque">📄 Šek</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Bank Transfer Details */}
+                {watch("paymentMethod") === "bank_transfer" && (
+                  <div className="space-y-3 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <h4 className="text-sm font-semibold text-blue-700 dark:text-blue-300">Bankovní údaje</h4>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="bankAccount" className="text-xs">Číslo účtu</Label>
+                        <Input
+                          {...register("bankAccount")}
+                          placeholder="123456789/0100"
+                          className="mt-1 h-10 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="variableSymbol" className="text-xs">Variabilní symbol</Label>
+                        <Input
+                          {...register("variableSymbol")}
+                          placeholder="Automaticky dle čísla faktury"
+                          className="mt-1 h-10 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="constantSymbol" className="text-xs">Konstantní symbol</Label>
+                        <Input
+                          {...register("constantSymbol")}
+                          placeholder="0308"
+                          className="mt-1 h-10 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="specificSymbol" className="text-xs">Specifický symbol</Label>
+                        <Input
+                          {...register("specificSymbol")}
+                          placeholder="Volitelné"
+                          className="mt-1 h-10 text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <Separator className="my-4" />
+
                 <div className="space-y-3">
                   <Label htmlFor="status" className="text-sm font-semibold">Stav faktury</Label>
                   <Select
@@ -735,6 +825,55 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                       <SelectItem value="overdue">⚠️ Po splatnosti</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                {/* Additional fields */}
+                <div className="space-y-3">
+                  <Label htmlFor="orderNumber" className="text-sm font-semibold">Číslo objednávky (volitelné)</Label>
+                  <Input
+                    {...register("orderNumber")}
+                    placeholder="Zadejte číslo objednávky"
+                    className="h-11 border-2 border-gray-200 dark:border-gray-600"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <Label htmlFor="deliveryMethod" className="text-sm font-semibold">Způsob dodání</Label>
+                  <Select
+                    value={watch("deliveryMethod")}
+                    onValueChange={(value) => setValue("deliveryMethod", value as any)}
+                  >
+                    <SelectTrigger className="h-11 border-2 border-gray-200 dark:border-gray-600">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="email">📧 E-mailem</SelectItem>
+                      <SelectItem value="post">📮 Poštou</SelectItem>
+                      <SelectItem value="pickup">🏢 Osobní odběr</SelectItem>
+                      <SelectItem value="courier">🚚 Kurýrní služba</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {watch("deliveryMethod") !== "email" && (
+                  <div className="space-y-3">
+                    <Label htmlFor="deliveryAddress" className="text-sm font-semibold">Adresa dodání</Label>
+                    <Textarea
+                      {...register("deliveryAddress")}
+                      placeholder="Zadejte dodací adresu (pokud se liší od fakturační)"
+                      rows={3}
+                      className="border-2 border-gray-200 dark:border-gray-600"
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  <Label htmlFor="warranty" className="text-sm font-semibold">Záruka (volitelné)</Label>
+                  <Input
+                    {...register("warranty")}
+                    placeholder="např. 24 měsíců"
+                    className="h-11 border-2 border-gray-200 dark:border-gray-600"
+                  />
                 </div>
               </CardContent>
             </Card>

@@ -24,7 +24,22 @@ export interface Invoice {
   subtotal: string;
   vatAmount: string;
   total: string;
+  currency?: string;
+  // Payment details
+  paymentMethod?: "bank_transfer" | "card" | "cash" | "online" | "cheque";
+  bankAccount?: string;
+  variableSymbol?: string;
+  constantSymbol?: string;
+  specificSymbol?: string;
+  paymentReference?: string;
+  // Delivery details
+  deliveryMethod?: "email" | "post" | "pickup" | "courier";
+  deliveryAddress?: string;
+  orderNumber?: string;
+  warranty?: string;
+  // Standard fields
   status: 'draft' | 'sent' | 'paid' | 'overdue';
+  isReverseCharge?: boolean;
   paidAt?: string;
   notes?: string;
   customer?: Customer;
