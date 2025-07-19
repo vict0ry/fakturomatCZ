@@ -1,5 +1,4 @@
-import jsPDF from 'jspdf';
-import QRCode from 'qrcode';
+import puppeteer from 'puppeteer';
 import type { Invoice, Customer, InvoiceItem } from "@shared/schema";
 
 export async function generateInvoicePDF(
@@ -7,224 +6,488 @@ export async function generateInvoicePDF(
 ): Promise<Buffer> {
   console.log('Generuji PDF pro fakturu:', invoice.invoiceNumber);
   
-  // Create jsPDF instance - handle different import formats
-  let doc;
+  // Generate HTML template with proper Czech character support
+  const htmlContent = generateInvoiceHTML(invoice);
+  
+  let browser;
   try {
-    // Try new jsPDF() first
-    doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
+    browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
+    
+    const page = await browser.newPage();
+    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+    
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '20mm',
+        right: '15mm',
+        bottom: '20mm',
+        left: '15mm'
+      }
+    });
+    
+    await browser.close();
+    
+    console.log('PDF vygenerované úspěšně, veľkosť:', pdfBuffer.length, 'bytov');
+    return Buffer.from(pdfBuffer);
+    
   } catch (error) {
-    // Fallback for different module format
-    const jsPDFConstructor = jsPDF.default || jsPDF;
-    doc = new jsPDFConstructor({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    });
+    if (browser) {
+      await browser.close();
+    }
+    console.error('Puppeteer failed:', error);
+    throw new Error('PDF generation failed: ' + error.message);
   }
-  
-  // Nastavenie písma
-  doc.setFont('helvetica');
-  
-  // Hlavička
-  doc.setFontSize(24);
-  doc.setTextColor(0, 102, 204);
-  doc.text('FAKTURA', 20, 30);
-  
-  doc.setFontSize(12);
-  doc.setTextColor(0, 0, 0);
-  doc.text(`Číslo: ${invoice.invoiceNumber}`, 20, 40);
-  
-  // Dodavateľ
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Dodavatel:', 20, 60);
-  
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.text('FakturaAI s.r.o.', 20, 70);
-  doc.text('Václavské náměstí 1', 20, 75);
-  doc.text('110 00 Praha 1', 20, 80);
-  doc.text('IČO: 12345678', 20, 85);
-  doc.text('DIČ: CZ12345678', 20, 90);
-  doc.text('Tel: +420 123 456 789', 20, 95);
-  doc.text('Email: info@fakturaai.cz', 20, 100);
-  
-  // Odberateľ
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Odběratel:', 110, 60);
-  
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  let yPos = 70;
-  doc.text(invoice.customer.name, 110, yPos);
-  if (invoice.customer.address) {
-    yPos += 5;
-    doc.text(invoice.customer.address, 110, yPos);
-  }
-  if (invoice.customer.city && invoice.customer.postalCode) {
-    yPos += 5;
-    doc.text(`${invoice.customer.postalCode} ${invoice.customer.city}`, 110, yPos);
-  }
-  if (invoice.customer.ico) {
-    yPos += 5;
-    doc.text(`IČO: ${invoice.customer.ico}`, 110, yPos);
-  }
-  if (invoice.customer.dic) {
-    yPos += 5;
-    doc.text(`DIČ: ${invoice.customer.dic}`, 110, yPos);
-  }
-  
-  // Dátumy a platobné info
+}
+
+function generateInvoiceHTML(invoice: Invoice & { customer: Customer; items: InvoiceItem[] }): string {
   const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleDateString('cs-CZ');
   };
   
-  doc.setFontSize(10);
-  yPos = 120;
-  doc.text(`Datum vystavení: ${formatDate(invoice.issueDate)}`, 20, yPos);
-  doc.text(`Datum splatnosti: ${formatDate(invoice.dueDate)}`, 20, yPos + 5);
-  doc.text(`Způsob platby: ${getPaymentMethodLabel((invoice as any).paymentMethod)}`, 20, yPos + 10);
-  doc.text(`Měna: ${invoice.currency || 'CZK'}`, 20, yPos + 15);
-  
-  // Tabuľka položiek
-  const startY = yPos + 30;
-  
-  // Hlavička tabuľky
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'bold');
-  doc.setFillColor(0, 102, 204);
-  doc.setTextColor(255, 255, 255);
-  doc.rect(20, startY, 170, 8, 'F');
-  
-  doc.text('Popis', 22, startY + 5);
-  doc.text('Množství', 80, startY + 5);
-  doc.text('Cena/ks', 105, startY + 5);
-  doc.text('DPH %', 130, startY + 5);
-  doc.text('Celkem', 155, startY + 5);
-  
-  // Položky
-  doc.setTextColor(0, 0, 0);
-  doc.setFont('helvetica', 'normal');
-  let itemY = startY + 15;
-  
-  invoice.items.forEach((item, index) => {
-    const total = (parseFloat(item.quantity) * parseFloat(item.unitPrice)).toFixed(2);
-    
-    doc.text(item.description.substring(0, 25), 22, itemY);
-    doc.text(item.quantity, 80, itemY);
-    doc.text(`${item.unitPrice} Kč`, 105, itemY);
-    doc.text(`${item.vatRate}%`, 130, itemY);
-    doc.text(`${total} Kč`, 155, itemY);
-    
-    itemY += 8;
-    
-    // Čiara pod položkou
-    doc.setDrawColor(200, 200, 200);
-    doc.line(20, itemY - 2, 190, itemY - 2);
-  });
-  
-  // Súčty
-  const summaryY = itemY + 10;
-  doc.setFont('helvetica', 'bold');
-  
-  doc.text(`Základ DPH: ${invoice.subtotal} Kč`, 130, summaryY);
-  doc.text(`DPH 21%: ${invoice.vatAmount} Kč`, 130, summaryY + 5);
-  
-  doc.setFontSize(12);
-  doc.setTextColor(0, 102, 204);
-  doc.text(`CELKEM: ${invoice.total} Kč`, 130, summaryY + 15);
-  
-  // Platobné údaje
-  doc.setFontSize(10);
-  doc.setTextColor(0, 0, 0);
-  doc.setFont('helvetica', 'bold');
-  const paymentY = summaryY + 30;
-  doc.text('Platební údaje:', 20, paymentY);
-  
-  doc.setFont('helvetica', 'normal');
-  const paymentMethod = (invoice as any).paymentMethod;
-  
-  if (paymentMethod === 'bank_transfer' || !paymentMethod) {
-    doc.text(`Číslo účtu: ${(invoice as any).bankAccount || '123456789/0100'}`, 20, paymentY + 8);
-    doc.text(`IBAN: CZ6508000000192000145399`, 20, paymentY + 13);
-    doc.text(`Variabilní symbol: ${(invoice as any).variableSymbol || invoice.invoiceNumber}`, 20, paymentY + 18);
-    
-    if ((invoice as any).constantSymbol) {
-      doc.text(`Konstantní symbol: ${(invoice as any).constantSymbol}`, 20, paymentY + 23);
-    }
-    
-    if ((invoice as any).specificSymbol) {
-      doc.text(`Specifický symbol: ${(invoice as any).specificSymbol}`, 20, paymentY + 28);
-    }
-    
-    // QR kód pre platbu
-    try {
-      const qrData = generateQRPaymentData(invoice);
-      const qrCodeDataURL = await QRCode.toDataURL(qrData);
-      
-      // Pridanie QR kódu do PDF
-      doc.addImage(qrCodeDataURL, 'PNG', 140, paymentY + 5, 30, 30);
-      doc.setFontSize(8);
-      doc.text('QR kód pro platbu', 140, paymentY + 40);
-    } catch (error) {
-      console.error('Chyba pri generovaní QR kódu:', error);
-    }
-  }
-  
-  // Poznámky
-  if (invoice.notes) {
-    const notesY = paymentY + 50;
-    doc.setFont('helvetica', 'bold');
-    doc.text('Poznámky:', 20, notesY);
-    doc.setFont('helvetica', 'normal');
-    
-    const splitNotes = doc.splitTextToSize(invoice.notes, 170);
-    doc.text(splitNotes, 20, notesY + 8);
-  }
-  
-  // Pätka
-  const footerY = 280;
-  doc.setFontSize(8);
-  doc.setTextColor(100, 100, 100);
-  doc.text('FakturaAI s.r.o. | Václavské náměstí 1, 110 00 Praha 1 | IČO: 12345678 | DIČ: CZ12345678', 20, footerY);
-  doc.text('www.fakturaai.cz | info@fakturaai.cz | +420 123 456 789', 20, footerY + 4);
-  
-  // Generujeme PDF ako Buffer
-  const pdfData = doc.output('arraybuffer');
-  const buffer = Buffer.from(pdfData);
-  
-  console.log('PDF vygenerované, veľkosť:', buffer.length, 'bytov');
-  
-  if (buffer.length < 1000) {
-    throw new Error(`PDF je príliš malé: ${buffer.length} bytov`);
-  }
-  
-  return buffer;
-}
-
-function getPaymentMethodLabel(method: string | null) {
-  const methods = {
-    bank_transfer: "Bankovní převod",
-    card: "Platební karta", 
-    cash: "Hotovost",
-    online: "Online platba",
-    cheque: "Šek"
+  const formatCurrency = (amount: string | number) => {
+    return new Intl.NumberFormat('cs-CZ', {
+      style: 'currency',
+      currency: 'CZK',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Number(amount));
   };
-  return methods[method as keyof typeof methods] || "Bankovní převod";
+  
+  const getPaymentMethodLabel = (method: string | null) => {
+    const methods = {
+      bank_transfer: "Bankovní převod",
+      card: "Platební karta", 
+      cash: "Hotovost",
+      online: "Online platba",
+      cheque: "Šek"
+    };
+    return methods[method as keyof typeof methods] || "Bankovní převod";
+  };
+
+  return `<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faktura ${invoice.invoiceNumber}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 11px;
+            line-height: 1.4;
+            color: #1f2937;
+            background: white;
+        }
+        
+        .invoice-container {
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 0;
+            background: white;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #f97316;
+        }
+        
+        .logo-section h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #f97316;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+        
+        .invoice-number {
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .invoice-type {
+            display: inline-block;
+            padding: 6px 12px;
+            background: #f97316;
+            color: white;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .company-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 30px;
+        }
+        
+        .company-section {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #f97316;
+        }
+        
+        .company-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #f97316;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .company-section .company-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 8px;
+        }
+        
+        .company-section p {
+            font-size: 11px;
+            color: #4b5563;
+            margin-bottom: 3px;
+        }
+        
+        .invoice-info {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #fef3e2 0%, #fed7aa 100%);
+            border-radius: 8px;
+        }
+        
+        .info-item {
+            text-align: center;
+        }
+        
+        .info-item .label {
+            font-size: 10px;
+            font-weight: 500;
+            color: #92400e;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        
+        .info-item .value {
+            font-size: 12px;
+            font-weight: 600;
+            color: #92400e;
+        }
+        
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .items-table thead {
+            background: #f97316;
+            color: white;
+        }
+        
+        .items-table th {
+            padding: 12px 10px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .items-table th:last-child {
+            text-align: right;
+        }
+        
+        .items-table td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 11px;
+        }
+        
+        .items-table tbody tr:nth-child(even) {
+            background: #f9fafb;
+        }
+        
+        .items-table tbody tr:hover {
+            background: #f3f4f6;
+        }
+        
+        .items-table .text-right {
+            text-align: right;
+            font-weight: 500;
+        }
+        
+        .totals-section {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 30px;
+        }
+        
+        .totals-table {
+            min-width: 300px;
+        }
+        
+        .totals-table tr {
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .totals-table tr:last-child {
+            border-bottom: 3px solid #f97316;
+        }
+        
+        .totals-table td {
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+        
+        .totals-table .label {
+            font-weight: 500;
+            color: #374151;
+        }
+        
+        .totals-table .amount {
+            text-align: right;
+            font-weight: 600;
+            color: #111827;
+        }
+        
+        .total-row .label {
+            font-size: 14px;
+            font-weight: 700;
+            color: #f97316;
+            text-transform: uppercase;
+        }
+        
+        .total-row .amount {
+            font-size: 16px;
+            font-weight: 700;
+            color: #f97316;
+        }
+        
+        .payment-section {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #f97316;
+            margin-bottom: 30px;
+        }
+        
+        .payment-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #f97316;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+        }
+        
+        .payment-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .payment-info p {
+            font-size: 11px;
+            margin-bottom: 4px;
+        }
+        
+        .payment-info .label {
+            font-weight: 500;
+            color: #374151;
+        }
+        
+        .notes-section {
+            background: #fffbeb;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #fbbf24;
+            margin-bottom: 30px;
+        }
+        
+        .notes-section h3 {
+            font-size: 12px;
+            font-weight: 600;
+            color: #92400e;
+            margin-bottom: 8px;
+        }
+        
+        .footer {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            color: #6b7280;
+            font-size: 9px;
+        }
+        
+        @media print {
+            body { -webkit-print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+    <div class="invoice-container">
+        <header class="header">
+            <div class="logo-section">
+                <h1>FAKTURA</h1>
+                <div class="invoice-number">č. ${invoice.invoiceNumber}</div>
+            </div>
+            <div class="invoice-type">
+                ${getInvoiceTypeLabel(invoice.type || 'invoice')}
+            </div>
+        </header>
+        
+        <div class="company-details">
+            <div class="company-section">
+                <h3>Dodavatel</h3>
+                <div class="company-name">FakturaAI s.r.o.</div>
+                <p>Václavské náměstí 1</p>
+                <p>110 00 Praha 1</p>
+                <p>IČO: 12345678</p>
+                <p>DIČ: CZ12345678</p>
+                <p>Tel: +420 123 456 789</p>
+                <p>Email: info@fakturaai.cz</p>
+            </div>
+            
+            <div class="company-section">
+                <h3>Odběratel</h3>
+                <div class="company-name">${invoice.customer.name}</div>
+                ${invoice.customer.address ? `<p>${invoice.customer.address}</p>` : ''}
+                ${invoice.customer.city && invoice.customer.postalCode ? 
+                  `<p>${invoice.customer.postalCode} ${invoice.customer.city}</p>` : ''}
+                ${invoice.customer.ico ? `<p>IČO: ${invoice.customer.ico}</p>` : ''}
+                ${invoice.customer.dic ? `<p>DIČ: ${invoice.customer.dic}</p>` : ''}
+                ${invoice.customer.email ? `<p>Email: ${invoice.customer.email}</p>` : ''}
+                ${invoice.customer.phone ? `<p>Tel: ${invoice.customer.phone}</p>` : ''}
+            </div>
+        </div>
+        
+        <div class="invoice-info">
+            <div class="info-item">
+                <div class="label">Datum vystavení</div>
+                <div class="value">${formatDate(invoice.issueDate)}</div>
+            </div>
+            <div class="info-item">
+                <div class="label">Datum splatnosti</div>
+                <div class="value">${formatDate(invoice.dueDate)}</div>
+            </div>
+            <div class="info-item">
+                <div class="label">Způsob platby</div>
+                <div class="value">${getPaymentMethodLabel((invoice as any).paymentMethod)}</div>
+            </div>
+            <div class="info-item">
+                <div class="label">Měna</div>
+                <div class="value">${invoice.currency || 'CZK'}</div>
+            </div>
+        </div>
+        
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th style="width: 40%">Popis</th>
+                    <th style="width: 12%">Množství</th>
+                    <th style="width: 16%">Cena/ks</th>
+                    <th style="width: 12%">DPH %</th>
+                    <th style="width: 20%">Celkem</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${invoice.items.map(item => {
+                  const itemTotal = (parseFloat(item.quantity) * parseFloat(item.unitPrice)).toFixed(2);
+                  return `
+                    <tr>
+                        <td>${item.description}</td>
+                        <td class="text-right">${item.quantity}</td>
+                        <td class="text-right">${formatCurrency(item.unitPrice)}</td>
+                        <td class="text-right">${item.vatRate}%</td>
+                        <td class="text-right">${formatCurrency(itemTotal)}</td>
+                    </tr>
+                  `;
+                }).join('')}
+            </tbody>
+        </table>
+        
+        <div class="totals-section">
+            <table class="totals-table">
+                <tr>
+                    <td class="label">Základ DPH:</td>
+                    <td class="amount">${formatCurrency(invoice.subtotal)}</td>
+                </tr>
+                <tr>
+                    <td class="label">DPH 21%:</td>
+                    <td class="amount">${formatCurrency(invoice.vatAmount)}</td>
+                </tr>
+                <tr class="total-row">
+                    <td class="label">Celkem k úhradě:</td>
+                    <td class="amount">${formatCurrency(invoice.total)}</td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="payment-section">
+            <h3>Platební údaje</h3>
+            <div class="payment-details">
+                <div class="payment-info">
+                    <p><span class="label">Číslo účtu:</span> ${(invoice as any).bankAccount || '123456789/0100'}</p>
+                    <p><span class="label">IBAN:</span> CZ6508000000192000145399</p>
+                    <p><span class="label">Variabilní symbol:</span> ${(invoice as any).variableSymbol || invoice.invoiceNumber}</p>
+                    ${(invoice as any).constantSymbol ? 
+                      `<p><span class="label">Konstantní symbol:</span> ${(invoice as any).constantSymbol}</p>` : ''}
+                </div>
+                <div class="qr-section">
+                    <!-- QR kód bude přidán později -->
+                </div>
+            </div>
+        </div>
+        
+        ${invoice.notes ? `
+        <div class="notes-section">
+            <h3>Poznámky</h3>
+            <p>${invoice.notes}</p>
+        </div>
+        ` : ''}
+        
+        <footer class="footer">
+            <p>FakturaAI s.r.o. | Václavské náměstí 1, 110 00 Praha 1 | IČO: 12345678 | DIČ: CZ12345678</p>
+            <p>www.fakturaai.cz | info@fakturaai.cz | +420 123 456 789</p>
+        </footer>
+    </div>
+</body>
+</html>`;
 }
 
-function generateQRPaymentData(invoice: Invoice & { customer: Customer }) {
-  // Formát pre české QR platby (Short Payment Descriptor)
-  const accountNumber = (invoice as any).bankAccount || '123456789/0100';
-  const amount = invoice.total;
-  const variableSymbol = (invoice as any).variableSymbol || invoice.invoiceNumber;
-  const message = `Faktura ${invoice.invoiceNumber}`;
-  
-  // SPD formát pre QR platbu
-  return `SPD*1.0*ACC:${accountNumber}*AM:${amount}*CC:CZK*MSG:${message}*X-VS:${variableSymbol}`;
+function getInvoiceTypeLabel(type: string) {
+  const types = {
+    invoice: 'Faktura',
+    proforma: 'Proforma faktura',
+    credit_note: 'Dobropis'
+  };
+  return types[type as keyof typeof types] || 'Faktura';
 }
