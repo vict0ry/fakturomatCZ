@@ -505,10 +505,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Invoice not found" });
       }
       
-      const htmlContent = await generateInvoicePDF(invoice as any);
+      const pdfBuffer = await generateInvoicePDF(invoice as any);
       
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.send(htmlContent);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="Faktura_${invoice.invoiceNumber}.pdf"`);
+      res.send(pdfBuffer);
     } catch (error) {
       console.error("Error generating PDF:", error);
       res.status(500).json({ message: "Failed to generate PDF" });
