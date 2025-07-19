@@ -9,9 +9,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Download, Edit, ArrowLeft, Send, Check, Clock, AlertTriangle, Plus } from "lucide-react";
+import { Download, Edit, ArrowLeft, Send, Check, Clock, AlertTriangle, Plus, History, User, Mail } from "lucide-react";
 import type { Invoice } from "@/lib/api";
 import { InvoiceForm } from "@/components/invoice-form";
+import { useState } from "react";
 
 export default function InvoiceDetail() {
   const [, params] = useRoute("/invoices/:id");
@@ -21,10 +22,18 @@ export default function InvoiceDetail() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const [showHistory, setShowHistory] = useState(false);
+
   const { data: invoice, isLoading, error } = useQuery({
     queryKey: ["/api/invoices", invoiceId],
     queryFn: () => invoiceAPI.getById(invoiceId!),
     enabled: !!invoiceId,
+  });
+
+  const { data: invoiceHistory } = useQuery({
+    queryKey: ["/api/invoices", invoiceId, "history"],
+    queryFn: () => fetch(`/api/invoices/${invoiceId}/history`).then(res => res.json()),
+    enabled: !!invoiceId && showHistory,
   });
 
   const downloadPDFMutation = useMutation({
@@ -317,6 +326,14 @@ export default function InvoiceDetail() {
                 {downloadPDFMutation.isPending ? 'Stahování...' : 'Stáhnout PDF'}
               </Button>
               
+              <Button 
+                variant="outline" 
+                onClick={() => setShowHistory(!showHistory)}
+              >
+                <History className="mr-2 h-4 w-4" />
+                Historie
+              </Button>
+              
               <Select
                 value={invoice!.status}
                 onValueChange={(status) => updateStatusMutation.mutate(status)}
@@ -414,6 +431,56 @@ export default function InvoiceDetail() {
                 )}
 
                 <Separator className="my-4" />
+                
+                {/* Invoice History Section */}
+                {showHistory && (
+                  <div className="mt-6">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center">
+                      <History className="mr-2 h-5 w-5" />
+                      Historie změn faktury
+                    </h3>
+                    {invoiceHistory && invoiceHistory.length > 0 ? (
+                      <div className="space-y-4">
+                        {invoiceHistory.map((entry: any) => (
+                          <div key={entry.id} className="border rounded-lg p-4 bg-gray-50">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2 mb-2">
+                                  <span className="font-medium text-sm capitalize">
+                                    {entry.action === 'created' && '📄 Vytvoření'}
+                                    {entry.action === 'updated' && '✏️ Úprava'}
+                                    {entry.action === 'sent' && '📧 Odeslání'}
+                                    {entry.action === 'paid' && '💰 Uhrazení'}
+                                    {entry.action === 'reminder_sent' && '⏰ Upomínka'}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    {new Date(entry.createdAt).toLocaleString('cs-CZ')}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-700 mb-2">{entry.description}</p>
+                                {entry.recipientEmail && (
+                                  <div className="flex items-center text-xs text-gray-500">
+                                    <Mail className="mr-1 h-3 w-3" />
+                                    {entry.recipientEmail}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center text-xs text-gray-500 ml-4">
+                                <User className="mr-1 h-3 w-3" />
+                                {entry.user ? `${entry.user.firstName} ${entry.user.lastName}` : 'Systém'}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <History className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                        <p>Zatím žádná historie změn</p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Totals */}
                 <div className="space-y-2">

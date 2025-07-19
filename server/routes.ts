@@ -344,14 +344,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customerId = newCustomer.id;
       }
       
-      const invoiceDataParsed = insertInvoiceSchema.parse({
+      // Convert string dates to Date objects and handle numeric fields
+      const processedInvoiceData = {
         ...invoiceData,
         customerId,
         companyId: req.user.companyId,
-        userId: req.user.userId
-      });
+        userId: req.user.userId,
+        issueDate: new Date(invoiceData.issueDate),
+        dueDate: new Date(invoiceData.dueDate),
+        subtotal: parseFloat(invoiceData.subtotal || '0'),
+        vatAmount: parseFloat(invoiceData.vatAmount || '0'),
+        total: parseFloat(invoiceData.total || '0')
+      };
+      
+      const invoiceDataParsed = insertInvoiceSchema.parse(processedInvoiceData);
       
       const invoice = await storage.createInvoice(invoiceDataParsed);
+      
+      // Log creation in history
+      await storage.createInvoiceHistory({
+        invoiceId: invoice.id,
+        companyId: req.user.companyId,
+        userId: req.user.userId,
+        action: 'created',
+        description: `Faktúra ${invoice.invoiceNumber} bola vytvorená`,
+        newValue: { status: invoice.status, total: invoice.total }
+      });
+      
       res.json(invoice);
     } catch (error) {
       console.error("Error creating invoice:", error);
@@ -376,8 +395,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/invoices/:id", requireAuth, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
-      const invoiceData = insertInvoiceSchema.partial().parse(req.body);
+      
+      // Handle date conversion for PATCH requests too
+      const processedData = {
+        ...req.body,
+        issueDate: req.body.issueDate ? new Date(req.body.issueDate) : undefined,
+        dueDate: req.body.dueDate ? new Date(req.body.dueDate) : undefined,
+        subtotal: req.body.subtotal ? parseFloat(req.body.subtotal) : undefined,
+        vatAmount: req.body.vatAmount ? parseFloat(req.body.vatAmount) : undefined,
+        total: req.body.total ? parseFloat(req.body.total) : undefined
+      };
+      
+      const oldInvoice = await storage.getInvoice(id, req.user.companyId);
+      const invoiceData = insertInvoiceSchema.partial().parse(processedData);
       const invoice = await storage.updateInvoice(id, invoiceData, req.user.companyId);
+      
+      // Log update in history
+      if (oldInvoice) {
+        const changes = Object.keys(invoiceData).filter(key => 
+          oldInvoice[key as keyof typeof oldInvoice] !== invoiceData[key as keyof typeof invoiceData]
+        );
+        
+        if (changes.length > 0) {
+          await storage.createInvoiceHistory({
+            invoiceId: id,
+            companyId: req.user.companyId,
+            userId: req.user.userId,
+            action: 'updated',
+            description: `Faktúra bola upravená (${changes.join(', ')})`,
+            oldValue: Object.fromEntries(changes.map(key => [key, oldInvoice[key as keyof typeof oldInvoice]])),
+            newValue: Object.fromEntries(changes.map(key => [key, invoiceData[key as keyof typeof invoiceData]]))
+          });
+        }
+      }
+      
       res.json(invoice);
     } catch (error) {
       console.error("Error updating invoice:", error);
@@ -388,7 +439,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/invoices/:id", requireAuth, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
-      const invoiceData = insertInvoiceSchema.partial().parse(req.body);
+      
+      // Handle date conversion for PUT requests too
+      const processedData = {
+        ...req.body,
+        issueDate: req.body.issueDate ? new Date(req.body.issueDate) : undefined,
+        dueDate: req.body.dueDate ? new Date(req.body.dueDate) : undefined,
+        subtotal: req.body.subtotal ? parseFloat(req.body.subtotal) : undefined,
+        vatAmount: req.body.vatAmount ? parseFloat(req.body.vatAmount) : undefined,
+        total: req.body.total ? parseFloat(req.body.total) : undefined
+      };
+      
+      const invoiceData = insertInvoiceSchema.partial().parse(processedData);
       const invoice = await storage.updateInvoice(id, invoiceData, req.user.companyId);
       res.json(invoice);
     } catch (error) {
@@ -469,6 +531,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting invoice item:", error);
       res.status(500).json({ message: "Failed to delete invoice item" });
+    }
+  });
+
+  // Invoice history routes
+  app.get("/api/invoices/:id/history", requireAuth, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const history = await storage.getInvoiceHistory(id);
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching invoice history:", error);
+      res.status(500).json({ message: "Failed to fetch invoice history" });
     }
   });
 

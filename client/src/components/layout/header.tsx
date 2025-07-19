@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Bell, User, ChevronDown, LogOut, Settings } from "lucide-react";
+import { Link, useLocation } from "wouter";
 
 export function Header() {
   const { user, logout } = useAuth();
@@ -18,18 +19,18 @@ export function Header() {
         {/* Left side - Navigation for larger screens */}
         <div className="hidden lg:block">
           <nav className="flex space-x-1">
-            <a href="/" className="text-neutral-600 hover:text-primary transition-colors px-3 py-2 text-sm font-medium">
+            <Link href="/" className="text-neutral-600 hover:text-primary transition-colors px-3 py-2 text-sm font-medium">
               Dashboard
-            </a>
-            <a href="/invoices" className="text-neutral-600 hover:text-primary transition-colors px-3 py-2 text-sm font-medium">
+            </Link>
+            <Link href="/invoices" className="text-neutral-600 hover:text-primary transition-colors px-3 py-2 text-sm font-medium">
               Faktury
-            </a>
-            <a href="/customers" className="text-neutral-600 hover:text-primary transition-colors px-3 py-2 text-sm font-medium">
+            </Link>
+            <Link href="/customers" className="text-neutral-600 hover:text-primary transition-colors px-3 py-2 text-sm font-medium">
               Zákazníci
-            </a>
-            <a href="/analytics" className="text-neutral-600 hover:text-primary transition-colors px-3 py-2 text-sm font-medium">
+            </Link>
+            <Link href="/analytics" className="text-neutral-600 hover:text-primary transition-colors px-3 py-2 text-sm font-medium">
               Analýzy
-            </a>
+            </Link>
           </nav>
         </div>
 
@@ -69,13 +70,21 @@ export function Header() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                Profil
+              <DropdownMenuItem asChild>
+                <Link href="/profile">
+                  <div className="flex items-center w-full">
+                    <User className="mr-2 h-4 w-4" />
+                    Profil
+                  </div>
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
-                Nastavení
+              <DropdownMenuItem asChild>
+                <Link href="/settings">
+                  <div className="flex items-center w-full">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Nastavení
+                  </div>
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={logout}>

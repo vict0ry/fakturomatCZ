@@ -1,9 +1,9 @@
 import { 
-  companies, users, customers, invoices, invoiceItems, chatMessages, reminders, sessions,
+  companies, users, customers, invoices, invoiceItems, chatMessages, reminders, sessions, invoiceHistory,
   type Company, type User, type Customer, type Invoice, type InvoiceItem, 
-  type ChatMessage, type Reminder, type Session,
+  type ChatMessage, type Reminder, type Session, type InvoiceHistory,
   type InsertCompany, type InsertUser, type InsertCustomer, type InsertInvoice, 
-  type InsertInvoiceItem, type InsertChatMessage, type InsertReminder, type InsertSession
+  type InsertInvoiceItem, type InsertChatMessage, type InsertReminder, type InsertSession, type InsertInvoiceHistory
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, ilike, gte, lte, count } from "drizzle-orm";
@@ -61,6 +61,10 @@ export interface IStorage {
   // Chat Messages
   createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
   getChatMessages(companyId: number, userId: number, limit: number): Promise<ChatMessage[]>;
+
+  // Invoice History
+  createInvoiceHistory(history: InsertInvoiceHistory): Promise<InvoiceHistory>;
+  getInvoiceHistory(invoiceId: number): Promise<InvoiceHistory[]>;
   
   // Reminders
   createReminder(reminder: InsertReminder): Promise<Reminder>;
@@ -400,6 +404,41 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(reminders)
       .where(eq(reminders.companyId, companyId))
       .orderBy(desc(reminders.createdAt));
+  }
+
+  // Invoice History
+  async createInvoiceHistory(history: InsertInvoiceHistory): Promise<InvoiceHistory> {
+    const [newHistory] = await db
+      .insert(invoiceHistory)
+      .values(history)
+      .returning();
+    return newHistory;
+  }
+
+  async getInvoiceHistory(invoiceId: number): Promise<InvoiceHistory[]> {
+    return await db.select({
+      id: invoiceHistory.id,
+      invoiceId: invoiceHistory.invoiceId,
+      companyId: invoiceHistory.companyId,
+      userId: invoiceHistory.userId,
+      action: invoiceHistory.action,
+      oldValue: invoiceHistory.oldValue,
+      newValue: invoiceHistory.newValue,
+      description: invoiceHistory.description,
+      recipientEmail: invoiceHistory.recipientEmail,
+      metadata: invoiceHistory.metadata,
+      createdAt: invoiceHistory.createdAt,
+      user: {
+        id: users.id,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
+      }
+    })
+    .from(invoiceHistory)
+    .leftJoin(users, eq(invoiceHistory.userId, users.id))
+    .where(eq(invoiceHistory.invoiceId, invoiceId))
+    .orderBy(desc(invoiceHistory.createdAt));
   }
 
   // Statistics

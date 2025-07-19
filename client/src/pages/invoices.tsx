@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoiceAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -10,18 +10,41 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Search, Download, Eye, Edit, Trash2 } from "lucide-react";
+import { useLocation, Link } from "wouter";
 
 export default function Invoices() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [typeFilter, setTypeFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [customerFilter, setCustomerFilter] = useState<string>("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [location] = useLocation();
+  
+  // Check for customer filter in URL parameters
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const customerId = urlParams.get('customer');
+    if (customerId) {
+      setCustomerFilter(customerId);
+    }
+  }, [location]);
 
   const { data: invoices, isLoading } = useQuery({
-    queryKey: ["/api/invoices", statusFilter],
+    queryKey: ["/api/invoices", statusFilter, customerFilter],
     queryFn: () => invoiceAPI.getAll(statusFilter || undefined),
   });
+
+  // Filter invoices by customer if customerFilter is set
+  const displayedInvoices = invoices?.filter(invoice => {
+    if (customerFilter && invoice.customerId?.toString() !== customerFilter) {
+      return false;
+    }
+    if (searchQuery && !invoice.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase())) {
+      return false;
+    }
+    return true;
+  }) || [];
 
   const downloadPDFMutation = useMutation({
     mutationFn: (invoiceId: number) => invoiceAPI.downloadPDF(invoiceId),
@@ -108,14 +131,7 @@ export default function Invoices() {
     }
   };
 
-  const filteredInvoices = invoices?.filter(invoice => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      invoice.invoiceNumber.toLowerCase().includes(query) ||
-      invoice.customer?.name.toLowerCase().includes(query)
-    );
-  });
+
 
   return (
     <div className="py-6">
@@ -189,7 +205,7 @@ export default function Invoices() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-medium">
-                {filteredInvoices ? `${filteredInvoices.length} faktur` : 'Faktury'}
+                {displayedInvoices ? `${displayedInvoices.length} faktur` : 'Faktury'}
               </h3>
               {statusFilter && (
                 <Button 
@@ -216,7 +232,7 @@ export default function Invoices() {
                   </div>
                 ))}
               </div>
-            ) : filteredInvoices && filteredInvoices.length > 0 ? (
+            ) : displayedInvoices && displayedInvoices.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -231,7 +247,7 @@ export default function Invoices() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredInvoices.map((invoice) => (
+                  {displayedInvoices.map((invoice) => (
                     <TableRow key={invoice.id} className="invoice-table-row">
                       <TableCell className="font-medium">
                         <a 

@@ -113,6 +113,20 @@ export const reminders = pgTable("reminders", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const invoiceHistory = pgTable("invoice_history", {
+  id: serial("id").primaryKey(),
+  invoiceId: integer("invoice_id").references(() => invoices.id),
+  companyId: integer("company_id").references(() => companies.id),
+  userId: integer("user_id").references(() => users.id),
+  action: text("action").notNull(), // created, updated, sent, paid, cancelled, reminder_sent
+  oldValue: json("old_value"),
+  newValue: json("new_value"),
+  description: text("description"),
+  recipientEmail: text("recipient_email"), // for sent actions
+  metadata: json("metadata"), // additional data like email delivery status
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const sessions = pgTable("sessions", {
   id: text("id").primaryKey(),
   userId: integer("user_id").references(() => users.id),
@@ -147,6 +161,7 @@ export const invoicesRelations = relations(invoices, ({ one, many }) => ({
   customer: one(customers, { fields: [invoices.customerId], references: [customers.id] }),
   items: many(invoiceItems),
   reminders: many(reminders),
+  history: many(invoiceHistory),
 }));
 
 export const invoiceItemsRelations = relations(invoiceItems, ({ one }) => ({
@@ -163,6 +178,12 @@ export const remindersRelations = relations(reminders, ({ one }) => ({
   invoice: one(invoices, { fields: [reminders.invoiceId], references: [invoices.id] }),
 }));
 
+export const invoiceHistoryRelations = relations(invoiceHistory, ({ one }) => ({
+  invoice: one(invoices, { fields: [invoiceHistory.invoiceId], references: [invoices.id] }),
+  company: one(companies, { fields: [invoiceHistory.companyId], references: [companies.id] }),
+  user: one(users, { fields: [invoiceHistory.userId], references: [users.id] }),
+}));
+
 export const sessionsRelations = relations(sessions, ({ one }) => ({
   user: one(users, { fields: [sessions.userId], references: [users.id] }),
 }));
@@ -175,6 +196,7 @@ export const insertInvoiceSchema = createInsertSchema(invoices);
 export const insertInvoiceItemSchema = createInsertSchema(invoiceItems);
 export const insertChatMessageSchema = createInsertSchema(chatMessages);
 export const insertReminderSchema = createInsertSchema(reminders);
+export const insertInvoiceHistorySchema = createInsertSchema(invoiceHistory);
 export const insertSessionSchema = createInsertSchema(sessions);
 
 // Types
@@ -185,6 +207,7 @@ export type Invoice = typeof invoices.$inferSelect;
 export type InvoiceItem = typeof invoiceItems.$inferSelect;
 export type ChatMessage = typeof chatMessages.$inferSelect;
 export type Reminder = typeof reminders.$inferSelect;
+export type InvoiceHistory = typeof invoiceHistory.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 
 export type InsertCompany = z.infer<typeof insertCompanySchema>;
@@ -194,4 +217,5 @@ export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
 export type InsertInvoiceItem = z.infer<typeof insertInvoiceItemSchema>;
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 export type InsertReminder = z.infer<typeof insertReminderSchema>;
+export type InsertInvoiceHistory = z.infer<typeof insertInvoiceHistorySchema>;
 export type InsertSession = z.infer<typeof insertSessionSchema>;
