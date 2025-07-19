@@ -172,6 +172,14 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
     });
   };
 
+  const updateItem = (index: number, field: string, value: any) => {
+    setValue(`items.${index}.${field}`, value);
+  };
+
+  const removeItem = (index: number) => {
+    remove(index);
+  };
+
   const formatCurrency = (amount: string | number) => {
     return new Intl.NumberFormat('cs-CZ', {
       style: 'currency',
@@ -554,14 +562,13 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-4">
-                  {items.map((item, index) => (
+                  {fields.map((item, index) => (
                     <div key={index} className="p-4 border-2 border-gray-100 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-700/50">
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                         <div className="md:col-span-4">
                           <Label className="text-sm font-semibold">Popis služby/produktu</Label>
                           <Input
-                            value={item.description}
-                            onChange={(e) => updateItem(index, 'description', e.target.value)}
+                            {...register(`items.${index}.description`)}
                             placeholder="Název položky..."
                             className="mt-1 h-11 border-2 border-gray-200 dark:border-gray-600"
                           />
@@ -570,8 +577,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                           <Label className="text-sm font-semibold">Množství</Label>
                           <Input
                             type="number"
-                            value={item.quantity}
-                            onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
+                            {...register(`items.${index}.quantity`)}
                             placeholder="1"
                             min="0"
                             step="0.01"
@@ -581,18 +587,17 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                         <div className="md:col-span-2">
                           <Label className="text-sm font-semibold">Jednotka</Label>
                           <Input
-                            value={item.unit}
-                            onChange={(e) => updateItem(index, 'unit', e.target.value)}
+                            defaultValue="ks"
                             placeholder="ks"
                             className="mt-1 h-11 border-2 border-gray-200 dark:border-gray-600"
+                            disabled
                           />
                         </div>
                         <div className="md:col-span-2">
                           <Label className="text-sm font-semibold">Cena za jednotku</Label>
                           <Input
                             type="number"
-                            value={item.unitPrice}
-                            onChange={(e) => updateItem(index, 'unitPrice', parseFloat(e.target.value) || 0)}
+                            {...register(`items.${index}.unitPrice`)}
                             placeholder="0.00"
                             min="0"
                             step="0.01"
@@ -602,8 +607,8 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                         <div className="md:col-span-1">
                           <Label className="text-sm font-semibold">VAT %</Label>
                           <Select
-                            value={item.vatRate.toString()}
-                            onValueChange={(value) => updateItem(index, 'vatRate', parseFloat(value))}
+                            value={watchedItems[index]?.vatRate?.toString() || "21"}
+                            onValueChange={(value) => setValue(`items.${index}.vatRate`, value)}
                           >
                             <SelectTrigger className="h-11 border-2 border-gray-200 dark:border-gray-600">
                               <SelectValue />
@@ -624,22 +629,22 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                             onClick={() => removeItem(index)}
                             className="h-11 w-full bg-red-50 hover:bg-red-100 text-red-600 border-red-200"
                           >
-                            🗑️
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
                       <div className="mt-3 p-3 bg-white dark:bg-gray-800 rounded-lg border">
                         <div className="flex justify-between text-sm">
                           <span>Celkem bez DPH:</span>
-                          <span className="font-medium">{formatCurrency(item.quantity * item.unitPrice)}</span>
+                          <span className="font-medium">{formatCurrency((parseFloat(watchedItems[index]?.quantity) || 0) * (parseFloat(watchedItems[index]?.unitPrice) || 0))}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span>DPH ({item.vatRate}%):</span>
-                          <span className="font-medium">{formatCurrency(item.quantity * item.unitPrice * (item.vatRate / 100))}</span>
+                          <span>DPH ({watchedItems[index]?.vatRate || 21}%):</span>
+                          <span className="font-medium">{formatCurrency(((parseFloat(watchedItems[index]?.quantity) || 0) * (parseFloat(watchedItems[index]?.unitPrice) || 0)) * ((parseFloat(watchedItems[index]?.vatRate) || 21) / 100))}</span>
                         </div>
                         <div className="flex justify-between text-sm font-bold border-t pt-2 mt-2">
                           <span>Celkem s DPH:</span>
-                          <span className="text-blue-600">{formatCurrency(item.quantity * item.unitPrice * (1 + item.vatRate / 100))}</span>
+                          <span className="text-blue-600">{formatCurrency(((parseFloat(watchedItems[index]?.quantity) || 0) * (parseFloat(watchedItems[index]?.unitPrice) || 0)) * (1 + ((parseFloat(watchedItems[index]?.vatRate) || 21) / 100)))}</span>
                         </div>
                       </div>
                     </div>

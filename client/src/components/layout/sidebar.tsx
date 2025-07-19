@@ -1,165 +1,148 @@
-import { useLocation } from "wouter";
+import { useState } from "react";
+import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/auth-context";
+import { 
+  Home, 
+  FileText, 
+  Users, 
+  Settings, 
+  PieChart,
+  Receipt,
+  Calendar,
+  TrendingUp,
+  ChevronRight,
+  Menu
+} from "lucide-react";
 
-export function Sidebar() {
+interface SidebarProps {
+  className?: string;
+}
+
+export function Sidebar({ className }: SidebarProps) {
   const [location] = useLocation();
+  const { user } = useAuth();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const isActive = (path: string) => {
-    if (path === "/" && location === "/") return true;
-    if (path !== "/" && location.startsWith(path)) return true;
-    return false;
-  };
+  const navigation = [
+    {
+      name: "Dashboard",
+      href: "/",
+      icon: Home,
+      current: location === "/",
+    },
+    {
+      name: "Faktury",
+      href: "/invoices",
+      icon: FileText,
+      current: location === "/invoices" || location.startsWith("/invoices/"),
+    },
+    {
+      name: "Zákazníci",
+      href: "/customers",
+      icon: Users,
+      current: location === "/customers",
+    },
+    {
+      name: "Analýzy",
+      href: "/analytics",
+      icon: PieChart,
+      current: location === "/analytics",
+    },
+    {
+      name: "Nastavení",
+      href: "/settings",
+      icon: Settings,
+      current: location === "/settings",
+    },
+  ];
 
   return (
-    <aside className="hidden lg:flex lg:flex-shrink-0">
-      <div className="flex flex-col w-64">
-        <div className="flex flex-col h-0 flex-1 bg-white border-r border-neutral-200">
-          <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
-            <nav className="mt-5 flex-1 px-4 space-y-1">
-              {/* Dashboard */}
-              <a 
-                href="/" 
-                className={cn(
-                  "sidebar-nav-item",
-                  isActive("/") && "active"
-                )}
-              >
-                <i className="fas fa-tachometer-alt mr-3 text-lg"></i>
-                Dashboard
-              </a>
-
-              {/* Invoices Section */}
-              <div className="mt-6">
-                <h3 className="px-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
-                  Fakturace
-                </h3>
-                <div className="mt-2 space-y-1">
-                  <a 
-                    href="/invoices" 
-                    className={cn(
-                      "sidebar-nav-item",
-                      isActive("/invoices") && "active"
-                    )}
-                  >
-                    <i className="fas fa-file-invoice mr-3"></i>
-                    Všechny faktury
-                  </a>
-                  <a 
-                    href="/invoices/new" 
-                    className="sidebar-nav-item"
-                  >
-                    <i className="fas fa-plus-circle mr-3"></i>
-                    Nová faktura
-                  </a>
-                  <a 
-                    href="/invoices?type=proforma" 
-                    className="sidebar-nav-item"
-                  >
-                    <i className="fas fa-file-contract mr-3"></i>
-                    Proformy
-                  </a>
-                  <a 
-                    href="/invoices?type=credit_note" 
-                    className="sidebar-nav-item"
-                  >
-                    <i className="fas fa-undo mr-3"></i>
-                    Dobropisy
-                  </a>
-                </div>
-              </div>
-
-              {/* Customers Section */}
-              <div className="mt-6">
-                <h3 className="px-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
-                  Zákazníci
-                </h3>
-                <div className="mt-2 space-y-1">
-                  <a 
-                    href="/customers" 
-                    className={cn(
-                      "sidebar-nav-item",
-                      isActive("/customers") && "active"
-                    )}
-                  >
-                    <i className="fas fa-users mr-3"></i>
-                    Všichni zákazníci
-                  </a>
-                  <a 
-                    href="/customers/new" 
-                    className="sidebar-nav-item"
-                  >
-                    <i className="fas fa-user-plus mr-3"></i>
-                    Přidat zákazníka
-                  </a>
-                  <a 
-                    href="/customers?filter=inactive" 
-                    className="sidebar-nav-item text-destructive hover:text-destructive hover:bg-red-50"
-                  >
-                    <i className="fas fa-exclamation-triangle mr-3"></i>
-                    Neúčtovaní klienti
-                    <span className="ml-auto bg-destructive text-white text-xs px-2 py-1 rounded-full">
-                      3
-                    </span>
-                  </a>
-                </div>
-              </div>
-
-              {/* Reports Section */}
-              <div className="mt-6">
-                <h3 className="px-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
-                  Přehledy
-                </h3>
-                <div className="mt-2 space-y-1">
-                  <a href="#" className="sidebar-nav-item">
-                    <i className="fas fa-chart-line mr-3"></i>
-                    Příjmy & Výdaje
-                  </a>
-                  <a href="/invoices?status=sent,overdue" className="sidebar-nav-item">
-                    <i className="fas fa-clock mr-3"></i>
-                    Neuhrazené faktury
-                  </a>
-                  <a href="#" className="sidebar-nav-item">
-                    <i className="fas fa-download mr-3"></i>
-                    Export dat
-                  </a>
-                </div>
-              </div>
-
-              {/* Settings Section */}
-              <div className="mt-6">
-                <h3 className="px-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
-                  Systém
-                </h3>
-                <div className="mt-2 space-y-1">
-                  <a 
-                    href="/settings" 
-                    className={cn(
-                      "sidebar-nav-item",
-                      isActive("/settings") && "active"
-                    )}
-                  >
-                    <i className="fas fa-cog mr-3"></i>
-                    Nastavení
-                  </a>
-                </div>
-              </div>
-            </nav>
-          </div>
-
-          {/* Sidebar Footer */}
-          <div className="flex-shrink-0 flex border-t border-neutral-200 p-4">
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
-                <i className="fas fa-robot text-white text-sm"></i>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-neutral-700">AI Asistent</p>
-                <p className="text-xs text-neutral-500">Aktivní</p>
-              </div>
+    <div className={cn(
+      "flex flex-col bg-white border-r border-neutral-200 transition-all duration-300",
+      isCollapsed ? "w-16" : "w-64",
+      "h-screen sticky top-0",
+      className
+    )}>
+      {/* Sidebar Header */}
+      <div className="flex items-center justify-between p-4 border-b border-neutral-200">
+        {!isCollapsed && (
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <Receipt className="h-5 w-5 text-white" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold text-neutral-900">
+                Fakturoidu
+              </span>
+              <span className="text-xs text-neutral-500">
+                {user?.companyId ? 'Pro firmu' : 'Dashboard'}
+              </span>
             </div>
           </div>
-        </div>
+        )}
+        
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="h-8 w-8 p-0"
+        >
+          <Menu className="h-4 w-4" />
+        </Button>
       </div>
-    </aside>
+
+      {/* Navigation */}
+      <nav className="flex-1 p-4 space-y-2">
+        {navigation.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link key={item.name} href={item.href}>
+              <Button
+                variant={item.current ? "default" : "ghost"}
+                className={cn(
+                  "w-full justify-start gap-3 h-10",
+                  isCollapsed && "justify-center px-2",
+                  item.current 
+                    ? "bg-blue-600 hover:bg-blue-700 text-white" 
+                    : "hover:bg-neutral-100"
+                )}
+              >
+                <Icon className="h-4 w-4 flex-shrink-0" />
+                {!isCollapsed && (
+                  <>
+                    <span className="text-sm font-medium">{item.name}</span>
+                    {item.current && (
+                      <ChevronRight className="ml-auto h-4 w-4" />
+                    )}
+                  </>
+                )}
+              </Button>
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Bottom Section */}
+      <div className="p-4 border-t border-neutral-200">
+        {!isCollapsed && (
+          <div className="bg-blue-50 rounded-lg p-3">
+            <div className="flex items-center space-x-2 mb-2">
+              <TrendingUp className="h-4 w-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-900">
+                Upgrade
+              </span>
+            </div>
+            <p className="text-xs text-blue-700 mb-2">
+              Získejte pokročilé funkce a neomezený počet faktur.
+            </p>
+            <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700">
+              Upgrade
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

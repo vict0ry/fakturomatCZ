@@ -613,6 +613,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mount additional routes
   setupEmailRoutes(app, sessions);
   setupCompanyRoutes(app, sessions);
+  
+  // Import and mount new route modules
+  try {
+    const chatRoutes = (await import("./routes/chat")).default;
+    const analyticsRoutes = (await import("./routes/analytics")).default;
+    
+    app.use("/api/chat", chatRoutes);
+    app.use("/api/analytics", analyticsRoutes);
+  } catch (error) {
+    console.error("Error loading additional routes:", error);
+  }
 
   return server;
 }

@@ -94,6 +94,9 @@ export const chatMessages = pgTable("chat_messages", {
   userId: integer("user_id").references(() => users.id),
   message: text("message").notNull(),
   response: text("response"),
+  role: text("role").notNull().default("user"), // user, assistant, system
+  sessionId: text("session_id"),
+  metadata: json("metadata"), // For storing additional data like commands
   createdAt: timestamp("created_at").defaultNow(),
 });
 

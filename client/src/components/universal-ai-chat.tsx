@@ -1,73 +1,51 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Skeleton } from "@/components/ui/skeleton";
-import { X, Send, Bot, User, MessageCircle, Sparkles } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useAuth } from "@/contexts/auth-context";
-import { useLocation } from "wouter";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { 
+  MessageCircle, 
+  X, 
+  Send, 
+  Minimize2, 
+  Maximize2, 
+  Bot, 
+  User,
+  Sparkles,
+  FileText,
+  Users,
+  Calculator
+} from "lucide-react";
 
-interface ChatMessage {
+interface Message {
   id: string;
-  type: 'user' | 'ai';
+  type: 'user' | 'assistant';
   content: string;
   timestamp: Date;
-  isLoading?: boolean;
-  action?: {
-    type: 'navigate' | 'fill_form' | 'search' | 'create_invoice';
+  command?: {
+    action: string;
     data?: any;
   };
 }
 
-interface UniversalAIChatProps {
-  onFormFill?: (data: any) => void;
-  context?: 'registration' | 'login' | 'dashboard' | 'invoices' | 'customers' | 'general';
-}
-
-export function UniversalAIChat({ onFormFill, context = 'general' }: UniversalAIChatProps) {
+export function UniversalAIChat() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [inputValue, setInputValue] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  
-  const { isAuthenticated } = useAuth();
-  const [location, navigate] = useLocation();
-
-  // Initialize chat based on context
-  useEffect(() => {
-    let welcomeMessage = '';
-    
-    switch (context) {
-      case 'registration':
-        welcomeMessage = 'Pomohu vám s registrací! Stačí mi říct email a IČO vaší firmy a automaticky vyplním registrační formulář pomocí dat z ARES.';
-        break;
-      case 'login':
-        welcomeMessage = 'Pomohu vám s přihlášením nebo vás nasměruji na registraci, pokud ještě nemáte účet.';
-        break;
-      case 'dashboard':
-        welcomeMessage = 'Vítejte! Můžete mi říct například: "Zobraz faktury od CreativeLand", "Vytvoř novou fakturu pro XYZ s.r.o." nebo "Najdi neplacené faktury".';
-        break;
-      case 'invoices':
-        welcomeMessage = 'Pomohu vám s fakturami. Můžete říct: "Najdi faktury od března", "Vytvoř fakturu pro XYZ za 10000 Kč" nebo "Zobraz neplacené faktury".';
-        break;
-      case 'customers':
-        welcomeMessage = 'Pomohu vám se zákazníky. Zkuste: "Najdi zákazníka s IČO 12345678", "Pridej nového zákazníka XYZ" nebo "Zobraz neaktivní zákazníky".';
-        break;
-      default:
-        welcomeMessage = 'Jsem zde, abych vám pomohl s fakturací. Můžete mi říct například: "Vytvoř fakturu pro CreativeLand s.r.o. za konzultace za 5000 Kč"';
-    }
-
-    setMessages([{
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState<Message[]>([
+    {
       id: '1',
-      type: 'ai',
-      content: welcomeMessage,
+      type: 'assistant',
+      content: 'Ahoj! Jsem váš AI asistent pro faktury. Mohu vám pomoci s vytvářením faktur, hledáním zákazníků, analýzou dluhů a mnohem více. Zkuste mi říci například "Vytvoř fakturu pro ABC s.r.o." nebo "Najdi všechny neuhrazené faktury".',
       timestamp: new Date(),
-    }]);
-  }, [context]);
+    }
+  ]);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -77,131 +55,96 @@ export function UniversalAIChat({ onFormFill, context = 'general' }: UniversalAI
     scrollToBottom();
   }, [messages]);
 
-  useEffect(() => {
-    if (isOpen && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [isOpen]);
-
-  const handleSendMessage = async () => {
-    if (!inputValue.trim()) return;
-
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      type: 'user',
-      content: inputValue,
-      timestamp: new Date(),
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setInputValue('');
-    setIsLoading(true);
-
-    // Add loading message
-    const loadingMessage: ChatMessage = {
-      id: (Date.now() + 1).toString(),
-      type: 'ai',
-      content: 'Zpracovávám váš požadavek...',
-      timestamp: new Date(),
-      isLoading: true,
-    };
-
-    setMessages(prev => [...prev, loadingMessage]);
-
-    try {
-      const response = await processAIMessage(inputValue, context);
-      
-      setMessages(prev => prev.map(msg => 
-        msg.isLoading ? {
-          ...msg,
-          content: response.content,
-          isLoading: false,
-          action: response.action
-        } : msg
-      ));
-
-      // Execute action if provided
-      if (response.action) {
-        executeAction(response.action);
-      }
-    } catch (error) {
-      setMessages(prev => prev.map(msg => 
-        msg.isLoading ? {
-          ...msg,
-          content: 'Omlouváme se, došlo k chybě při zpracování vašeho požadavku.',
-          isLoading: false
-        } : msg
-      ));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const processAIMessage = async (message: string, context: string) => {
-    const requestData = {
-      message,
-      context,
-      currentPath: location,
-      isAuthenticated,
-    };
-
-    if (isAuthenticated) {
-      const sessionId = localStorage.getItem('sessionId');
+  const sendMessageMutation = useMutation({
+    mutationFn: async (messageText: string) => {
       const response = await fetch('/api/chat/universal', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionId}`,
+          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`,
         },
-        body: JSON.stringify(requestData),
+        body: JSON.stringify({ message: messageText }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to process message');
+        throw new Error('Nepodařilo se odeslat zprávu');
       }
 
-      return await response.json();
-    } else {
-      // For non-authenticated users (registration/login)
-      const response = await fetch('/api/chat/public', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData),
+      return response.json();
+    },
+    onSuccess: (data) => {
+      const assistantMessage: Message = {
+        id: Date.now().toString(),
+        type: 'assistant',
+        content: data.response,
+        timestamp: new Date(),
+        command: data.command,
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+
+      // If there's a command, handle it
+      if (data.command) {
+        handleCommand(data.command);
+      }
+
+      // Invalidate relevant queries if AI performed actions
+      if (data.command?.action === 'create_invoice' || data.command?.action === 'update_invoice') {
+        queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
+      }
+      if (data.command?.action === 'create_customer') {
+        queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Chyba",
+        description: error.message || "Nepodařilo se odeslat zprávu AI asistentovi.",
+        variant: "destructive",
       });
+    },
+  });
 
-      if (!response.ok) {
-        throw new Error('Failed to process message');
-      }
-
-      return await response.json();
+  const handleCommand = (command: any) => {
+    switch (command.action) {
+      case 'navigate_to_invoices':
+        window.location.href = '/invoices';
+        break;
+      case 'navigate_to_customers':
+        window.location.href = '/customers';
+        break;
+      case 'navigate_to_dashboard':
+        window.location.href = '/';
+        break;
+      case 'navigate_to_settings':
+        window.location.href = '/settings';
+        break;
+      case 'create_invoice':
+        if (command.data?.customerId) {
+          window.location.href = `/invoices/new?customer=${command.data.customerId}`;
+        } else {
+          window.location.href = '/invoices/new';
+        }
+        break;
+      default:
+        // No specific action needed
+        break;
     }
   };
 
-  const executeAction = (action: any) => {
-    switch (action.type) {
-      case 'navigate':
-        navigate(action.data.path);
-        break;
-      case 'fill_form':
-        if (onFormFill) {
-          onFormFill(action.data);
-        }
-        break;
-      case 'search':
-        if (action.data.filters) {
-          const params = new URLSearchParams();
-          Object.entries(action.data.filters).forEach(([key, value]) => {
-            if (value) params.append(key, value as string);
-          });
-          navigate(`${action.data.path}?${params.toString()}`);
-        }
-        break;
-      case 'create_invoice':
-        navigate('/invoices/new', { state: action.data });
-        break;
-    }
+  const handleSendMessage = () => {
+    if (!message.trim()) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      type: 'user',
+      content: message,
+      timestamp: new Date(),
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    sendMessageMutation.mutate(message);
+    setMessage("");
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -211,139 +154,157 @@ export function UniversalAIChat({ onFormFill, context = 'general' }: UniversalAI
     }
   };
 
-  const handleToggle = () => {
-    setIsOpen(!isOpen);
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('cs-CZ', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
   };
 
-  return (
-    <>
-      {/* Chat Toggle Button */}
-      <Button
-        onClick={handleToggle}
-        className={cn(
-          "fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-300",
-          "bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700",
-          isOpen && "scale-110"
-        )}
-        size="icon"
-      >
-        {isOpen ? (
-          <X className="h-6 w-6 text-white" />
-        ) : (
-          <MessageCircle className="h-6 w-6 text-white" />
-        )}
-      </Button>
+  const getActionIcon = (action?: string) => {
+    switch (action) {
+      case 'create_invoice':
+      case 'navigate_to_invoices':
+        return <FileText className="h-3 w-3" />;
+      case 'create_customer':
+      case 'navigate_to_customers':
+        return <Users className="h-3 w-3" />;
+      case 'calculate':
+        return <Calculator className="h-3 w-3" />;
+      default:
+        return <Sparkles className="h-3 w-3" />;
+    }
+  };
 
-      {/* Chat Window */}
-      {isOpen && (
-        <Card className="fixed bottom-24 right-6 z-50 w-96 h-96 shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
-          <div className="flex flex-col h-full">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-t-lg">
-              <div className="flex items-center space-x-2">
-                <Bot className="h-5 w-5" />
-                <span className="font-medium">AI Asistent</span>
-                <Sparkles className="h-4 w-4" />
-              </div>
+  if (!isOpen) {
+    return (
+      <Button
+        onClick={() => setIsOpen(true)}
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-blue-600 hover:bg-blue-700 shadow-lg z-50"
+        size="lg"
+      >
+        <MessageCircle className="h-6 w-6" />
+        <span className="sr-only">Otevřít AI chat</span>
+      </Button>
+    );
+  }
+
+  return (
+    <Card className={`fixed bottom-6 right-6 z-50 transition-all duration-300 ${
+      isMinimized ? 'w-80 h-16' : 'w-96 h-[600px]'
+    } shadow-xl border-2 border-blue-200`}>
+      <CardHeader className="flex flex-row items-center justify-between p-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-lg">
+        <div className="flex items-center space-x-2">
+          <Bot className="h-5 w-5" />
+          <CardTitle className="text-lg font-semibold">
+            AI Asistent
+          </CardTitle>
+          <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
+            Online
+          </Badge>
+        </div>
+        <div className="flex items-center space-x-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsMinimized(!isMinimized)}
+            className="h-8 w-8 p-0 text-white hover:bg-blue-500"
+          >
+            {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsOpen(false)}
+            className="h-8 w-8 p-0 text-white hover:bg-blue-500"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </CardHeader>
+
+      {!isMinimized && (
+        <CardContent className="flex flex-col h-[calc(600px-80px)] p-0">
+          {/* Messages */}
+          <ScrollArea className="flex-1 p-4">
+            <div className="space-y-4">
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[80%] rounded-lg p-3 ${
+                      msg.type === 'user'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-900'
+                    }`}
+                  >
+                    <div className="flex items-start space-x-2">
+                      {msg.type === 'assistant' && <Bot className="h-4 w-4 mt-0.5 flex-shrink-0" />}
+                      {msg.type === 'user' && <User className="h-4 w-4 mt-0.5 flex-shrink-0" />}
+                      <div className="flex-1">
+                        <p className="text-sm">{msg.content}</p>
+                        {msg.command && (
+                          <div className="mt-2 flex items-center space-x-1">
+                            {getActionIcon(msg.command.action)}
+                            <span className="text-xs opacity-75">
+                              Akce: {msg.command.action}
+                            </span>
+                          </div>
+                        )}
+                        <p className="text-xs opacity-75 mt-1">
+                          {formatTime(msg.timestamp)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {sendMessageMutation.isPending && (
+                <div className="flex justify-start">
+                  <div className="bg-gray-100 rounded-lg p-3 max-w-[80%]">
+                    <div className="flex items-center space-x-2">
+                      <Bot className="h-4 w-4" />
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div ref={messagesEndRef} />
+          </ScrollArea>
+
+          {/* Input */}
+          <div className="border-t p-4">
+            <div className="flex space-x-2">
+              <Input
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Napište zprávu..."
+                className="flex-1"
+                disabled={sendMessageMutation.isPending}
+              />
               <Button
-                onClick={handleToggle}
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-white hover:bg-white/20"
+                onClick={handleSendMessage}
+                disabled={!message.trim() || sendMessageMutation.isPending}
+                size="sm"
+                className="px-4"
               >
-                <X className="h-4 w-4" />
+                <Send className="h-4 w-4" />
               </Button>
             </div>
-
-            {/* Messages */}
-            <ScrollArea className="flex-1 p-4">
-              <div className="space-y-4">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={cn(
-                      "flex items-start space-x-2",
-                      message.type === 'user' ? 'justify-end' : 'justify-start'
-                    )}
-                  >
-                    {message.type === 'ai' && (
-                      <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                        <Bot className="h-4 w-4 text-white" />
-                      </div>
-                    )}
-                    <div
-                      className={cn(
-                        "max-w-xs p-3 rounded-lg text-sm",
-                        message.type === 'user'
-                          ? 'bg-blue-500 text-white ml-auto'
-                          : 'bg-gray-100 text-gray-800'
-                      )}
-                    >
-                      {message.isLoading ? (
-                        <div className="space-y-2">
-                          <Skeleton className="h-4 w-full" />
-                          <Skeleton className="h-4 w-3/4" />
-                        </div>
-                      ) : (
-                        <p className="whitespace-pre-wrap">{message.content}</p>
-                      )}
-                    </div>
-                    {message.type === 'user' && (
-                      <div className="flex-shrink-0 w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                        <User className="h-4 w-4 text-gray-600" />
-                      </div>
-                    )}
-                  </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
-            </ScrollArea>
-
-            {/* Input */}
-            <div className="p-4 border-t bg-gray-50">
-              <div className="flex space-x-2">
-                <Input
-                  ref={inputRef}
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Napište zprávu..."
-                  className="flex-1"
-                  disabled={isLoading}
-                />
-                <Button
-                  onClick={handleSendMessage}
-                  disabled={!inputValue.trim() || isLoading}
-                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
+            <div className="mt-2 text-xs text-gray-500">
+              Zkuste: "Vytvoř fakturu", "Najdi dlužníky", "Zobraz statistiky"
             </div>
           </div>
-        </Card>
+        </CardContent>
       )}
-    </>
+    </Card>
   );
 }
-
-// Export specific context versions for convenience
-export const RegistrationAIChat = (props: { onFormFill?: (data: any) => void }) => (
-  <UniversalAIChat context="registration" {...props} />
-);
-
-export const LoginAIChat = () => (
-  <UniversalAIChat context="login" />
-);
-
-export const DashboardAIChat = () => (
-  <UniversalAIChat context="dashboard" />
-);
-
-export const InvoicesAIChat = () => (
-  <UniversalAIChat context="invoices" />
-);
-
-export const CustomersAIChat = () => (
-  <UniversalAIChat context="customers" />
-);

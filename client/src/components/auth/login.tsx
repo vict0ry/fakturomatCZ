@@ -3,12 +3,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, LogIn } from "lucide-react";
-import { LoginAIChat } from "@/components/universal-ai-chat";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/auth-context";
+import { Register } from "./register";
+import { Receipt, Eye, EyeOff } from "lucide-react";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Uživatelské jméno je povinné"),
@@ -17,14 +18,12 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
-interface LoginProps {
-  onSuccess: (user: any, sessionId: string) => void;
-  onSwitchToRegister: () => void;
-}
-
-export function Login({ onSuccess, onSwitchToRegister }: LoginProps) {
+export function Login() {
+  const [showRegister, setShowRegister] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { login } = useAuth();
+  const { toast } = useToast();
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -36,47 +35,55 @@ export function Login({ onSuccess, onSwitchToRegister }: LoginProps) {
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
-    setError(null);
-
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(data),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Přihlášení se nezdařilo");
+        const error = await response.json();
+        throw new Error(error.message || 'Přihlášení selhalo');
       }
 
       const result = await response.json();
-      onSuccess(result.user, result.sessionId);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "Nastala chyba při přihlašování");
+      login(result.user, result.sessionId);
+      
+      toast({
+        title: "Úspěšně přihlášen",
+        description: `Vítejte zpět, ${result.user.firstName}!`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Chyba při přihlášení",
+        description: error.message || "Nepodařilo se přihlásit. Zkuste to znovu.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
+  if (showRegister) {
+    return <Register onBack={() => setShowRegister(false)} />;
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
+          <div className="mx-auto w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center mb-4">
+            <Receipt className="h-6 w-6 text-white" />
+          </div>
           <CardTitle className="text-2xl font-bold">Přihlášení</CardTitle>
           <CardDescription>
-            Přihlaste se do vašeho fakturačního systému
+            Přihlaste se do svého účtu Fakturoidu
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {error && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -87,17 +94,16 @@ export function Login({ onSuccess, onSwitchToRegister }: LoginProps) {
                     <FormLabel>Uživatelské jméno</FormLabel>
                     <FormControl>
                       <Input
-                        {...field}
-                        type="text"
                         placeholder="Zadejte uživatelské jméno"
-                        autoComplete="username"
+                        {...field}
+                        disabled={isLoading}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
+              
               <FormField
                 control={form.control}
                 name="password"
@@ -105,52 +111,54 @@ export function Login({ onSuccess, onSwitchToRegister }: LoginProps) {
                   <FormItem>
                     <FormLabel>Heslo</FormLabel>
                     <FormControl>
-                      <Input
-                        {...field}
-                        type="password"
-                        placeholder="Zadejte heslo"
-                        autoComplete="current-password"
-                      />
+                      <div className="relative">
+                        <Input
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Zadejte heslo"
+                          {...field}
+                          disabled={isLoading}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                          disabled={isLoading}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Přihlašuji...
-                  </>
-                ) : (
-                  <>
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Přihlásit se
-                  </>
-                )}
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Přihlašování..." : "Přihlásit se"}
               </Button>
             </form>
           </Form>
 
           <div className="mt-6 text-center">
-            <Button
-              variant="link"
-              onClick={onSwitchToRegister}
-              className="text-sm text-gray-600 hover:text-gray-900"
-            >
-              Nemáte účet? Zaregistrujte se
-            </Button>
+            <p className="text-sm text-gray-600">
+              Nemáte účet?{" "}
+              <Button
+                variant="link"
+                className="p-0 h-auto font-normal"
+                onClick={() => setShowRegister(true)}
+              >
+                Zaregistrujte se
+              </Button>
+            </p>
           </div>
         </CardContent>
       </Card>
-      
-      {/* AI Chat for login assistance */}
-      <LoginAIChat />
     </div>
   );
 }
