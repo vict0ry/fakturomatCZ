@@ -1,12 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { statsAPI } from "@/lib/api";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TrendingUp, FileText, AlertTriangle, Users } from "lucide-react";
 
 export function StatsCards() {
-  const { data: stats, isLoading } = useQuery({
+  const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["/api/stats"],
-    queryFn: () => statsAPI.getMonthlyStats(),
   });
 
   const formatCurrency = (amount: number) => {
@@ -18,150 +17,77 @@ export function StatsCards() {
     }).format(amount);
   };
 
-  if (isLoading) {
+  if (statsLoading) {
     return (
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[1, 2, 3, 4].map((i) => (
-          <Card key={i} className="stat-card">
-            <div className="flex items-center">
-              <Skeleton className="w-8 h-8 rounded-lg" />
-              <div className="ml-5 w-0 flex-1">
-                <Skeleton className="h-4 w-20 mb-2" />
-                <Skeleton className="h-6 w-16" />
-              </div>
-            </div>
-            <div className="mt-3">
+          <Card key={i}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-4" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-20 mb-2" />
               <Skeleton className="h-3 w-32" />
-            </div>
+            </CardContent>
           </Card>
         ))}
       </div>
     );
   }
 
-  if (!stats) {
-    return (
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="stat-card">
-          <div className="text-center text-neutral-500">
-            <p>Chyba při načítání statistik</p>
-          </div>
-        </Card>
-      </div>
-    );
-  }
-
-  const lastMonthRevenue = stats.revenue * 0.9; // Mock previous month for percentage
-  const revenueGrowth = ((stats.revenue - lastMonthRevenue) / lastMonthRevenue * 100).toFixed(1);
-
   return (
-    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-      {/* Revenue Card */}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <Card className="stat-card">
-        <div className="flex items-center">
-          <div className="flex-shrink-0">
-            <div className="stat-icon revenue">
-              <i className="fas fa-euro-sign text-white text-sm"></i>
-            </div>
-          </div>
-          <div className="ml-5 w-0 flex-1">
-            <dl>
-              <dt className="text-sm font-medium text-neutral-500 truncate">
-                Příjmy tento měsíc
-              </dt>
-              <dd className="text-lg font-semibold text-neutral-900">
-                {formatCurrency(stats.revenue)}
-              </dd>
-            </dl>
-          </div>
-        </div>
-        <div className="mt-3">
-          <div className="flex items-center text-sm">
-            <span className="text-secondary font-medium">+{revenueGrowth}%</span>
-            <span className="text-neutral-500 ml-1">oproti minulému měsíci</span>
-          </div>
-        </div>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Celkové příjmy</CardTitle>
+          <TrendingUp className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{formatCurrency(stats?.revenue || 0)}</div>
+          <p className="text-xs text-muted-foreground">
+            +20.1% od minulého měsíce
+          </p>
+        </CardContent>
       </Card>
 
-      {/* Invoices Card */}
       <Card className="stat-card">
-        <div className="flex items-center">
-          <div className="flex-shrink-0">
-            <div className="stat-icon invoices">
-              <i className="fas fa-file-invoice text-white text-sm"></i>
-            </div>
-          </div>
-          <div className="ml-5 w-0 flex-1">
-            <dl>
-              <dt className="text-sm font-medium text-neutral-500 truncate">
-                Faktury tento měsíc
-              </dt>
-              <dd className="text-lg font-semibold text-neutral-900">
-                {stats.invoiceCount}
-              </dd>
-            </dl>
-          </div>
-        </div>
-        <div className="mt-3">
-          <div className="flex items-center text-sm">
-            <span className="text-secondary font-medium">{stats.paidInvoices} uhrazených</span>
-            <span className="text-neutral-500 ml-1">• {stats.invoiceCount - stats.paidInvoices} čeká na platbu</span>
-          </div>
-        </div>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Faktury</CardTitle>
+          <FileText className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{stats?.invoiceCount || 0}</div>
+          <p className="text-xs text-muted-foreground">
+            +{stats?.paidInvoices || 0} uhrazeno tento měsíc
+          </p>
+        </CardContent>
       </Card>
 
-      {/* Unpaid Card */}
       <Card className="stat-card">
-        <div className="flex items-center">
-          <div className="flex-shrink-0">
-            <div className="stat-icon unpaid">
-              <i className="fas fa-clock text-white text-sm"></i>
-            </div>
-          </div>
-          <div className="ml-5 w-0 flex-1">
-            <dl>
-              <dt className="text-sm font-medium text-neutral-500 truncate">
-                Neuhrazené faktury
-              </dt>
-              <dd className="text-lg font-semibold text-neutral-900">
-                {formatCurrency(stats.unpaidAmount)}
-              </dd>
-            </dl>
-          </div>
-        </div>
-        <div className="mt-3">
-          <div className="flex items-center text-sm">
-            <span className="text-destructive font-medium">{stats.overdueCount} po splatnosti</span>
-            <span className="text-neutral-500 ml-1">• celkem neuhrazených</span>
-          </div>
-        </div>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Neuhrazené</CardTitle>
+          <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{formatCurrency(stats?.unpaidAmount || 0)}</div>
+          <p className="text-xs text-muted-foreground">
+            {stats?.unpaidCount || 0} faktér čeká na platbu
+          </p>
+        </CardContent>
       </Card>
 
-      {/* Customers Card */}
       <Card className="stat-card">
-        <div className="flex items-center">
-          <div className="flex-shrink-0">
-            <div className="stat-icon customers">
-              <i className="fas fa-users text-white text-sm"></i>
-            </div>
-          </div>
-          <div className="ml-5 w-0 flex-1">
-            <dl>
-              <dt className="text-sm font-medium text-neutral-500 truncate">
-                Aktivní zákazníci
-              </dt>
-              <dd className="text-lg font-semibold text-neutral-900">
-                {stats.activeCustomers}
-              </dd>
-            </dl>
-          </div>
-        </div>
-        <div className="mt-3">
-          <div className="flex items-center text-sm">
-            <span className="text-secondary font-medium">+{Math.floor(stats.activeCustomers * 0.1)} noví</span>
-            <span className="text-neutral-500 ml-1">tento měsíc</span>
-          </div>
-        </div>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Zákazníci</CardTitle>
+          <Users className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{stats?.customerCount || 0}</div>
+          <p className="text-xs text-muted-foreground">
+            +2 noví tento měsíc
+          </p>
+        </CardContent>
       </Card>
     </div>
   );

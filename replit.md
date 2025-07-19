@@ -8,6 +8,23 @@ This is a modern, full-stack invoice management system built for Czech businesse
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+### Dashboard Enhancements (2025-07-19)
+- ✓ Added dark/light theme toggle functionality with ThemeProvider
+- ✓ Implemented customizable dashboard widgets with drag-and-drop using React Beautiful DND
+- ✓ Created comprehensive draggable dashboard with 6 widget types:
+  - Statistics cards (revenue, invoices, unpaid, customers)
+  - Interactive revenue and expense charts
+  - Recent invoices table
+  - Quick actions panel
+  - AI assistant widget
+  - Calendar widget (placeholder)
+- ✓ Enhanced theme switching with system preference detection
+- ✓ Added widget enable/disable functionality with localStorage persistence
+- ✓ Implemented edit mode for dashboard customization
+- ✓ Added proper dark mode CSS variables and styling
+
 ## System Architecture
 
 ### Frontend Architecture
