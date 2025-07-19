@@ -8,7 +8,7 @@ import {
 } from "@shared/schema";
 import { fetchCompanyFromAres, searchCompaniesByName } from "./services/ares";
 import { processAICommand, generateInvoiceDescription, processUniversalAICommand, processPublicAICommand } from "./services/openai";
-import { generateInvoicePDF } from "./services/pdf";
+import { generateInvoicePDF } from "./services/pdf-new";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
 import setupEmailRoutes from "./routes/email";
