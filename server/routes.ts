@@ -1084,13 +1084,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         total: String(expenseData.total || '0')
       };
       
-      const expenseDataParsed = insertExpenseSchema.parse(processedExpenseData);
-      
-      if (!expenseDataParsed.expenseNumber || expenseDataParsed.expenseNumber.trim() === '') {
+      // Generate expense number before validation
+      if (!processedExpenseData.expenseNumber || processedExpenseData.expenseNumber === '') {
         const year = new Date().getFullYear();
-        const count = await storage.getCompanyExpenses(req.user.companyId);
-        expenseDataParsed.expenseNumber = `N${year}${String(count.length + 1).padStart(4, '0')}`;
+        try {
+          const existingExpenses = await storage.getCompanyExpenses(req.user.companyId);
+          processedExpenseData.expenseNumber = `N${year}${String(existingExpenses.length + 1).padStart(4, '0')}`;
+        } catch (error) {
+          // If error (e.g., table doesn't exist), start with first number
+          processedExpenseData.expenseNumber = `N${year}0001`;
+        }
       }
+      
+
+      const expenseDataParsed = insertExpenseSchema.parse(processedExpenseData);
 
       const expense = await storage.createExpense(expenseDataParsed, req.user.companyId);
       

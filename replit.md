@@ -21,6 +21,9 @@ Technical preference: Always use AI for intelligent text/product matching instea
 - ✅ **Úplná feature parita** - AI nyní umí vše co UI + pokročilé funkce navíc
 - ✅ **Zvýšené payload limity** - Express.json limit na 50MB pro Vision API
 - ✅ **Opravené storage metódy** - Všetky expense CRUD operácie funkčné
+- ✅ **Opravená autentifikace nákladů** - Vyřešena chyba s expenseNumber validací
+- ✅ **Vytvořené databázové tabulky** - Expenses a expense_items tabulky úspěšně vytvořeny
+- ✅ **Funkční expense API** - POST /api/expenses endpoint nyní funguje správně
 
 ### File Upload AI Chat + Expense Management (2025-07-20)  
 - ✅ Implementováno nahrávání souborů do AI chatu (drag & drop + klik)
