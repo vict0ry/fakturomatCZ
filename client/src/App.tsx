@@ -13,6 +13,7 @@ import Analytics from "@/pages/analytics";
 import InvoiceDetail from "@/pages/invoice-detail";
 import InvoiceEdit from "@/pages/invoice-edit";
 import SettingsPage from "@/pages/settings";
+import ExpensesPage from "@/pages/expenses";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 
@@ -31,6 +32,7 @@ function Router() {
       <Route path="/invoices/:id/edit" component={InvoiceEdit} />
       <Route path="/invoices/:id" component={InvoiceDetail} />
       <Route path="/customers" component={Customers} />
+      <Route path="/expenses" component={ExpensesPage} />
       <Route path="/analytics" component={Analytics} />
       <Route path="/settings" component={SettingsPage} />
       <Route component={NotFound} />

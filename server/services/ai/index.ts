@@ -132,6 +132,12 @@ Kontext: ${context}`;
         case 'update_invoice_status':
           return await this.updateInvoiceStatus(args, userContext);
         
+        case 'create_expense':
+          return await this.createExpense(args, userContext);
+        
+        case 'get_expenses':
+          return await this.getExpenses(args, userContext);
+        
         case 'provide_help':
           return { content: args.response };
         
@@ -452,6 +458,88 @@ Kontext: ${context}`;
       console.error('Add item to invoice failed:', error);
       return {
         content: "Nepodařilo se přidat položku k faktuře. Zkuste to prosím znovu."
+      };
+    }
+  }
+
+  // Expense functions
+  private async createExpense(args: any, userContext: UserContext): Promise<UniversalAIResponse> {
+    try {
+      console.log('Creating expense:', args);
+      
+      // Find or create supplier
+      const existingSuppliers = await userContext.storage.searchCustomers(args.supplierName, userContext.companyId);
+      let supplierId = null;
+      
+      if (existingSuppliers.length === 0) {
+        const supplier = await userContext.storage.createCustomer({
+          name: args.supplierName,
+          companyId: userContext.companyId
+        });
+        supplierId = supplier.id;
+      } else {
+        supplierId = existingSuppliers[0].id;
+      }
+
+      const expenseNumber = `N${new Date().getFullYear()}${String(Date.now()).slice(-4)}`;
+      const vatAmount = args.vatRate ? (args.amount || 0) * (args.vatRate / 100) : 0;
+      const totalAmount = args.total || (args.amount || 0) + vatAmount;
+
+      const expense = await userContext.storage.createExpense({
+        companyId: userContext.companyId,
+        userId: userContext.userId,
+        expenseNumber,
+        supplierId,
+        category: args.category,
+        description: args.description,
+        amount: String(args.amount || totalAmount),
+        vatAmount: String(vatAmount),
+        total: String(totalAmount),
+        vatRate: String(args.vatRate || 21),
+        expenseDate: args.expenseDate ? new Date(args.expenseDate) : new Date(),
+        receiptNumber: args.receiptNumber || '',
+        status: 'draft'
+      });
+
+      return {
+        content: `Náklad "${args.description}" byl vytvořen!\n\n• Dodavatel: ${args.supplierName}\n• Kategorie: ${args.category}\n• Částka: ${totalAmount.toLocaleString('cs-CZ')} Kč\n• Číslo nákladu: ${expenseNumber}`,
+        action: { type: 'navigate', data: { path: '/expenses' } }
+      };
+
+    } catch (error) {
+      console.error('Expense creation failed:', error);
+      return {
+        content: "Nepodařilo se vytvořit náklad. Zkuste zadat příkaz znovu s názvem dodavatele a popisem nákladu.",
+        action: { type: 'navigate', data: { path: '/expenses' } }
+      };
+    }
+  }
+
+  private async getExpenses(args: any, userContext: UserContext): Promise<UniversalAIResponse> {
+    try {
+      console.log('Getting expenses with filters:', args);
+      const expenses = await userContext.storage.getCompanyExpenses(userContext.companyId, args);
+      
+      if (expenses.length === 0) {
+        return {
+          content: "Nebyly nalezeny žádné náklady odpovídající zadaným kritériím.",
+          action: { type: 'navigate', data: { path: '/expenses' } }
+        };
+      }
+
+      const expenseList = expenses.slice(0, 5).map(expense => 
+        `• ${expense.description} - ${parseFloat(expense.total).toLocaleString('cs-CZ')} Kč (${expense.category || 'Nezařazeno'})`
+      ).join('\n');
+
+      return {
+        content: `Nalezeno ${expenses.length} nákladů:\n\n${expenseList}${expenses.length > 5 ? '\n\n...a další' : ''}`,
+        action: { type: 'navigate', data: { path: '/expenses' } }
+      };
+
+    } catch (error) {
+      console.error('Get expenses failed:', error);
+      return {
+        content: "Nepodařilo se načíst seznam nákladů. Zkuste to prosím znovu."
       };
     }
   }

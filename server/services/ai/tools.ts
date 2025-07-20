@@ -3,6 +3,51 @@ export const AI_TOOLS = [
   {
     type: "function",
     function: {
+      name: "create_expense",
+      description: "Vytvoření nového nákladu/výdaje - dodavatel, kategorie, částka, DPH",
+      parameters: {
+        type: "object",
+        properties: {
+          supplierName: {
+            type: "string",
+            description: "Jméno dodavatele/firmy (např. 'ČEZ a.s.', 'Tesco')"
+          },
+          category: {
+            type: "string", 
+            description: "Kategorie nákladu (office, travel, materials, services, utilities, etc.)"
+          },
+          description: {
+            type: "string",
+            description: "Popis nákladu"
+          },
+          amount: {
+            type: "number",
+            description: "Částka bez DPH"
+          },
+          total: {
+            type: "number", 
+            description: "Celková částka včetně DPH"
+          },
+          vatRate: {
+            type: "number",
+            description: "Sazba DPH (např. 21, 15, 0)"
+          },
+          expenseDate: {
+            type: "string",
+            description: "Datum nákladu (YYYY-MM-DD)"
+          },
+          receiptNumber: {
+            type: "string",
+            description: "Číslo účtenky/faktury"
+          }
+        },
+        required: ["supplierName", "category", "description", "total"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
       name: "update_invoice_universal",
       description: "Univerzální aktualizace faktury - splatnost, poznámky, adresy, zákazník, platební údaje, množství, status - VŠECHNO!",
       parameters: {
@@ -208,6 +253,34 @@ export const AI_TOOLS = [
           }
         },
         required: ["invoiceNumber", "status"]
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "get_expenses",
+      description: "Zobrazení seznamu nákladů/výdajů s filtry",
+      parameters: {
+        type: "object",
+        properties: {
+          status: {
+            type: "string",
+            description: "Status nákladu (draft, approved, paid, rejected)"
+          },
+          category: {
+            type: "string",
+            description: "Kategorie nákladu"
+          },
+          dateFrom: {
+            type: "string",
+            description: "Od data (YYYY-MM-DD)"
+          },
+          dateTo: {
+            type: "string", 
+            description: "Do data (YYYY-MM-DD)"
+          }
+        }
       }
     }
   },

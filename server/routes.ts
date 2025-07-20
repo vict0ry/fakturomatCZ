@@ -764,6 +764,149 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Expenses routes
+  app.get("/api/expenses", requireAuth, async (req: any, res) => {
+    try {
+      const { status, category, dateFrom, dateTo, supplierId } = req.query;
+      const filters = { status, category, dateFrom, dateTo, supplierId };
+      const expenses = await storage.getCompanyExpenses(req.user.companyId, filters);
+      res.json(expenses);
+    } catch (error) {
+      console.error("Error fetching expenses:", error);
+      res.status(500).json({ message: "Failed to fetch expenses" });
+    }
+  });
+
+  app.get("/api/expenses/recent", requireAuth, async (req: any, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 10;
+      const expenses = await storage.getRecentExpenses(req.user.companyId, limit);
+      res.json(expenses);
+    } catch (error) {
+      console.error("Error fetching recent expenses:", error);
+      res.status(500).json({ message: "Failed to fetch recent expenses" });
+    }
+  });
+
+  app.post("/api/expenses", requireAuth, async (req: any, res) => {
+    try {
+      let { supplier, supplierId, ...expenseData } = req.body;
+      
+      if (supplier && (!supplierId || supplierId === -1)) {
+        const newSupplier = await storage.createCustomer({
+          ...supplier,
+          companyId: req.user.companyId
+        });
+        supplierId = newSupplier.id;
+      }
+      
+      const processedExpenseData = {
+        ...expenseData,
+        supplierId,
+        companyId: req.user.companyId,
+        userId: req.user.userId,
+        expenseDate: new Date(expenseData.expenseDate || new Date()),
+        dueDate: expenseData.dueDate ? new Date(expenseData.dueDate) : undefined,
+        amount: String(expenseData.amount || '0'),
+        vatAmount: String(expenseData.vatAmount || '0'),
+        total: String(expenseData.total || '0')
+      };
+      
+      const expenseDataParsed = insertExpenseSchema.parse(processedExpenseData);
+      
+      if (!expenseDataParsed.expenseNumber || expenseDataParsed.expenseNumber.trim() === '') {
+        const year = new Date().getFullYear();
+        const count = await storage.getCompanyExpenses(req.user.companyId);
+        expenseDataParsed.expenseNumber = `N${year}${String(count.length + 1).padStart(4, '0')}`;
+      }
+
+      const expense = await storage.createExpense(expenseDataParsed);
+      
+      if (expenseData.items && Array.isArray(expenseData.items)) {
+        for (const item of expenseData.items) {
+          await storage.createExpenseItem({
+            expenseId: expense.id,
+            description: item.description || '',
+            quantity: String(item.quantity || '1'),
+            unitPrice: String(item.unitPrice || '0'),
+            vatRate: String(item.vatRate || '21'),
+            total: String(parseFloat(item.quantity || '1') * parseFloat(item.unitPrice || '0'))
+          });
+        }
+      }
+      
+      res.json(expense);
+    } catch (error) {
+      console.error("Error creating expense:", error);
+      res.status(500).json({ message: "Failed to create expense" });
+    }
+  });
+
+  app.get("/api/expenses/:id", requireAuth, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const expense = await storage.getExpenseWithDetails(id, req.user.companyId);
+      if (!expense) {
+        return res.status(404).json({ message: "Expense not found" });
+      }
+      res.json(expense);
+    } catch (error) {
+      console.error("Error fetching expense:", error);
+      res.status(500).json({ message: "Failed to fetch expense" });
+    }
+  });
+
+  app.patch("/api/expenses/:id", requireAuth, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const processedData = {
+        ...req.body,
+        expenseDate: req.body.expenseDate ? new Date(req.body.expenseDate) : undefined,
+        dueDate: req.body.dueDate ? new Date(req.body.dueDate) : undefined,
+        amount: req.body.amount ? String(req.body.amount) : undefined,
+        vatAmount: req.body.vatAmount ? String(req.body.vatAmount) : undefined,
+        total: req.body.total ? String(req.body.total) : undefined
+      };
+      
+      const expenseData = insertExpenseSchema.partial().parse(processedData);
+      const expense = await storage.updateExpense(id, expenseData, req.user.companyId);
+      res.json(expense);
+    } catch (error) {
+      console.error("Error updating expense:", error);
+      res.status(500).json({ message: "Failed to update expense" });
+    }
+  });
+
+  app.get("/api/expenses/:id/items", requireAuth, async (req: any, res) => {
+    try {
+      const expenseId = parseInt(req.params.id);
+      const items = await storage.getExpenseItems(expenseId);
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching expense items:", error);
+      res.status(500).json({ message: "Failed to fetch expense items" });
+    }
+  });
+
+  app.post("/api/expenses/:id/items", requireAuth, async (req: any, res) => {
+    try {
+      const expenseId = parseInt(req.params.id);
+      const itemData = insertExpenseItemSchema.parse({
+        ...req.body,
+        expenseId,
+        quantity: String(req.body.quantity),
+        unitPrice: String(req.body.unitPrice),
+        total: String(req.body.total)
+      });
+      
+      const item = await storage.createExpenseItem(itemData);
+      res.json(item);
+    } catch (error) {
+      console.error("Error creating expense item:", error);
+      res.status(500).json({ message: "Failed to create expense item" });
+    }
+  });
+
   // WebSocket setup for real-time features
   const server = createServer(app);
   const wss = new WebSocketServer({ server, path: '/ws' });

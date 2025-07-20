@@ -635,9 +635,7 @@ export class DatabaseStorage implements IStorage {
     .leftJoin(customers, eq(expenses.supplierId, customers.id))
     .where(eq(expenses.companyId, companyId));
 
-    if (filters?.status) {
-      query = query.where(eq(expenses.status, filters.status));
-    }
+    // Additional filters can be added here later
 
     const result = await query.orderBy(desc(expenses.createdAt));
     return result.map(row => ({ ...row.expenses, supplier: row.supplier! }));

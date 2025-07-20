@@ -45,6 +45,12 @@ export function Sidebar({ className }: SidebarProps) {
       current: location === "/customers",
     },
     {
+      name: "Náklady",
+      href: "/expenses",
+      icon: Receipt,
+      current: location === "/expenses",
+    },
+    {
       name: "Analýzy",
       href: "/analytics",
       icon: PieChart,
