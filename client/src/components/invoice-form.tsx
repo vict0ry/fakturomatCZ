@@ -645,10 +645,10 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                         <div className="sm:col-span-1 lg:col-span-2">
                           <Label className="text-sm font-semibold">Jednotka</Label>
                           <Input
+                            {...register(`items.${index}.unit`)}
                             defaultValue="ks"
-                            placeholder="ks"
+                            placeholder="ks, kg, hod, m..."
                             className="mt-1 h-11 border-2 border-gray-200 dark:border-gray-600"
-                            disabled
                           />
                         </div>
                         <div className="sm:col-span-1 lg:col-span-2">

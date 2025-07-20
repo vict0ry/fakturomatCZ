@@ -32,6 +32,10 @@ export class UniversalAIService {
         return await this.handleInvoiceUpdate(message, userContext, currentPath);
       }
 
+      if (aiResponse.action?.type === 'add_note') {
+        return await this.handleAddNote(message, userContext, currentPath);
+      }
+
       return aiResponse;
 
     } catch (error) {
@@ -111,6 +115,65 @@ export class UniversalAIService {
       return {
         content: "Nepodařilo se aktualizovat fakturu s cenami. Zkuste to prosím znovu nebo upravte fakturu manuálně.",
         action: { type: 'navigate', data: { path: '/invoices' } }
+      };
+    }
+  }
+
+  private async handleAddNote(message: string, userContext: UserContext, currentPath: string): Promise<UniversalAIResponse> {
+    try {
+      // Extract invoice ID from current path if we're in edit mode
+      const invoiceIdMatch = currentPath.match(/\/invoices\/(\d+)\/edit/);
+      if (!invoiceIdMatch) {
+        return {
+          content: "Pro přidání poznámky k faktuře musíte být na stránce editace faktury.",
+          action: { type: 'navigate', data: { path: '/invoices' } }
+        };
+      }
+
+      const invoiceId = parseInt(invoiceIdMatch[1]);
+      
+      // Extract note content from the message
+      const noteMatch = message.match(/poznámk[ua].*?[:-]\s*(.+)/i) || 
+                       message.match(/přidej tam poznámku[:-]\s*(.+)/i) ||
+                       message.match(/poznámej si[:-]\s*(.+)/i) ||
+                       message.match(/přidej[:-]\s*(.+)/i);
+      
+      let noteContent = '';
+      if (noteMatch) {
+        noteContent = noteMatch[1].trim();
+      } else {
+        // If no explicit note pattern, use the whole message as note
+        noteContent = message.trim();
+      }
+
+      // Get current invoice
+      const invoice = await userContext.storage.getInvoice(invoiceId, userContext.companyId);
+      if (!invoice) {
+        return {
+          content: "Faktura nebyla nalezena.",
+          action: { type: 'navigate', data: { path: '/invoices' } }
+        };
+      }
+
+      // Update invoice with the note
+      const currentNotes = invoice.notes || '';
+      const newNotes = currentNotes 
+        ? `${currentNotes}\n\n${noteContent}` 
+        : noteContent;
+
+      await userContext.storage.updateInvoice(invoiceId, {
+        notes: newNotes
+      }, userContext.companyId);
+
+      return {
+        content: `Poznámka byla přidána k faktuře ${invoice.invoiceNumber}: "${noteContent}"`,
+        action: { type: 'refresh_current_page' }
+      };
+
+    } catch (error) {
+      console.error('Add note failed:', error);
+      return {
+        content: "Nepodařilo se přidat poznámku k faktuře. Zkuste to prosím znovu.",
       };
     }
   }
