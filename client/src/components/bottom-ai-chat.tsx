@@ -6,6 +6,7 @@ import { Send, MessageSquare, ChevronUp, ChevronDown, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthApi } from '@/hooks/use-auth-api';
 import { useLocation } from 'wouter';
+import { queryClient } from '@/lib/queryClient';
 
 interface Message {
   id: string;
@@ -91,7 +92,7 @@ export function BottomAIChat() {
 
     try {
       const currentPath = window.location.pathname;
-      const response = await apiRequest<AIResponse>('/api/chat/universal', {
+      const response = await apiRequest('/api/chat/universal', {
         method: 'POST',
         body: JSON.stringify({
           message: userMessage,
@@ -109,13 +110,17 @@ export function BottomAIChat() {
             setLocation(response.action.data.path);
             break;
           case 'refresh_current_page':
-            // Invalidate queries for current invoice being edited
-            const currentPath = window.location.pathname;
+            // Invalidate queries for current invoice being edited  
             const invoiceMatch = currentPath.match(/\/invoices\/(\d+)/);
             if (invoiceMatch) {
               const invoiceId = parseInt(invoiceMatch[1]);
+              console.log('Refreshing data for invoice:', invoiceId);
               queryClient.invalidateQueries({ queryKey: ["/api/invoices", invoiceId] });
               queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+              // Force refetch after small delay
+              setTimeout(() => {
+                queryClient.refetchQueries({ queryKey: ["/api/invoices", invoiceId] });
+              }, 100);
             } else {
               queryClient.invalidateQueries();
             }
