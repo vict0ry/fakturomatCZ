@@ -523,30 +523,29 @@ export class DatabaseStorage implements IStorage {
     .orderBy(desc(invoiceHistory.createdAt));
   }
 
-  // Expenses
+  // Expenses - Remove duplicates and fix implementation
   async createExpense(expenseData: any, companyId: number): Promise<any> {
-    // Generate expense number
     const expenseCount = await db.select({ count: sql`count(*)` })
       .from(expenses)
       .where(eq(expenses.companyId, companyId));
     
     const count = Number(expenseCount[0]?.count || 0);
-    const expenseNumber = `EXP-${String(count + 1).padStart(4, '0')}`;
+    const expenseNumber = expenseData.expenseNumber || `EXP-${String(count + 1).padStart(4, '0')}`;
 
     const [newExpense] = await db
       .insert(expenses)
       .values({
         companyId,
         expenseNumber,
-        supplierName: expenseData.supplierName,
+        supplierId: expenseData.supplierId || null,
         category: expenseData.category || 'Other',
         description: expenseData.description,
-        amount: String(expenseData.amount || expenseData.total),
-        vatAmount: String(expenseData.vatAmount || '0'),
-        total: String(expenseData.total || expenseData.amount),
-        vatRate: String(expenseData.vatRate || '21'),
+        amount: expenseData.amount,
+        vatAmount: expenseData.vatAmount || 0,
+        total: expenseData.total,
+        vatRate: expenseData.vatRate || 21,
         currency: expenseData.currency || 'CZK',
-        expenseDate: new Date(expenseData.expenseDate || new Date()),
+        expenseDate: expenseData.expenseDate || new Date(),
         status: expenseData.status || 'draft',
         receiptNumber: expenseData.receiptNumber,
         attachmentUrl: expenseData.attachmentUrl,
@@ -569,12 +568,6 @@ export class DatabaseStorage implements IStorage {
       if (filters.category) {
         conditions.push(eq(expenses.category, filters.category));
       }
-      if (filters.dateFrom) {
-        conditions.push(gte(expenses.expenseDate, new Date(filters.dateFrom)));
-      }
-      if (filters.dateTo) {
-        conditions.push(lte(expenses.expenseDate, new Date(filters.dateTo)));
-      }
     }
     
     return await db.select().from(expenses)
@@ -588,7 +581,11 @@ export class DatabaseStorage implements IStorage {
     return expense || undefined;
   }
 
-  async updateExpense(id: number, companyId: number, updates: any): Promise<any> {
+  async getExpenseWithDetails(id: number, companyId: number): Promise<any> {
+    return this.getExpense(id, companyId);
+  }
+
+  async updateExpense(id: number, updates: any, companyId: number): Promise<any> {
     const [updatedExpense] = await db
       .update(expenses)
       .set(updates)
@@ -600,6 +597,14 @@ export class DatabaseStorage implements IStorage {
   async deleteExpense(id: number, companyId: number): Promise<void> {
     await db.delete(expenses)
       .where(and(eq(expenses.id, id), eq(expenses.companyId, companyId)));
+  }
+
+  async createExpenseItem(item: any): Promise<any> {
+    const [newItem] = await db
+      .insert(expenseItems)
+      .values(item)
+      .returning();
+    return newItem;
   }
 
   async getInvoiceCount(companyId: number, year: number): Promise<number> {
