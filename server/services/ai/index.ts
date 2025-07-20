@@ -49,6 +49,28 @@ export class UniversalAIService {
     attachments: any[] = []
   ): Promise<UniversalAIResponse> {
     
+    // If there are image attachments, process them with Vision API first
+    if (attachments && attachments.length > 0) {
+      const imageAttachments = attachments.filter(att => 
+        att.type?.startsWith('image/') || att.name?.match(/\.(jpg|jpeg|png)$/i)
+      );
+      
+      if (imageAttachments.length > 0) {
+        try {
+          const visionResult = await this.processImageWithVision(imageAttachments, message);
+          if (visionResult) {
+            // Extract expense data from receipt/invoice
+            return await this.createExpenseFromVision(visionResult, userContext);
+          }
+        } catch (error) {
+          console.error('Vision API processing failed:', error);
+          return {
+            content: 'Nepodařilo se zpracovat obrázek účtenky. Zkuste prosím nahrát obrázek znovu nebo vytvořit náklad manuálně.'
+          };
+        }
+      }
+    }
+    
     // Enhanced system prompt for Function Calling
     const systemPrompt = `Jsi pokročilý AI asistent pro český fakturační systém. 
 
@@ -66,6 +88,10 @@ PŘÍKLADY:
 "5kg kvety za 100kc" → add_item_to_invoice(description: "kvety", quantity: "5", unit: "kg", unitPrice: 100)
 
 Kontext: ${context}`;
+
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    });
 
     // Build conversation with chat history
     const messages: any[] = [
@@ -249,7 +275,7 @@ Kontext: ${context}`;
       // Implementation would need to find invoice by number and update status
       return {
         content: `Status faktury ${args.invoiceNumber} byl změněn na ${args.status}.`,
-        action: { type: 'refresh_current_page' }
+        action: { type: 'refresh_current_page', data: {} }
       };
     } catch (error) {
       return {
@@ -368,7 +394,7 @@ Kontext: ${context}`;
 
       return {
         content: responseMessage,
-        action: { type: 'refresh_current_page' }
+        action: { type: 'refresh_current_page', data: {} }
       };
 
     } catch (error) {
@@ -453,7 +479,7 @@ Kontext: ${context}`;
 
       return {
         content: `Položka "${args.description}" byla přidána k faktuře ${invoice.invoiceNumber}!\n\n• Množství: ${args.quantity} ${args.unit}\n• Cena: ${unitPrice.toLocaleString('cs-CZ')} Kč/${args.unit}\n• Celkem za položku: ${total.toLocaleString('cs-CZ')} Kč\n\nNový celkový součet faktury: ${newTotal.toLocaleString('cs-CZ')} Kč (vč. DPH)`,
-        action: { type: 'refresh_current_page' }
+        action: { type: 'refresh_current_page', data: {} }
       };
 
     } catch (error) {
@@ -542,6 +568,114 @@ Kontext: ${context}`;
       console.error('Get expenses failed:', error);
       return {
         content: "Nepodařilo se načíst seznam nákladů. Zkuste to prosím znovu."
+      };
+    }
+  }
+
+  private async processImageWithVision(imageAttachments: any[], message: string): Promise<any> {
+    try {
+      const openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY
+      });
+
+      // Use the first image attachment
+      const image = imageAttachments[0];
+      
+      // Convert base64 data if needed
+      const imageData = image.data || image.content;
+      
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: `Prosím analyzuj tuto účtenku nebo fakturu a extrahuj následující informace v JSON formátu:
+                {
+                  "supplierName": "název dodavatele",
+                  "description": "popis nákupu/služby", 
+                  "amount": "částka bez DPH",
+                  "total": "celková částka včetně DPH",
+                  "vatAmount": "částka DPH",
+                  "vatRate": "sazba DPH v %",
+                  "receiptNumber": "číslo účtenky/faktury",
+                  "expenseDate": "datum ve formátu YYYY-MM-DD",
+                  "category": "kategorie (Office, Travel, Marketing, IT, Utilities, Fuel, Materials, Services, Other)"
+                }
+                
+                Pokud nějaká informace není k dispozici, použij null. Pro kategorii zvol nejpodobnější z nabízených možností.`
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:image/jpeg;base64,${imageData}`
+                }
+              }
+            ],
+          },
+        ],
+        response_format: { type: "json_object" },
+        max_tokens: 1000,
+      });
+
+      return JSON.parse(response.choices[0].message.content || '{}');
+    } catch (error) {
+      console.error('Vision API error:', error);
+      throw error;
+    }
+  }
+
+  private async createExpenseFromVision(visionData: any, userContext: UserContext): Promise<UniversalAIResponse> {
+    try {
+      // Create expense from vision data
+      const expenseData = {
+        supplierName: visionData.supplierName || 'Neznámý dodavatel',
+        description: visionData.description || 'Náklad z účtenky',
+        amount: visionData.amount || visionData.total,
+        total: visionData.total || visionData.amount,
+        vatAmount: visionData.vatAmount || '0',
+        vatRate: visionData.vatRate || '21',
+        receiptNumber: visionData.receiptNumber,
+        expenseDate: visionData.expenseDate || new Date().toISOString().split('T')[0],
+        category: visionData.category || 'Other',
+        status: 'draft'
+      };
+
+      const expense = await userContext.storage.createExpense(expenseData, userContext.companyId);
+
+      return {
+        content: `✅ Vytvořil jsem náklad z účtenky:
+
+🏢 **Dodavatel:** ${expenseData.supplierName}
+📝 **Popis:** ${expenseData.description}
+💰 **Částka:** ${expenseData.total} Kč
+🏷️ **Kategorie:** ${expenseData.category}
+📄 **Účtenka č.:** ${expenseData.receiptNumber || 'N/A'}
+📅 **Datum:** ${expenseData.expenseDate}
+
+Náklad byl uložen jako koncept. Můžete ho upravit v sekci Náklady.`,
+        action: {
+          type: 'navigate',
+          data: { path: '/expenses' }
+        }
+      };
+    } catch (error) {
+      console.error('Create expense from vision failed:', error);
+      return {
+        content: `Extrahoval jsem tyto údaje z účtenky:
+        
+🏢 **Dodavatel:** ${visionData.supplierName || 'Neznámý'}
+📝 **Popis:** ${visionData.description || 'N/A'}
+💰 **Částka:** ${visionData.total || visionData.amount || 'N/A'} Kč
+🏷️ **Kategorie:** ${visionData.category || 'Other'}
+
+Nepodařilo se automaticky vytvořit náklad. Můžete ho vytvořit manuálně na stránce Náklady → Nový náklad.`,
+        action: {
+          type: 'navigate', 
+          data: { path: '/expenses/new' }
+        }
       };
     }
   }

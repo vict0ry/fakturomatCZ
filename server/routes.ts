@@ -1092,7 +1092,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         expenseDataParsed.expenseNumber = `N${year}${String(count.length + 1).padStart(4, '0')}`;
       }
 
-      const expense = await storage.createExpense(expenseDataParsed);
+      const expense = await storage.createExpense(expenseDataParsed, req.user.companyId);
       
       if (expenseData.items && Array.isArray(expenseData.items)) {
         for (const item of expenseData.items) {

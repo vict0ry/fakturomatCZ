@@ -68,11 +68,23 @@ export default function ExpenseCreatePage() {
   });
 
   const createExpenseMutation = useMutation({
-    mutationFn: (data: ExpenseFormData) => 
-      apiRequest('/api/expenses', {
+    mutationFn: async (data: ExpenseFormData) => {
+      const response = await fetch('/api/expenses', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
         body: JSON.stringify(data)
-      }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Nepodařilo se vytvořit náklad');
+      }
+
+      return response.json();
+    },
     onSuccess: () => {
       toast({
         title: 'Náklad vytvořen',

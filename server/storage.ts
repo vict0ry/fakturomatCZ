@@ -607,7 +607,12 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async createExpense(expense: InsertExpense): Promise<Expense> {
+  async createExpense(expense: InsertExpense, companyId?: number): Promise<Expense> {
+    // Ensure companyId is set if provided as parameter
+    if (companyId && !expense.companyId) {
+      expense.companyId = companyId;
+    }
+    
     const [newExpense] = await db.insert(expenses).values(expense).returning();
     return newExpense;
   }
