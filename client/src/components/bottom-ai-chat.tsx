@@ -110,20 +110,34 @@ export function BottomAIChat() {
             setLocation(response.action.data.path);
             break;
           case 'refresh_current_page':
-            // Invalidate queries for current invoice being edited  
+            // Agresivní refresh - invaliduj všechny invoice dotazy
+            console.log('AI akce vyžaduje refresh dat');
+            queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+            
+            // Specifický refresh pro editovanou fakturu
             const invoiceMatch = currentPath.match(/\/invoices\/(\d+)/);
             if (invoiceMatch) {
               const invoiceId = parseInt(invoiceMatch[1]);
-              console.log('Refreshing data for invoice:', invoiceId);
+              console.log('Refreshing invoice data:', invoiceId);
               queryClient.invalidateQueries({ queryKey: ["/api/invoices", invoiceId] });
-              queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
-              // Force refetch after small delay
+              queryClient.invalidateQueries({ queryKey: ["/api/invoices", invoiceId, "items"] });
+              
+              // Několik vln refreshe pro jistotu
               setTimeout(() => {
+                queryClient.refetchQueries({ queryKey: ["/api/invoices"] });
                 queryClient.refetchQueries({ queryKey: ["/api/invoices", invoiceId] });
-              }, 100);
-            } else {
-              queryClient.invalidateQueries();
+              }, 50);
+              setTimeout(() => {
+                queryClient.refetchQueries({ queryKey: ["/api/invoices", invoiceId, "items"] });
+              }, 150);
             }
+            
+            // Globální refresh jako záloha
+            setTimeout(() => {
+              queryClient.refetchQueries();
+            }, 300);
             break;
           case 'refresh_data':
             queryClient.invalidateQueries();

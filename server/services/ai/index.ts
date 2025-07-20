@@ -373,23 +373,36 @@ Aktuální stránka: ${currentPath}`;
 
   private async addItemToInvoice(args: any, userContext: UserContext, currentPath: string): Promise<UniversalAIResponse> {
     try {
-      // Find target invoice from current path
-      const invoiceIdMatch = currentPath.match(/\/invoices\/(\d+)\/edit/);
-      if (!invoiceIdMatch) {
-        return {
-          content: "Pro přidání položky musíte být na stránce editace faktury.",
-          action: { type: 'navigate', data: { path: '/invoices' } }
-        };
-      }
+      // Find target invoice from current path OR from last created invoice context
+      let invoiceId: number;
+      let invoice: any;
 
-      const invoiceId = parseInt(invoiceIdMatch[1]);
-      const invoice = await userContext.storage.getInvoice(invoiceId, userContext.companyId);
-      
-      if (!invoice) {
-        return {
-          content: "Faktura nebyla nalezena.",
-          action: { type: 'navigate', data: { path: '/invoices' } }
-        };
+      // Try to find invoice from current path first
+      const invoiceIdMatch = currentPath.match(/\/invoices\/(\d+)\/edit/);
+      if (invoiceIdMatch) {
+        invoiceId = parseInt(invoiceIdMatch[1]);
+        invoice = await userContext.storage.getInvoice(invoiceId, userContext.companyId);
+        
+        if (!invoice) {
+          return {
+            content: `Faktura s ID ${invoiceId} nebyla nalezena v databázi. Prosím zkontrolujte, zda faktura existuje.`,
+            action: { type: 'navigate', data: { path: '/invoices' } }
+          };
+        }
+      } else {
+        // If not on edit page, try to find the most recent invoice for this user/company
+        const recentInvoices = await userContext.storage.getInvoices(userContext.companyId);
+        if (!recentInvoices || recentInvoices.length === 0) {
+          return {
+            content: "Pro přidání položky musíte být na stránce editace faktury nebo mít alespoň jednu vytvořenou fakturu.",
+            action: { type: 'navigate', data: { path: '/invoices' } }
+          };
+        }
+        
+        // Use the most recent invoice (highest ID)
+        invoice = recentInvoices.sort((a, b) => b.id - a.id)[0];
+        invoiceId = invoice.id;
+        console.log(`Using most recent invoice: ${invoice.invoiceNumber} (ID: ${invoiceId})`);
       }
 
       // Calculate totals
