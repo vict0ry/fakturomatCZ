@@ -1,3 +1,4 @@
+import React from 'react';
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -272,7 +273,7 @@ export default function Analytics() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {data.monthlyData.map((month, index) => (
+              {data.monthlyData.map((month: any, index: number) => (
                 <div key={month.month} className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div className="w-8 text-sm font-medium text-gray-500">
@@ -288,7 +289,7 @@ export default function Analytics() {
                         </span>
                       </div>
                       <Progress 
-                        value={(month.revenue / Math.max(...data.monthlyData.map(m => m.revenue))) * 100}
+                        value={(month.revenue / Math.max(...data.monthlyData.map((m: any) => m.revenue))) * 100}
                         className="h-2"
                       />
                     </div>

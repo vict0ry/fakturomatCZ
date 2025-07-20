@@ -14,21 +14,21 @@ export function Header() {
   const { user, logout } = useAuth();
 
   return (
-    <header className="bg-white border-b border-neutral-200 px-4 sm:px-6 md:px-8 sticky top-0 z-50">
+    <header className="bg-white dark:bg-gray-900 border-b border-neutral-200 dark:border-neutral-700 px-4 sm:px-6 md:px-8 sticky top-0 z-50">
       <div className="flex justify-between items-center h-16">
         {/* Left side - Navigation for larger screens */}
         <div className="hidden lg:block">
           <nav className="flex space-x-1">
-            <Link href="/" className="text-neutral-600 hover:text-primary transition-colors px-3 py-2 text-sm font-medium">
+            <Link href="/" className="text-neutral-600 dark:text-neutral-300 hover:text-primary transition-colors px-3 py-2 text-sm font-medium">
               Dashboard
             </Link>
-            <Link href="/invoices" className="text-neutral-600 hover:text-primary transition-colors px-3 py-2 text-sm font-medium">
+            <Link href="/invoices" className="text-neutral-600 dark:text-neutral-300 hover:text-primary transition-colors px-3 py-2 text-sm font-medium">
               Faktury
             </Link>
-            <Link href="/customers" className="text-neutral-600 hover:text-primary transition-colors px-3 py-2 text-sm font-medium">
+            <Link href="/customers" className="text-neutral-600 dark:text-neutral-300 hover:text-primary transition-colors px-3 py-2 text-sm font-medium">
               Zákazníci
             </Link>
-            <Link href="/analytics" className="text-neutral-600 hover:text-primary transition-colors px-3 py-2 text-sm font-medium">
+            <Link href="/analytics" className="text-neutral-600 dark:text-neutral-300 hover:text-primary transition-colors px-3 py-2 text-sm font-medium">
               Analýzy
             </Link>
           </nav>
@@ -40,7 +40,7 @@ export function Header() {
             <input
               type="text"
               placeholder="Hledat faktury, zákazníky..."
-              className="w-full pl-4 pr-10 py-2 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-4 pr-10 py-2 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-gray-800 text-neutral-900 dark:text-neutral-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-3">
               <kbd className="hidden sm:inline-flex items-center px-2 py-1 text-xs text-neutral-500 bg-neutral-100 border border-neutral-300 rounded">

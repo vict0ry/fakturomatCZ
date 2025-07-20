@@ -66,23 +66,23 @@ export function Sidebar({ className }: SidebarProps) {
 
   return (
     <div className={cn(
-      "flex flex-col bg-white border-r border-neutral-200 transition-all duration-300",
+      "flex flex-col bg-white dark:bg-gray-900 border-r border-neutral-200 dark:border-neutral-700 transition-all duration-300",
       isCollapsed ? "w-16" : "w-64",
       "h-screen sticky top-0",
       className
     )}>
       {/* Sidebar Header */}
-      <div className="flex items-center justify-between p-4 border-b border-neutral-200">
+      <div className="flex items-center justify-between p-4 border-b border-neutral-200 dark:border-neutral-700">
         {!isCollapsed && (
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <Receipt className="h-5 w-5 text-white" />
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-semibold text-neutral-900">
+              <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
                 Fakturoidu
               </span>
-              <span className="text-xs text-neutral-500">
+              <span className="text-xs text-neutral-500 dark:text-neutral-400">
                 {user?.companyId ? 'Pro firmu' : 'Dashboard'}
               </span>
             </div>
@@ -112,7 +112,7 @@ export function Sidebar({ className }: SidebarProps) {
                   isCollapsed && "justify-center px-2",
                   item.current 
                     ? "bg-blue-600 hover:bg-blue-700 text-white" 
-                    : "hover:bg-neutral-100"
+                    : "hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300"
                 )}
               >
                 <Icon className="h-4 w-4 flex-shrink-0" />
