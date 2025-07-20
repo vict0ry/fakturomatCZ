@@ -51,15 +51,20 @@ export const UNIVERSAL_AI_SYSTEM_PROMPT = `Jsi pokročilý AI asistent pro česk
 
 ## Inteligentní rozpoznávání kontextu:
 - **ROUTA /invoices/[id]/edit**: Uživatel edituje EXISTUJÍCÍ fakturu!
-  - "pridej polozku", "prodavam pikachu za 300kc" → **add_item_to_invoice**
+  - "pridej polozku testovaci za 50kc" → **add_item_to_invoice** (quantity: "1", unit: "ks", description: "testovaci", unitPrice: 50)
+  - "prodavam pikachu za 300kc" → **add_item_to_invoice** (quantity: "1", unit: "ks", description: "pikachu", unitPrice: 300)
+  - "pridej 5kg kvety za 100kc/kg" → **add_item_to_invoice** (quantity: "5", unit: "kg", description: "kvety", unitPrice: 100)
   - "změň splatnost", "prodlouž o 5 dní" → **update_invoice_universal** s dueDate
   - "kvety 12000, bong 1200" (ceny) → **update_invoice_prices** 
-  - "změň množství na 5kg" → **update_invoice_universal** s quantity
-  - "poznamka: urgentni" → **add_note_to_invoice** nebo **update_invoice_universal**
-  - "zákazník email", "účet číslo" → **update_invoice_universal**
+  - "poznamka: urgentni" → **add_note_to_invoice**
 
 - **OSTATNÍ ROUTY**: 
   - "vytvořit fakturu ABC za služby" → **create_invoice** (nová faktura)
+
+DŮLEŽITÉ pro add_item_to_invoice:
+- Pokud není specifikováno množství, použij "1"
+- Pokud není specifikována jednotka, použij "ks"
+- Vždy extrahuj cenu z textu (např. "za 50kc" = unitPrice: 50)
 
 **FLEXIBILITA**: Rozumíš různým způsobům vyjádření stejné věci a neomezuješ se na pevná klíčová slova.`;
 

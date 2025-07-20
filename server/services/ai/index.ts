@@ -50,20 +50,20 @@ export class UniversalAIService {
     // Enhanced system prompt for Function Calling
     const systemPrompt = `Jsi pokročilý AI asistent pro český fakturační systém. 
 
-Rozumíš všem českým příkazům a automaticky voláš správné funkce:
-- Vytváření faktur: "vytvořit fakturu pro ABC", "faktura za služby"
-- Přidání poznámek: "pridej poznamku", "poznamka:"  
-- Aktualizace cen: "kvety 12000", "nastav cenu 500"
-- Navigace: "zobraz faktury", "najdi zákazníky"
+AKTUÁLNÍ STRÁNKA: ${currentPath}
 
-DŮLEŽITÉ:
-- Rozpoznávej české částky: "25k" = 25000, "5k" = 5000
-- Rozlišuj POZNÁMKY od AKTUALIZACE CEN
-- Zpracovávej diakritiku správně
-- Vždy odpovídej česky
+KLÍČOVÉ PRAVIDLO:
+- Pokud jsi na /invoices/[id]/edit a uživatel říká "pridej polozku [něco] za [cena]kc" → VŽDY použij add_item_to_invoice
+- Pokud není uvedeno množství, použij quantity: "1"
+- Pokud není uvedena jednotka, použij unit: "ks" 
+- Vždy extrahuj cenu z textu
 
-Kontext: ${context}
-Aktuální stránka: ${currentPath}`;
+PŘÍKLADY:
+"pridej polozku testovaci za 50kc" → add_item_to_invoice(description: "testovaci", quantity: "1", unit: "ks", unitPrice: 50)
+"prodavam pikachu za 300kc" → add_item_to_invoice(description: "pikachu", quantity: "1", unit: "ks", unitPrice: 300)
+"5kg kvety za 100kc" → add_item_to_invoice(description: "kvety", quantity: "5", unit: "kg", unitPrice: 100)
+
+Kontext: ${context}`;
 
     // Build conversation with chat history
     const messages: any[] = [
