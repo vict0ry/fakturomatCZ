@@ -2,7 +2,9 @@ import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, MessageSquare, ChevronUp, ChevronDown, X, Paperclip, FileText, Image } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { Send, MessageSquare, ChevronUp, ChevronDown, X, Paperclip, FileText, Image, Plus, Sparkles, Calculator, Receipt, FileCheck, Users, TrendingUp, Zap, Clock, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthApi } from '@/hooks/use-auth-api';
 import { useLocation } from 'wouter';
@@ -14,6 +16,16 @@ interface Message {
   content: string;
   timestamp: Date;
   attachments?: FileAttachment[];
+  status?: 'sending' | 'sent' | 'error';
+  actions?: QuickAction[];
+}
+
+interface QuickAction {
+  id: string;
+  label: string;
+  icon: any;
+  command: string;
+  category: 'invoice' | 'expense' | 'customer' | 'analytics';
 }
 
 interface FileAttachment {
@@ -31,6 +43,16 @@ interface AIResponse {
   };
 }
 
+// Quick action suggestions
+const QUICK_ACTIONS: QuickAction[] = [
+  { id: '1', label: 'Nová faktura', icon: FileCheck, command: 'vytvoř novou fakturu', category: 'invoice' },
+  { id: '2', label: 'Přidat náklad', icon: Receipt, command: 'přidat nový náklad', category: 'expense' },
+  { id: '3', label: 'Nový zákazník', icon: Users, command: 'přidat nového zákazníka', category: 'customer' },
+  { id: '4', label: 'Statistiky', icon: TrendingUp, command: 'zobraz mi statistiky tohoto měsíce', category: 'analytics' },
+  { id: '5', label: 'Nezaplacené faktury', icon: Clock, command: 'zobraz nezaplacené faktury', category: 'invoice' },
+  { id: '6', label: 'Kalkulačka DPH', icon: Calculator, command: 'vypočítej DPH z částky', category: 'invoice' },
+];
+
 export function BottomAIChat() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -39,6 +61,7 @@ export function BottomAIChat() {
   const [, setLocation] = useLocation();
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -184,15 +207,23 @@ export function BottomAIChat() {
     handleFileUpload(files);
   };
 
-  const handleSendMessage = async () => {
-    if ((!input.trim() && attachments.length === 0) || isLoading) return;
+  const handleQuickAction = (action: QuickAction) => {
+    setInput(action.command);
+    setShowSuggestions(false);
+    // Auto-submit the command
+    setTimeout(() => handleSendMessage(action.command), 100);
+  };
 
-    const userMessage = input.trim();
+  const handleSendMessage = async (commandText?: string) => {
+    const messageText = commandText || input.trim();
+    if ((!messageText && attachments.length === 0) || isLoading) return;
+
     const messageAttachments = [...attachments];
     
     setInput('');
     setAttachments([]);
-    addMessage('user', userMessage || '📎 Příloha nahrána', messageAttachments);
+    setShowSuggestions(false);
+    addMessage('user', messageText || '📎 Příloha nahrána', messageAttachments);
     setIsLoading(true);
 
     try {
@@ -200,7 +231,7 @@ export function BottomAIChat() {
       const response = await apiRequest('/api/chat/universal', {
         method: 'POST',
         body: JSON.stringify({
-          message: userMessage,
+          message: messageText,
           context: JSON.stringify(messages.slice(-5)),
           currentPath,
           attachments: messageAttachments
@@ -261,6 +292,15 @@ export function BottomAIChat() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Smart suggestions based on current context
+  const getSmartSuggestions = () => {
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('/invoice')) return QUICK_ACTIONS.filter(a => a.category === 'invoice');
+    if (currentPath.includes('/expense')) return QUICK_ACTIONS.filter(a => a.category === 'expense');
+    if (currentPath.includes('/customer')) return QUICK_ACTIONS.filter(a => a.category === 'customer');
+    return QUICK_ACTIONS.slice(0, 4); // Show top 4 by default
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
