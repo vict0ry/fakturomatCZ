@@ -44,10 +44,20 @@ const EXPENSE_CATEGORIES = [
   'Other'
 ];
 
-export default function ExpenseCreatePage() {
+interface ExpenseCreatePageProps {
+  expenseId?: number;
+}
+
+export default function ExpenseCreatePage({ expenseId }: ExpenseCreatePageProps) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fetch existing expense data if editing
+  const { data: existingExpense } = useQuery({
+    queryKey: ['/api/expenses', expenseId],
+    enabled: !!expenseId
+  });
 
   const form = useForm<ExpenseFormData>({
     resolver: zodResolver(expenseSchema),
@@ -67,10 +77,33 @@ export default function ExpenseCreatePage() {
     }
   });
 
+  // Update form when existing expense data loads
+  React.useEffect(() => {
+    if (existingExpense) {
+      form.reset({
+        supplierName: existingExpense.supplier?.name || '',
+        category: existingExpense.category || '',
+        description: existingExpense.description || '',
+        receiptNumber: existingExpense.receiptNumber || '',
+        amount: existingExpense.amount || '',
+        vatRate: existingExpense.vatRate || '21',
+        vatAmount: existingExpense.vatAmount || '',
+        total: existingExpense.total || '',
+        expenseDate: existingExpense.expenseDate ? new Date(existingExpense.expenseDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        dueDate: existingExpense.dueDate ? new Date(existingExpense.dueDate).toISOString().split('T')[0] : '',
+        status: existingExpense.status || 'draft',
+        notes: existingExpense.notes || ''
+      });
+    }
+  }, [existingExpense, form]);
+
   const createExpenseMutation = useMutation({
     mutationFn: async (data: ExpenseFormData) => {
-      const response = await fetch('/api/expenses', {
-        method: 'POST',
+      const method = expenseId ? 'PATCH' : 'POST';
+      const url = expenseId ? `/api/expenses/${expenseId}` : '/api/expenses';
+      
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -80,23 +113,26 @@ export default function ExpenseCreatePage() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Nepodařilo se vytvořit náklad');
+        throw new Error(error.message || `Nepodařilo se ${expenseId ? 'upravit' : 'vytvořit'} náklad`);
       }
 
       return response.json();
     },
     onSuccess: () => {
       toast({
-        title: 'Náklad vytvořen',
-        description: 'Náklad byl úspěšně vytvořen'
+        title: expenseId ? 'Náklad upraven' : 'Náklad vytvořen',
+        description: expenseId ? 'Náklad byl úspěšně upraven' : 'Náklad byl úspěšně vytvořen'
       });
       queryClient.invalidateQueries({ queryKey: ['/api/expenses'] });
+      if (expenseId) {
+        queryClient.invalidateQueries({ queryKey: ['/api/expenses', expenseId] });
+      }
       setLocation('/expenses');
     },
     onError: (error: any) => {
       toast({
         title: 'Chyba',
-        description: error.message || 'Nepodařilo se vytvořit náklad',
+        description: error.message || `Nepodařilo se ${expenseId ? 'upravit' : 'vytvořit'} náklad`,
         variant: 'destructive'
       });
     }

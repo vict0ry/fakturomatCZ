@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { 
   Plus, Search, Filter, Calendar, Receipt, Building, 
   CreditCard, Eye, Edit, Trash2, CheckCircle, Clock 
@@ -51,6 +51,7 @@ const statusIcons = {
 };
 
 export default function ExpensesPage() {
+  const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -329,10 +330,18 @@ export default function ExpensesPage() {
                         </div>
                         
                         <div className="flex gap-2 mt-3">
-                          <Button size="sm" variant="outline">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => setLocation(`/expenses/${expense.id}`)}
+                          >
                             <Eye className="w-4 h-4" />
                           </Button>
-                          <Button size="sm" variant="outline">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => setLocation(`/expenses/${expense.id}/edit`)}
+                          >
                             <Edit className="w-4 h-4" />
                           </Button>
                         </div>

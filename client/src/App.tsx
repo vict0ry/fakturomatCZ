@@ -15,6 +15,7 @@ import InvoiceEdit from "@/pages/invoice-edit";
 import SettingsPage from "@/pages/settings";
 import ExpensesPage from "@/pages/expenses";
 import ExpenseCreatePage from "@/pages/expense-create";
+import ExpenseDetail from "./pages/expense-detail";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 
@@ -34,6 +35,12 @@ function Router() {
       <Route path="/invoices/:id" component={InvoiceDetail} />
       <Route path="/customers" component={Customers} />
       <Route path="/expenses/new" component={ExpenseCreatePage} />
+      <Route path="/expenses/:id/edit">
+        {(params: any) => <ExpenseCreatePage key={`edit-${params.id}`} expenseId={parseInt(params.id)} />}
+      </Route>
+      <Route path="/expenses/:id">
+        {(params: any) => <ExpenseDetail key={`detail-${params.id}`} expenseId={parseInt(params.id)} />}
+      </Route>
       <Route path="/expenses" component={ExpensesPage} />
       <Route path="/analytics" component={Analytics} />
       <Route path="/settings" component={SettingsPage} />
