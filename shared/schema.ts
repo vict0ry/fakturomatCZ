@@ -138,6 +138,44 @@ export const invoiceItems = pgTable("invoice_items", {
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
 });
 
+// New expenses table
+export const expenses = pgTable("expenses", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").references(() => companies.id),
+  userId: integer("user_id").references(() => users.id),
+  expenseNumber: text("expense_number").notNull(),
+  supplierId: integer("supplier_id").references(() => customers.id), // Using customers table for suppliers too
+  category: text("category").notNull(), // office, travel, materials, services, etc.
+  description: text("description").notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  vatAmount: decimal("vat_amount", { precision: 10, scale: 2 }).notNull().default("0"),
+  total: decimal("total", { precision: 10, scale: 2 }).notNull(),
+  vatRate: decimal("vat_rate", { precision: 5, scale: 2 }).notNull().default("21"),
+  expenseDate: timestamp("expense_date").notNull().defaultNow(),
+  dueDate: timestamp("due_date"),
+  paidDate: timestamp("paid_date"),
+  status: text("status").notNull().default("draft"), // draft, approved, paid, rejected
+  paymentMethod: text("payment_method").default("bank_transfer"),
+  receiptNumber: text("receipt_number"), // Invoice/receipt number from supplier
+  notes: text("notes"),
+  isDeductible: boolean("is_deductible").default(true), // Tax deductible
+  currency: text("currency").default("CZK"),
+  exchangeRate: decimal("exchange_rate", { precision: 10, scale: 4 }).default("1"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const expenseItems = pgTable("expense_items", {
+  id: serial("id").primaryKey(),
+  expenseId: integer("expense_id").references(() => expenses.id),
+  description: text("description").notNull(),
+  quantity: decimal("quantity", { precision: 10, scale: 3 }).notNull(),
+  unit: text("unit").notNull().default("ks"),
+  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
+  vatRate: decimal("vat_rate", { precision: 5, scale: 2 }).notNull().default("21"),
+  total: decimal("total", { precision: 10, scale: 2 }).notNull(),
+});
+
 export const chatMessages = pgTable("chat_messages", {
   id: serial("id").primaryKey(),
   companyId: integer("company_id").references(() => companies.id),
@@ -299,6 +337,29 @@ export const sessionsRelations = relations(sessions, ({ one }) => ({
   user: one(users, { fields: [sessions.userId], references: [users.id] }),
 }));
 
+export const expensesRelations = relations(expenses, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [expenses.companyId],
+    references: [companies.id]
+  }),
+  user: one(users, {
+    fields: [expenses.userId],
+    references: [users.id]
+  }),
+  supplier: one(customers, {
+    fields: [expenses.supplierId],
+    references: [customers.id]
+  }),
+  items: many(expenseItems)
+}));
+
+export const expenseItemsRelations = relations(expenseItems, ({ one }) => ({
+  expense: one(expenses, {
+    fields: [expenseItems.expenseId],
+    references: [expenses.id]
+  })
+}));
+
 // Zod schemas
 export const insertCompanySchema = createInsertSchema(companies);
 export const insertUserSchema = createInsertSchema(users);
@@ -312,6 +373,8 @@ export const insertSessionSchema = createInsertSchema(sessions);
 export const insertCompanySettingsSchema = createInsertSchema(companySettings);
 export const insertBankTransactionSchema = createInsertSchema(bankTransactions);
 export const insertPaymentMatchingRuleSchema = createInsertSchema(paymentMatchingRules);
+export const insertExpenseSchema = createInsertSchema(expenses);
+export const insertExpenseItemSchema = createInsertSchema(expenseItems);
 
 // Types
 export type Company = typeof companies.$inferSelect;
@@ -326,6 +389,8 @@ export type Session = typeof sessions.$inferSelect;
 export type CompanySettings = typeof companySettings.$inferSelect;
 export type BankTransaction = typeof bankTransactions.$inferSelect;
 export type PaymentMatchingRule = typeof paymentMatchingRules.$inferSelect;
+export type Expense = typeof expenses.$inferSelect;
+export type ExpenseItem = typeof expenseItems.$inferSelect;
 
 export type InsertCompany = z.infer<typeof insertCompanySchema>;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -339,3 +404,5 @@ export type InsertSession = z.infer<typeof insertSessionSchema>;
 export type InsertCompanySettings = z.infer<typeof insertCompanySettingsSchema>;
 export type InsertBankTransaction = z.infer<typeof insertBankTransactionSchema>;
 export type InsertPaymentMatchingRule = z.infer<typeof insertPaymentMatchingRuleSchema>;
+export type InsertExpense = z.infer<typeof insertExpenseSchema>;
+export type InsertExpenseItem = z.infer<typeof insertExpenseItemSchema>;
