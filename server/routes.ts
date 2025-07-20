@@ -916,24 +916,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { message, context, currentPath, chatHistory, attachments } = req.body;
       
-      const aiResponse = await processUniversalAICommand(message, context, currentPath, {
-        companyId: req.user.companyId,
-        userId: req.user.id!,
-        storage
-      }, chatHistory, attachments);
+      const aiResponse = await processUniversalAICommand(
+        message, 
+        context, 
+        currentPath, 
+        {
+          companyId: req.user.companyId,
+          userId: req.user.id!,
+          storage
+        },
+        chatHistory,
+        attachments
+      );
       
       // Save chat message to history
       await storage.createChatMessage({
         message,
         response: aiResponse.content,
         companyId: req.user.companyId,
-        userId: req.user.userId
+        userId: req.user.id
       });
       
       res.json(aiResponse);
     } catch (error) {
-      console.error("Error processing universal AI command:", error);
-      res.status(500).json({ message: "Failed to process AI command" });
+      const err = error as Error;
+      console.error("Error processing universal AI command:", err);
+      console.error("Error stack:", err.stack);
+      res.status(500).json({ 
+        message: "Failed to process AI command",
+        error: err.message 
+      });
     }
   });
 
@@ -954,7 +966,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/chat/messages", requireAuth, async (req: any, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 50;
-      const messages = await storage.getChatMessages(req.user.companyId, req.user.userId, limit);
+      const messages = await storage.getChatMessages(req.user.companyId, req.user.id, limit);
       res.json(messages);
     } catch (error) {
       console.error("Error fetching chat messages:", error);

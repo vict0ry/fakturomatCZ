@@ -649,9 +649,12 @@ Kontext: ${context}`;
         max_tokens: 1000,
       });
 
-      return JSON.parse(response.choices[0].message.content || '{}');
+      const content = response.choices[0].message.content || '{}';
+      console.log('Vision API raw response:', content);
+      return JSON.parse(content);
     } catch (error) {
       console.error('Vision API error:', error);
+      console.error('Error details:', (error as Error).message);
       throw error;
     }
   }
@@ -676,7 +679,11 @@ Kontext: ${context}`;
         attachmentUrl: `data:${imageAttachment?.type || 'image/jpeg'};base64,${imageAttachment?.data}` // Store as base64
       };
 
-      const expense = await userContext.storage.createExpense(expenseData, userContext.companyId);
+      const expense = await userContext.storage.createExpense({
+        ...expenseData,
+        companyId: userContext.companyId,
+        userId: userContext.userId
+      });
 
       return {
         content: `✅ Vytvořil jsem náklad z účtenky:
@@ -1030,10 +1037,11 @@ export async function processUniversalAICommand(
   context: string, 
   currentPath: string, 
   userContext: UserContext,
-  chatHistory: any[] = []
+  chatHistory: any[] = [],
+  attachments: any[] = []
 ): Promise<UniversalAIResponse> {
   const service = new UniversalAIService();
-  return await service.processMessage(message, context, currentPath, userContext, chatHistory);
+  return await service.processMessage(message, context, currentPath, userContext, chatHistory, attachments);
 }
 
 // Export types
