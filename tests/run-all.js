@@ -8,6 +8,8 @@ import { runDatabaseTests } from './database.test.js';
 import { runAITests } from './ai.test.js';
 import { runPDFTests } from './pdf.test.js';
 import { runIntegrationTests } from './integration.test.js';
+import { runExpenseTests } from './expense.test.js';
+import { runAdvancedFeatureTests } from './advanced-features.test.js';
 
 class TestSuite {
   constructor() {

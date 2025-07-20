@@ -2,8 +2,14 @@
 
 ## Rychlé testování (doporučeno)
 ```bash
+# Zdravotní check systému (10 sekund) - spustit VŽDY jako první
+node tests/system-health.js
+
 # Základní test všech klíčových funkcí (30 sekund)
 node tests/quick-test.js
+
+# Kompletní testování všech funkcí (3-5 minut)
+node tests/comprehensive.test.js
 ```
 
 ## Detailní testování
@@ -14,6 +20,8 @@ node tests/run-all.js
 # Jednotlivé testovací sady
 node tests/api.test.js        # API endpointy a komunikace
 node tests/ai.test.js         # AI asistent a vytváření faktur
+node tests/expense.test.js    # Správa nákladů a přílohy
+node tests/advanced-features.test.js # Pokročilé AI funkce
 node tests/pdf.test.js        # PDF generování
 node tests/integration.test.js # End-to-end workflow
 ```
@@ -43,6 +51,16 @@ node tests/pdf.test.js
 ### 🔌 Problémy s API
 ```bash
 node tests/api.test.js
+```
+
+### 💰 Problémy s náklady
+```bash
+node tests/expense.test.js
+```
+
+### 🚀 Problémy s pokročilými funkcemi
+```bash
+node tests/advanced-features.test.js
 ```
 
 ## Očekávané výsledky
