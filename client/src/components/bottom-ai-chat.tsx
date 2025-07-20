@@ -456,11 +456,11 @@ export function BottomAIChat() {
         )}
       </AnimatePresence>
 
-      {/* Chat Input Bar */}
-      <div className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center space-x-3">
-            {!isExpanded && (
+      {/* Chat Input Bar - only show when not expanded */}
+      {!isExpanded && (
+        <div className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-4">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center space-x-3">
               <Button
                 variant="ghost"
                 size="sm"
@@ -469,38 +469,38 @@ export function BottomAIChat() {
               >
                 <ChevronUp className="w-4 h-4" />
               </Button>
-            )}
-            
-            <div className="flex-1 relative">
-              <Input
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                onFocus={() => !isExpanded && setIsExpanded(true)}
-                placeholder="Zeptejte se AI asistenta na cokoli..."
-                disabled={isLoading}
-                className="pr-12 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600 focus:border-orange-500 dark:focus:border-orange-500"
-              />
-              <Button
-                onClick={handleSendMessage}
-                disabled={!input.trim() || isLoading}
-                size="sm"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-orange-500 hover:bg-orange-600 text-white"
-              >
-                <Send className="w-4 h-4" />
-              </Button>
-            </div>
-
-            {messages.length > 0 && !isExpanded && (
-              <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
-                <MessageSquare className="w-4 h-4 mr-1" />
-                {messages.length}
+              
+              <div className="flex-1 relative">
+                <Input
+                  ref={inputRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  onFocus={() => setIsExpanded(true)}
+                  placeholder="Zeptejte se AI asistenta na cokoli..."
+                  disabled={isLoading}
+                  className="pr-12 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600 focus:border-orange-500 dark:focus:border-orange-500"
+                />
+                <Button
+                  onClick={handleSendMessage}
+                  disabled={!input.trim() || isLoading}
+                  size="sm"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-orange-500 hover:bg-orange-600 text-white"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
               </div>
-            )}
+
+              {messages.length > 0 && (
+                <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
+                  <MessageSquare className="w-4 h-4 mr-1" />
+                  {messages.length}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
