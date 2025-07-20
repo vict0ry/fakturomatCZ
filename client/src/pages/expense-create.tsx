@@ -56,7 +56,7 @@ export default function ExpenseCreatePage({ expenseId }: ExpenseCreatePageProps)
   const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
 
   // Fetch existing expense data if editing
-  const { data: existingExpense } = useQuery({
+  const { data: existingExpense } = useQuery<any>({
     queryKey: ['/api/expenses', expenseId],
     enabled: !!expenseId
   });
