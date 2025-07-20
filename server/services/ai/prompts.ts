@@ -62,7 +62,8 @@ Vrať JSON s:
       "productName": "název produktu/služby",
       "quantity": "množství jako string",
       "unit": "jednotka (ks, kg, hodiny, m, etc.)",
-      "description": "popis položky"
+      "description": "popis položky",
+      "unitPrice": číslo nebo null
     }
   ],
   "totalAmount": číslo nebo null,
@@ -70,9 +71,12 @@ Vrať JSON s:
 }
 
 DŮLEŽITÉ PRAVIDLA:
-- Rozpoznej "25k" jako 25000, "5k" jako 5000
+- Rozpoznej "25k" jako 25000, "5k" jako 5000  
 - Zpracovávej české znaky (ě, š, č, ř, ž, ý, á, í, é, ó, ú, ů, ď, ť, ň)
-- Pokud není částka uvedena, nastav totalAmount na null
+- Extrahuj jednotkové ceny pro každou položku (unitPrice)
+- Pokud není celková částka uvedena, spočítej ji ze součtu položek
+- Pro "1kg marihuany za 50000" nastav unitPrice: 50000
+- Pro "2kg květu za 30000" nastav unitPrice: 15000 (30000 / 2)
 - Rozpoznej české jednotky: ks, kg, hodiny, metry, litry
 - "za služby", "za práci", "za konzultace" = vytvoř položku služby s jednotkou "ks"
 - Vždy vytvoř alespoň jednu položku, i když je popis obecný

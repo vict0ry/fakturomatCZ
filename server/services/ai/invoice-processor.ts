@@ -302,8 +302,12 @@ Odpověz pouze "ANO" nebo "NE".`;
   }
 
   private validateInvoiceData(data: any): InvoiceData {
-    // Handle Czech amount formats like "25k" = 25000
+    console.log('Validating invoice data:', JSON.stringify(data, null, 2));
+    
+    // Calculate total from items if totalAmount not provided
     let totalAmount = data.totalAmount;
+    
+    // First try to get totalAmount from data
     if (typeof totalAmount === 'string') {
       const amountStr = totalAmount.toLowerCase().replace(/\s/g, '');
       if (amountStr.endsWith('k')) {
@@ -311,6 +315,18 @@ Odpověz pouze "ANO" nebo "NE".`;
       } else {
         totalAmount = parseFloat(amountStr) || null;
       }
+    }
+    
+    // If no totalAmount, calculate from items
+    if (!totalAmount && data.items && Array.isArray(data.items)) {
+      totalAmount = 0;
+      for (const item of data.items) {
+        if (item.unitPrice && typeof item.unitPrice === 'number') {
+          const quantity = parseFloat(item.quantity) || 1;
+          totalAmount += item.unitPrice * quantity;
+        }
+      }
+      console.log('Calculated totalAmount from items:', totalAmount);
     }
     
     // Also check if customer name contains amount format
@@ -322,7 +338,7 @@ Odpověz pouze "ANO" nebo "NE".`;
     }
 
     // Process items with fallback for service descriptions
-    let items = Array.isArray(data.items) ? data.items.filter(item => 
+    let items = Array.isArray(data.items) ? data.items.filter((item: any) => 
       item.productName && item.quantity && item.unit
     ) : [];
     
@@ -378,12 +394,12 @@ Odpověz pouze "ANO" nebo "NE".`;
     const customerData = {
       name: aresData?.name || customerName,
       ico: aresData?.ico || '',
-      dic: aresData?.dic || '',
+      dic: (aresData as any)?.dic || '',
       email: '',
       phone: '',
       address: aresData?.address || '',
       city: aresData?.city || '',
-      postalCode: aresData?.postalCode || '',
+      postalCode: (aresData as any)?.postalCode || '',
       companyId: userContext.companyId
     };
 
@@ -417,16 +433,21 @@ Odpověz pouze "ANO" nebo "NE".`;
 
   private async createInvoiceItems(invoiceId: number, items: any[], userContext: UserContext) {
     for (const item of items) {
+      const unitPrice = item.unitPrice || 0;
+      const quantity = parseFloat(item.quantity) || 1;
+      const itemTotal = unitPrice * quantity;
+      
       const itemRecord = {
         invoiceId: invoiceId,
         description: item.description || item.productName,
         quantity: item.quantity,
         unit: item.unit,
-        unitPrice: '0', // Will be filled by user
+        unitPrice: unitPrice.toString(),
         vatRate: '21',
-        total: '0'
+        total: itemTotal.toString()
       };
 
+      console.log('Creating invoice item:', itemRecord);
       await userContext.storage.createInvoiceItem(itemRecord);
     }
   }
