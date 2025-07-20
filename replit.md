@@ -11,7 +11,7 @@ Technical preference: Always use AI for intelligent text/product matching instea
 
 ## Recent Changes
 
-### Smart Invoice Sharing Implementation (2025-07-20)
+### Smart Invoice Sharing + Email Setup (2025-07-20)
 - ✅ Rozšířené databázové schema o sharing sloupce (shareToken, expiresAt, viewCount)
 - ✅ Implementováno bezpečné generování tokenů s expirací
 - ✅ Backend API pro vytváření/deaktivaci sdílených odkazů
@@ -21,6 +21,9 @@ Technical preference: Always use AI for intelligent text/product matching instea
 - ✅ PDF download pro sdílené faktury
 - ✅ Tracking počtu zobrazení a expirace odkazů
 - ✅ Bezpečnostní kontroly a validace tokenů
+- ✅ Amazon SES setup pro profesionální email delivery
+- ✅ Anti-spam email templates s správnými subject lines
+- ✅ Opraveny poznámky v AI systému - správný refresh mechanismus
 
 ### Previous OpenAI Function Calling Migration (2025-07-20)
 - ✅ Backup současného action-based systému do ai-backup/

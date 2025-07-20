@@ -108,6 +108,21 @@ export function BottomAIChat() {
           case 'navigate':
             setLocation(response.action.data.path);
             break;
+          case 'refresh_current_page':
+            // Invalidate queries for current invoice being edited
+            const currentPath = window.location.pathname;
+            const invoiceMatch = currentPath.match(/\/invoices\/(\d+)/);
+            if (invoiceMatch) {
+              const invoiceId = parseInt(invoiceMatch[1]);
+              queryClient.invalidateQueries({ queryKey: ["/api/invoices", invoiceId] });
+              queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+            } else {
+              queryClient.invalidateQueries();
+            }
+            break;
+          case 'refresh_data':
+            queryClient.invalidateQueries();
+            break;
           case 'create_invoice_direct':
             // Navigation handled by action response
             break;
