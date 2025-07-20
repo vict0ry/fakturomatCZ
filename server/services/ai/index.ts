@@ -4,7 +4,7 @@ import { InvoiceProcessor } from "./invoice-processor.js";
 import { extractUniversalUpdate } from './universal-update-extractor.js';
 import { UNIVERSAL_AI_SYSTEM_PROMPT } from "./prompts.js";
 import type { UniversalAIResponse, UserContext } from "./types.js";
-import { AI_TOOLS } from "./tools.js";
+import { AI_TOOLS } from "./prompts.js";
 
 const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_ENV_VAR || "default_key"
