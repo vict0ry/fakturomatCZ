@@ -1,9 +1,12 @@
 import { 
   companies, users, customers, invoices, invoiceItems, chatMessages, reminders, sessions, invoiceHistory,
+  expenses, expenseItems,
   type Company, type User, type Customer, type Invoice, type InvoiceItem, 
   type ChatMessage, type Reminder, type Session, type InvoiceHistory,
+  type Expense, type ExpenseItem,
   type InsertCompany, type InsertUser, type InsertCustomer, type InsertInvoice, 
-  type InsertInvoiceItem, type InsertChatMessage, type InsertReminder, type InsertSession, type InsertInvoiceHistory
+  type InsertInvoiceItem, type InsertChatMessage, type InsertReminder, type InsertSession, 
+  type InsertInvoiceHistory, type InsertExpense, type InsertExpenseItem
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, ilike, gte, lte, count } from "drizzle-orm";
@@ -92,6 +95,26 @@ export interface IStorage {
     overdueCount: number;
     activeCustomers: number;
   }>;
+
+  // Expenses
+  getExpense(id: number, companyId: number): Promise<Expense | undefined>;
+  getExpenseWithDetails(id: number, companyId: number): Promise<(Expense & { items: ExpenseItem[], supplier: Customer }) | undefined>;
+  createExpense(expense: InsertExpense): Promise<Expense>;
+  updateExpense(id: number, expense: Partial<InsertExpense>, companyId: number): Promise<Expense>;
+  getCompanyExpenses(companyId: number, filters?: {
+    status?: string;
+    category?: string;
+    dateFrom?: Date;
+    dateTo?: Date;
+    supplierId?: number;
+  }): Promise<(Expense & { supplier: Customer })[]>;
+  getRecentExpenses(companyId: number, limit: number): Promise<(Expense & { supplier: Customer })[]>;
+
+  // Expense Items
+  createExpenseItem(item: InsertExpenseItem): Promise<ExpenseItem>;
+  getExpenseItems(expenseId: number): Promise<ExpenseItem[]>;
+  updateExpenseItem(id: number, item: Partial<InsertExpenseItem>): Promise<ExpenseItem>;
+  deleteExpenseItem(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -558,6 +581,101 @@ export class DatabaseStorage implements IStorage {
       overdueCount: Number(stats.overdueCount) || 0,
       activeCustomers: Number(customerCount.activeCustomers) || 0,
     };
+  }
+  // Expenses implementation
+  async getExpense(id: number, companyId: number): Promise<Expense | undefined> {
+    const [expense] = await db.select().from(expenses)
+      .where(and(eq(expenses.id, id), eq(expenses.companyId, companyId)));
+    return expense || undefined;
+  }
+
+  async getExpenseWithDetails(id: number, companyId: number): Promise<(Expense & { items: ExpenseItem[], supplier: Customer }) | undefined> {
+    const [expense] = await db.select()
+      .from(expenses)
+      .leftJoin(customers, eq(expenses.supplierId, customers.id))
+      .where(and(eq(expenses.id, id), eq(expenses.companyId, companyId)));
+
+    if (!expense.expenses) return undefined;
+
+    const items = await db.select().from(expenseItems)
+      .where(eq(expenseItems.expenseId, id));
+
+    return {
+      ...expense.expenses,
+      supplier: expense.customers!,
+      items
+    };
+  }
+
+  async createExpense(expense: InsertExpense): Promise<Expense> {
+    const [newExpense] = await db.insert(expenses).values(expense).returning();
+    return newExpense;
+  }
+
+  async updateExpense(id: number, expense: Partial<InsertExpense>, companyId: number): Promise<Expense> {
+    const [updatedExpense] = await db.update(expenses)
+      .set({ ...expense, updatedAt: new Date() })
+      .where(and(eq(expenses.id, id), eq(expenses.companyId, companyId)))
+      .returning();
+    return updatedExpense;
+  }
+
+  async getCompanyExpenses(companyId: number, filters?: {
+    status?: string;
+    category?: string;
+    dateFrom?: Date;
+    dateTo?: Date;
+    supplierId?: number;
+  }): Promise<(Expense & { supplier: Customer })[]> {
+    let query = db.select({
+      expenses: expenses,
+      supplier: customers
+    })
+    .from(expenses)
+    .leftJoin(customers, eq(expenses.supplierId, customers.id))
+    .where(eq(expenses.companyId, companyId));
+
+    if (filters?.status) {
+      query = query.where(eq(expenses.status, filters.status));
+    }
+
+    const result = await query.orderBy(desc(expenses.createdAt));
+    return result.map(row => ({ ...row.expenses, supplier: row.supplier! }));
+  }
+
+  async getRecentExpenses(companyId: number, limit: number): Promise<(Expense & { supplier: Customer })[]> {
+    const result = await db.select({
+      expenses: expenses,
+      supplier: customers
+    })
+    .from(expenses)
+    .leftJoin(customers, eq(expenses.supplierId, customers.id))
+    .where(eq(expenses.companyId, companyId))
+    .orderBy(desc(expenses.createdAt))
+    .limit(limit);
+
+    return result.map(row => ({ ...row.expenses, supplier: row.supplier! }));
+  }
+
+  async createExpenseItem(item: InsertExpenseItem): Promise<ExpenseItem> {
+    const [newItem] = await db.insert(expenseItems).values(item).returning();
+    return newItem;
+  }
+
+  async getExpenseItems(expenseId: number): Promise<ExpenseItem[]> {
+    return await db.select().from(expenseItems).where(eq(expenseItems.expenseId, expenseId));
+  }
+
+  async updateExpenseItem(id: number, item: Partial<InsertExpenseItem>): Promise<ExpenseItem> {
+    const [updatedItem] = await db.update(expenseItems)
+      .set(item)
+      .where(eq(expenseItems.id, id))
+      .returning();
+    return updatedItem;
+  }
+
+  async deleteExpenseItem(id: number): Promise<void> {
+    await db.delete(expenseItems).where(eq(expenseItems.id, id));
   }
 }
 

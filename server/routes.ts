@@ -4,7 +4,8 @@ import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { 
   insertCompanySchema, insertUserSchema, insertCustomerSchema, 
-  insertInvoiceSchema, insertInvoiceItemSchema, insertChatMessageSchema 
+  insertInvoiceSchema, insertInvoiceItemSchema, insertChatMessageSchema,
+  insertExpenseSchema, insertExpenseItemSchema 
 } from "@shared/schema";
 import { fetchCompanyFromAres, searchCompaniesByName } from "./services/ares";
 import { processAICommand, generateInvoiceDescription, processUniversalAICommand, processPublicAICommand } from "./services/openai";
