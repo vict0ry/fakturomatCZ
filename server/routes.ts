@@ -14,6 +14,8 @@ import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
 import setupEmailRoutes from "./routes/email";
 import setupCompanyRoutes from "./routes/company";
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './config/swagger';
 
 // Simple session middleware (in production, use proper session management)
 const sessions = new Map<string, { userId: number; companyId: number }>();
@@ -36,6 +38,65 @@ const requireAuth = (req: any, res: any, next: any) => {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
+  /**
+   * @openapi
+   * /api/docs:
+   *   get:
+   *     summary: Swagger UI dokumentace
+   *     description: Interaktivní dokumentace API
+   *     tags: [Documentation]
+   *     responses:
+   *       200:
+   *         description: Swagger UI stránka
+   */
+  app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'Czech Invoice API Docs',
+    swaggerOptions: {
+      persistAuthorization: true
+    }
+  }));
+
+  // JSON specifikace pro externí použití
+  app.get('/api/docs.json', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(swaggerSpec);
+  });
+
+  /**
+   * @openapi
+   * /api/auth/register:
+   *   post:
+   *     summary: Registrace nové společnosti a administrátora
+   *     tags: [Authentication]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required: [company, user]
+   *             properties:
+   *               company:
+   *                 $ref: '#/components/schemas/Company'
+   *               user:
+   *                 type: object
+   *                 required: [username, password, email]
+   *                 properties:
+   *                   username:
+   *                     type: string
+   *                   password:
+   *                     type: string
+   *                     minLength: 6
+   *                   email:
+   *                     type: string
+   *                     format: email
+   *     responses:
+   *       201:
+   *         description: Úspěšná registrace
+   *       400:
+   *         description: Neplatná data
+   */
   // Authentication routes
   app.post("/api/auth/register", async (req, res) => {
     try {
@@ -249,6 +310,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * @openapi
+   * /api/customers:
+   *   get:
+   *     summary: Seznam všech zákazníků
+   *     tags: [Customers]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: search
+   *         schema:
+   *           type: string
+   *         description: Hledaný text
+   *     responses:
+   *       200:
+   *         description: Seznam zákazníků
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 $ref: '#/components/schemas/Customer'
+   *   post:
+   *     summary: Vytvoření nového zákazníka
+   *     tags: [Customers]
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/Customer'
+   *     responses:
+   *       201:
+   *         description: Zákazník vytvořen
+   *       400:
+   *         description: Neplatná data
+   */
   // Customer routes
   app.get("/api/customers", requireAuth, async (req: any, res) => {
     try {
@@ -362,6 +463,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * @openapi
+   * /api/invoices:
+   *   get:
+   *     summary: Seznam faktur s filtry
+   *     tags: [Invoices]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: status
+   *         schema:
+   *           type: string
+   *           enum: [draft, sent, paid, overdue, cancelled]
+   *       - in: query
+   *         name: customerId
+   *         schema:
+   *           type: integer
+   *       - in: query
+   *         name: dateFrom
+   *         schema:
+   *           type: string
+   *           format: date
+   *       - in: query
+   *         name: dateTo
+   *         schema:
+   *           type: string
+   *           format: date
+   *     responses:
+   *       200:
+   *         description: Seznam faktur
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 $ref: '#/components/schemas/Invoice'
+   *   post:
+   *     summary: Vytvoření nové faktury
+   *     tags: [Invoices]
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/Invoice'
+   *     responses:
+   *       201:
+   *         description: Faktura vytvořena
+   */
   // Invoice routes
   app.get("/api/invoices", requireAuth, async (req: any, res) => {
     try {
@@ -664,7 +817,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // AI Chat routes
+  // AI Chat routes  
+  /**
+   * @openapi
+   * /api/chat:
+   *   post:
+   *     summary: Základní AI chat pro vytváření faktur (legacy)
+   *     tags: [AI Chat]
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required: [message]
+   *             properties:
+   *               message:
+   *                 type: string
+   *     responses:
+   *       200:
+   *         description: AI odpověď
+   */
   app.post("/api/chat", requireAuth, async (req: any, res) => {
     try {
       const { message } = req.body;
@@ -685,6 +860,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * @openapi
+   * /api/chat/universal:
+   *   post:
+   *     summary: Univerzální AI chat pro autentifikované uživatele
+   *     description: AI asistent pro práci s fakturami, náklady, zákazníky a navigaci
+   *     tags: [AI Chat]
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required: [message]
+   *             properties:
+   *               message:
+   *                 type: string
+   *                 description: Zpráva pro AI (např. "vytvoř fakturu pro zákazníka XYZ")
+   *               context:
+   *                 type: object
+   *                 description: Kontext aplikace
+   *               currentPath:
+   *                 type: string
+   *                 description: Aktuální cesta v aplikaci
+   *               chatHistory:
+   *                 type: array
+   *                 items:
+   *                   type: object
+   *     responses:
+   *       200:
+   *         description: AI odpověď s možnou akcí
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/AIResponse'
+   *     examples:
+   *       createInvoice:
+   *         summary: Vytvoření faktury
+   *         value:
+   *           message: "vytvoř fakturu pro ABC s.r.o. za konzultace 5000 kč"
+   *       createExpense:
+   *         summary: Vytvoření nákladu
+   *         value:
+   *           message: "vytvoř náklad ČEZ elektřina 3500 kč kategorie utilities"
+   *       getExpenses:
+   *         summary: Zobrazení nákladů
+   *         value:
+   *           message: "zobraz všechny náklady tento měsíc"
+   */
   // Universal AI Chat - for authenticated users
   app.post("/api/chat/universal", requireAuth, async (req: any, res) => {
     try {
@@ -764,6 +990,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * @openapi
+   * /api/expenses:
+   *   get:
+   *     summary: Seznam nákladů s filtry
+   *     tags: [Expenses]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: status
+   *         schema:
+   *           type: string
+   *           enum: [draft, submitted, approved, paid, rejected]
+   *       - in: query
+   *         name: category
+   *         schema:
+   *           type: string
+   *       - in: query
+   *         name: supplierId
+   *         schema:
+   *           type: integer
+   *     responses:
+   *       200:
+   *         description: Seznam nákladů
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 $ref: '#/components/schemas/Expense'
+   *   post:
+   *     summary: Vytvoření nového nákladu
+   *     tags: [Expenses]
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/Expense'
+   *     responses:
+   *       201:
+   *         description: Náklad vytvořen
+   */
   // Expenses routes
   app.get("/api/expenses", requireAuth, async (req: any, res) => {
     try {
@@ -907,29 +1179,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // WebSocket setup for real-time features
+  // Create HTTP server - WebSocket temporarily disabled for stability
   const server = createServer(app);
-  const wss = new WebSocketServer({ server, path: '/ws' });
-
-  wss.on('connection', (ws) => {
-    console.log('New WebSocket connection');
-    
-    ws.on('message', (message) => {
-      try {
-        const data = JSON.parse(message.toString());
-        console.log('Received message:', data);
-        
-        // Echo back for now - in production, handle different message types
-        ws.send(JSON.stringify({ type: 'echo', data }));
-      } catch (error) {
-        console.error('WebSocket message error:', error);
-      }
-    });
-    
-    ws.on('close', () => {
-      console.log('WebSocket connection closed');
-    });
-  });
+  
+  // TODO: WebSocket implementation will be added back once basic functionality is stable
+  // For now, all real-time communication goes through regular HTTP API calls
 
   // Invoice sharing routes
   app.post("/api/invoices/:id/share", requireAuth, async (req: any, res) => {

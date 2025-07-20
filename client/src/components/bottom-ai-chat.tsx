@@ -71,6 +71,12 @@ export function BottomAIChat() {
     }
   }, [isExpanded]);
 
+  // Disable WebSocket for now to fix connection issues
+  // TODO: Re-implement WebSocket connection later
+  useEffect(() => {
+    // WebSocket connection logic disabled temporarily
+  }, []);
+
   const addMessage = (type: 'user' | 'assistant', content: string) => {
     const newMessage: Message = {
       id: Date.now().toString(),
