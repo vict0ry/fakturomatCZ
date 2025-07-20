@@ -676,13 +676,42 @@ Kontext: ${context}`;
         // Store attachment info
         attachmentName: imageAttachment?.name || 'receipt-image.jpg',
         attachmentType: imageAttachment?.type || 'image/jpeg',
-        attachmentUrl: `data:${imageAttachment?.type || 'image/jpeg'};base64,${imageAttachment?.data}` // Store as base64
+        attachmentUrl: `data:${imageAttachment?.type || 'image/jpeg'};base64,${imageAttachment?.content}` // Store as base64
       };
 
+      // Use the same logic as createExpense function to properly handle supplier
+      const existingSuppliers = await userContext.storage.searchCustomers(expenseData.supplierName, userContext.companyId);
+      let supplierId = null;
+      
+      if (existingSuppliers.length === 0) {
+        const supplier = await userContext.storage.createCustomer({
+          name: expenseData.supplierName,
+          companyId: userContext.companyId
+        });
+        supplierId = supplier.id;
+      } else {
+        supplierId = existingSuppliers[0].id;
+      }
+
+      const expenseNumber = `N${new Date().getFullYear()}${String(Date.now()).slice(-4)}`;
+      
+      const totalAmount = parseFloat(String(expenseData.total || expenseData.amount || 0));
+      const vatAmount = parseFloat(String(expenseData.vatAmount || 0));
+      
       const expense = await userContext.storage.createExpense({
-        ...expenseData,
         companyId: userContext.companyId,
-        userId: userContext.userId
+        userId: userContext.userId,
+        expenseNumber,
+        supplierId,
+        category: expenseData.category,
+        description: expenseData.description,
+        amount: String(totalAmount),
+        vatAmount: String(vatAmount),
+        total: String(totalAmount),
+        vatRate: String(expenseData.vatRate || '21'),
+        expenseDate: new Date(expenseData.expenseDate),
+        receiptNumber: expenseData.receiptNumber || '',
+        status: 'draft'
       });
 
       return {
