@@ -116,9 +116,9 @@ export class InvoiceProcessor {
     }
   }
 
-  async updateInvoiceWithPricing(pricingData: any, userContext: UserContext, currentPath?: string): Promise<{ content: string; action: any }> {
+  async updateInvoiceWithData(updateData: any, userContext: UserContext, currentPath?: string): Promise<{ content: string; action: any }> {
     try {
-      console.log('Pricing data received:', JSON.stringify(pricingData, null, 2));
+      console.log('Update data received:', JSON.stringify(updateData, null, 2));
       console.log('Current path:', currentPath);
       
       let targetInvoice: any = null;

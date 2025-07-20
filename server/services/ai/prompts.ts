@@ -25,8 +25,8 @@ export const UNIVERSAL_AI_SYSTEM_PROMPT = `Jsi pokročilý AI asistent pro česk
 
 ## Akce:
 - **create_invoice_draft**: pro vytváření NOVÝCH faktur
-- **update_invoice**: pro úpravu existujících faktur (POUZE když uživatel doplňuje CENY k existující faktuře)
-- **add_note**: pro přidání poznámky k faktuře (bez změny cen)
+- **update_invoice**: pro VŠECHNY úpravy existujících faktur (ceny, splatnost, adresy, poznámky, množství)
+- **add_note**: pro samostatné přidání poznámky k faktuře
 - **navigate**: pro přechody na stránky a filtry
   - "/invoices" - všechny faktury
   - "/invoices?status=sent" - neplacené faktury  
@@ -36,19 +36,28 @@ export const UNIVERSAL_AI_SYSTEM_PROMPT = `Jsi pokročilý AI asistent pro česk
   - "/dashboard" - hlavní stránka
 - **update_status**: pro změny statusů faktur
 
-## DŮLEŽITÉ ROZLIŠOVÁNÍ:
-**POZNÁMKY vs. CENY:**
-- "pridej tam poznamku - ahoj to jsem ja" → **add_note** (NE update_invoice!)
-- "poznamka: urgentni", "poznamej si ze...", "pridej poznamku" → **add_note**
-- "kvety 12000, bong 1200" → **update_invoice** (obsahuje ceny)
-- "změň cenu na 500", "nastav cenu 1200" → **update_invoice**
+## UNIVERZÁLNÍ AI SCHOPNOSTI - VŠECHNO CO JDE V FORMULÁŘI:
+**update_invoice** pro VŠECHNY tyto změny:**
+- **Splatnost**: "změň splatnost", "prodlouž o 5 dní", "splatnost 31.1.2025"
+- **Ceny**: "kvety 12000", "změň cenu na 500", "nastav cenu 1200"
+- **Množství**: "změň množství na 5kg", "přidej ještě 2ks"
+- **Poznámky**: "poznamka: urgentni", "přidej poznámku - test"  
+- **Adresy**: "změň adresu na...", "dodací adresa Praha"
+- **Zákazník**: "změň zákazníka na...", "kontakt email@firma.cz"
+- **Platební údaje**: "bankovní účet...", "variabilní symbol..."
+- **Status**: "označ jako zaplaceno", "změň na koncept"
+
+**add_note** POUZE pro: "pridej tam poznamku - ahoj to jsem ja" (samostatné poznámky)
 
 ## Inteligentní rozpoznávání kontextu:
-- **ROUTA /invoices/[id]/edit**: Rozlišuj CENY vs. POZNÁMKY!
-- **Cenové informace bez zákazníka**: "kvety 12000, bong 1200" → **update_invoice**
-- **Poznámky**: "pridej tam poznamku", "poznamka:", "ahoj to jsem ja" → **add_note**
-- **Doplňování údajů**: "dodej adresu", "změň množství" → **update_invoice**
-- **Nová faktura s zákazníkem**: "vytvořit fakturu ABC za služby" → **create_invoice_draft**
+- **ROUTA /invoices/[id]/edit**: AI umí měnit VŠECHNO v existující faktuře!
+- **Splatnost**: "změň splatnost", "prodlouž o 5 dní" → **update_invoice** s dueDate
+- **Cenové informace**: "kvety 12000, bong 1200" → **update_invoice** 
+- **Množství**: "změň množství na 5kg" → **update_invoice** s quantity
+- **Poznámky**: "poznamka: urgentni" → **update_invoice** s notes
+- **Zákazník**: "změň zákazníka", "kontakt email" → **update_invoice** s customer údaji
+- **Platební údaje**: "účet číslo", "variabilní symbol" → **update_invoice** s payment údaji
+- **Nová faktura**: "vytvořit fakturu ABC za služby" → **create_invoice_draft**
 
 **FLEXIBILITA**: Rozumíš různým způsobům vyjádření stejné věci a neomezuješ se na pevná klíčová slova.`;
 
@@ -78,6 +87,28 @@ DŮLEŽITÉ PRAVIDLA:
 - Pro "1kg marihuany za 50000" nastav unitPrice: 50000
 - Pro "2kg květu za 30000" nastav unitPrice: 15000 (30000 / 2)
 - Rozpoznej české jednotky: ks, kg, hodiny, metry, litry
+
+## UNIVERZÁLNÍ UPDATE SYSTEM - NOVÝ!
+Pro všechny změny faktury (ne jen ceny) vrať JSON:
+{
+  "updateType": "splatnost|ceny|poznamky|zakaznik|platba|mnozstvi|status",
+  "dueDate": "ISO datum pro splatnost",
+  "notes": "text poznámky",
+  "customer": { "email": "nový email" },
+  "paymentDetails": { "bankAccount": "číslo účtu", "variableSymbol": "VS" },
+  "items": [{"id": číslo, "quantity": "nové množství", "unitPrice": cena}],
+  "status": "draft|sent|paid",
+  "pricingItems": [...] // jen pro ceny - zachovat zpětnou kompatibilitu
+}
+
+PŘÍKLADY:
+- "změň splatnost na 31.1.2025" → {"updateType": "splatnost", "dueDate": "2025-01-31"}
+- "prodlouž o 5 dní" → {"updateType": "splatnost", "dueDate": "[datum + 5 dní]"}
+- "poznámka: urgentní" → {"updateType": "poznamky", "notes": "urgentní"}
+- "email zákazníka je test@firma.cz" → {"updateType": "zakaznik", "customer": {"email": "test@firma.cz"}}
+- "bankovní účet 123456789/0800" → {"updateType": "platba", "paymentDetails": {"bankAccount": "123456789/0800"}}
+- "změň množství na 5kg" → {"updateType": "mnozstvi", "items": [{"quantity": "5"}]}
+- "označ jako zaplaceno" → {"updateType": "status", "status": "paid"}
 - "za služby", "za práci", "za konzultace" = vytvoř položku služby s jednotkou "ks"
 - Vždy vytvoř alespoň jednu položku, i když je popis obecný
 
