@@ -120,6 +120,9 @@ Aktuální stránka: ${currentPath}`;
         case 'update_invoice_prices':
           return await this.updateInvoicePrices(args, userContext, currentPath);
         
+        case 'update_invoice_universal':
+          return await this.updateInvoiceUniversal(args, userContext, currentPath);
+        
         case 'navigate_to_page':
           return await this.navigateToPage(args);
         
@@ -240,6 +243,127 @@ Aktuální stránka: ${currentPath}`;
     } catch (error) {
       return {
         content: `Nepodařilo se změnit status faktury ${args.invoiceNumber}.`
+      };
+    }
+  }
+
+  private async updateInvoiceUniversal(args: any, userContext: UserContext, currentPath: string): Promise<UniversalAIResponse> {
+    try {
+      // Find target invoice
+      const invoiceIdMatch = currentPath.match(/\/invoices\/(\d+)\/edit/);
+      if (!invoiceIdMatch) {
+        return {
+          content: "Pro úpravu faktury musíte být na stránce editace faktury.",
+          action: { type: 'navigate', data: { path: '/invoices' } }
+        };
+      }
+
+      const invoiceId = parseInt(invoiceIdMatch[1]);
+      const invoice = await userContext.storage.getInvoice(invoiceId, userContext.companyId);
+      
+      if (!invoice) {
+        return {
+          content: "Faktura nebyla nalezena.",
+          action: { type: 'navigate', data: { path: '/invoices' } }
+        };
+      }
+
+      const invoiceUpdates: any = {};
+      let responseMessage = `Faktura ${invoice.invoiceNumber} byla aktualizována!`;
+
+      // Handle different update types
+      switch (args.updateType) {
+        case 'splatnost':
+          if (args.dueDate) {
+            invoiceUpdates.dueDate = new Date(args.dueDate);
+            responseMessage += `\n• Splatnost změněna na: ${new Date(args.dueDate).toLocaleDateString('cs-CZ')}`;
+          }
+          break;
+
+        case 'poznamky':
+          if (args.notes) {
+            const currentNotes = invoice.notes || '';
+            invoiceUpdates.notes = currentNotes 
+              ? `${currentNotes}\n\n${args.notes}` 
+              : args.notes;
+            responseMessage += `\n• Poznámka přidána: "${args.notes}"`;
+          }
+          break;
+
+        case 'zakaznik':
+          if (args.customer) {
+            const customer = await userContext.storage.getCustomer(invoice.customerId);
+            if (customer) {
+              const customerUpdates: any = {};
+              if (args.customer.email) customerUpdates.email = args.customer.email;
+              if (args.customer.phone) customerUpdates.phone = args.customer.phone;
+              if (args.customer.address) customerUpdates.address = args.customer.address;
+              
+              await userContext.storage.updateCustomer(customer.id, customerUpdates, userContext.companyId);
+              responseMessage += `\n• Údaje zákazníka aktualizovány`;
+            }
+          }
+          break;
+
+        case 'platba':
+          if (args.paymentDetails) {
+            if (args.paymentDetails.bankAccount) {
+              invoiceUpdates.bankAccount = args.paymentDetails.bankAccount;
+              responseMessage += `\n• Bankovní účet: ${args.paymentDetails.bankAccount}`;
+            }
+            if (args.paymentDetails.variableSymbol) {
+              invoiceUpdates.variableSymbol = args.paymentDetails.variableSymbol;
+              responseMessage += `\n• Variabilní symbol: ${args.paymentDetails.variableSymbol}`;
+            }
+          }
+          break;
+
+        case 'status':
+          if (args.status) {
+            invoiceUpdates.status = args.status;
+            const statusMap = {
+              'draft': 'koncept',
+              'sent': 'odesláno', 
+              'paid': 'zaplaceno',
+              'cancelled': 'zrušeno'
+            };
+            responseMessage += `\n• Status změněn na: ${statusMap[args.status] || args.status}`;
+          }
+          break;
+
+        case 'mnozstvi':
+          if (args.items && args.items.length > 0) {
+            const invoiceItems = await userContext.storage.getInvoiceItems(invoiceId);
+            for (let i = 0; i < Math.min(args.items.length, invoiceItems.length); i++) {
+              const itemUpdate = args.items[i];
+              const existingItem = invoiceItems[i];
+              
+              const updateData: any = {};
+              if (itemUpdate.quantity) updateData.quantity = itemUpdate.quantity;
+              if (itemUpdate.unitPrice) updateData.unitPrice = itemUpdate.unitPrice.toString();
+              if (itemUpdate.description) updateData.description = itemUpdate.description;
+              
+              await userContext.storage.updateInvoiceItem(existingItem.id, updateData);
+              responseMessage += `\n• Položka aktualizována: ${existingItem.description}`;
+            }
+          }
+          break;
+      }
+
+      // Apply invoice updates
+      if (Object.keys(invoiceUpdates).length > 0) {
+        await userContext.storage.updateInvoice(invoiceId, invoiceUpdates, userContext.companyId);
+      }
+
+      return {
+        content: responseMessage,
+        action: { type: 'refresh_current_page' }
+      };
+
+    } catch (error) {
+      console.error('Universal invoice update failed:', error);
+      return {
+        content: "Nepodařilo se aktualizovat fakturu. Zkuste to prosím znovu."
       };
     }
   }

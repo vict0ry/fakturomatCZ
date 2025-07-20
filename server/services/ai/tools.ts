@@ -1,6 +1,62 @@
 // OpenAI Function Calling Tools Definition
 export const AI_TOOLS = [
   {
+    type: "function",
+    function: {
+      name: "update_invoice_universal",
+      description: "Univerzální aktualizace faktury - splatnost, poznámky, adresy, zákazník, platební údaje, množství, status - VŠECHNO!",
+      parameters: {
+        type: "object",
+        properties: {
+          updateType: {
+            type: "string",
+            enum: ["splatnost", "ceny", "poznamky", "zakaznik", "platba", "mnozstvi", "status", "obecne"],
+            description: "Typ aktualizace"
+          },
+          dueDate: {
+            type: "string",
+            description: "Nová splatnost ve formátu YYYY-MM-DD"
+          },
+          notes: {
+            type: "string", 
+            description: "Poznámka k faktuře"
+          },
+          customer: {
+            type: "object",
+            properties: {
+              email: { type: "string" },
+              phone: { type: "string" },
+              address: { type: "string" }
+            }
+          },
+          paymentDetails: {
+            type: "object", 
+            properties: {
+              bankAccount: { type: "string" },
+              variableSymbol: { type: "string" }
+            }
+          },
+          items: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                quantity: { type: "string" },
+                unitPrice: { type: "number" },
+                description: { type: "string" }
+              }
+            }
+          },
+          status: {
+            type: "string",
+            enum: ["draft", "sent", "paid", "cancelled"]
+          }
+        },
+        required: ["updateType"]
+      }
+    }
+  },
+  {
     type: "function" as const,
     function: {
       name: "create_invoice",
