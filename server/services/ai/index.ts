@@ -59,8 +59,8 @@ export class UniversalAIService {
         try {
           const visionResult = await this.processImageWithVision(imageAttachments, message);
           if (visionResult) {
-            // Extract expense data from receipt/invoice
-            return await this.createExpenseFromVision(visionResult, userContext);
+            // Extract expense data from receipt/invoice and save attachment
+            return await this.createExpenseFromVision(visionResult, userContext, imageAttachments[0]);
           }
         } catch (error) {
           console.error('Vision API processing failed:', error);
@@ -434,7 +434,7 @@ Kontext: ${context}`;
         }
         
         // Use the most recent invoice (highest ID)
-        invoice = recentInvoices.sort((a, b) => b.id - a.id)[0];
+        invoice = recentInvoices.sort((a: any, b: any) => b.id - a.id)[0];
         invoiceId = invoice.id;
         console.log(`Using most recent invoice: ${invoice.invoiceNumber} (ID: ${invoiceId})`);
       }
@@ -555,7 +555,7 @@ Kontext: ${context}`;
         };
       }
 
-      const expenseList = expenses.slice(0, 5).map(expense => 
+      const expenseList = expenses.slice(0, 5).map((expense: any) => 
         `• ${expense.description} - ${parseFloat(expense.total).toLocaleString('cs-CZ')} Kč (${expense.category || 'Nezařazeno'})`
       ).join('\n');
 
@@ -627,7 +627,7 @@ Kontext: ${context}`;
     }
   }
 
-  private async createExpenseFromVision(visionData: any, userContext: UserContext): Promise<UniversalAIResponse> {
+  private async createExpenseFromVision(visionData: any, userContext: UserContext, imageAttachment?: any): Promise<UniversalAIResponse> {
     try {
       // Create expense from vision data
       const expenseData = {
@@ -640,7 +640,11 @@ Kontext: ${context}`;
         receiptNumber: visionData.receiptNumber,
         expenseDate: visionData.expenseDate || new Date().toISOString().split('T')[0],
         category: visionData.category || 'Other',
-        status: 'draft'
+        status: 'draft',
+        // Store attachment info
+        attachmentName: imageAttachment?.name || 'receipt-image.jpg',
+        attachmentType: imageAttachment?.type || 'image/jpeg',
+        attachmentUrl: `data:${imageAttachment?.type || 'image/jpeg'};base64,${imageAttachment?.data}` // Store as base64
       };
 
       const expense = await userContext.storage.createExpense(expenseData, userContext.companyId);

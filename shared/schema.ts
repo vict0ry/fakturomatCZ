@@ -157,6 +157,9 @@ export const expenses = pgTable("expenses", {
   status: text("status").notNull().default("draft"), // draft, approved, paid, rejected
   paymentMethod: text("payment_method").default("bank_transfer"),
   receiptNumber: text("receipt_number"), // Invoice/receipt number from supplier
+  attachmentUrl: text("attachment_url"), // URL to receipt/invoice attachment  
+  attachmentName: text("attachment_name"), // Original filename
+  attachmentType: text("attachment_type"), // MIME type
   notes: text("notes"),
   isDeductible: boolean("is_deductible").default(true), // Tax deductible
   currency: text("currency").default("CZK"),
