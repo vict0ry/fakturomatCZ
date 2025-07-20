@@ -1,16 +1,19 @@
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
-
-const data = [
-  { name: 'Led', revenue: 65000, expenses: 35000, invoices: 12 },
-  { name: 'Úno', revenue: 78000, expenses: 42000, invoices: 15 },
-  { name: 'Bře', revenue: 85000, expenses: 38000, invoices: 18 },
-  { name: 'Dub', revenue: 92000, expenses: 45000, invoices: 22 },
-  { name: 'Kvě', revenue: 108000, expenses: 52000, invoices: 25 },
-  { name: 'Čer', revenue: 125000, expenses: 48000, invoices: 28 },
-];
+import { useQuery } from "@tanstack/react-query";
 
 export function RevenueChart() {
+  // Fetch real data from API
+  const { data: stats } = useQuery({
+    queryKey: ['/api/stats'],
+  });
+
+  const { data: analyticsData } = useQuery({
+    queryKey: ['/api/analytics'],
+    retry: false,
+  });
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('cs-CZ', {
       style: 'currency',
@@ -19,6 +22,33 @@ export function RevenueChart() {
       maximumFractionDigits: 0,
     }).format(value);
   };
+
+  // Use real data or show empty state
+  const data = (analyticsData as any)?.monthlyData || [];
+  
+  // If no data, show empty state
+  if (data.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <span>Finanční přehled</span>
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Přehled příjmů, výdajů a počtu faktér za posledních 6 měsíců
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+            <div className="text-center">
+              <p className="text-lg font-medium">Žádná data k zobrazení</p>
+              <p className="text-sm mt-2">Vytvořte faktury a náklady pro zobrazení finančního přehledu</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -36,7 +66,7 @@ export function RevenueChart() {
           <div>
             <h4 className="text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">Příjmy a výdaje</h4>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={data}>
+              <LineChart data={data as any[]}>
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                 <XAxis 
                   dataKey="name" 
@@ -70,15 +100,17 @@ export function RevenueChart() {
                   dot={{ fill: '#3b82f6', strokeWidth: 2, r: 5 }}
                   activeDot={{ r: 7, stroke: '#3b82f6', strokeWidth: 2 }}
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="expenses" 
-                  stroke="#ef4444" 
-                  strokeWidth={3}
-                  name="Výdaje"
-                  dot={{ fill: '#ef4444', strokeWidth: 2, r: 5 }}
-                  activeDot={{ r: 7, stroke: '#ef4444', strokeWidth: 2 }}
-                />
+                {data.some((item: any) => item.expenses) && (
+                  <Line 
+                    type="monotone" 
+                    dataKey="expenses" 
+                    stroke="#ef4444" 
+                    strokeWidth={3}
+                    name="Výdaje"
+                    dot={{ fill: '#ef4444', strokeWidth: 2, r: 5 }}
+                    activeDot={{ r: 7, stroke: '#ef4444', strokeWidth: 2 }}
+                  />
+                )}
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -87,7 +119,7 @@ export function RevenueChart() {
           <div>
             <h4 className="text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">Počet faktér</h4>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={data}>
+              <BarChart data={data as any[]}>
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                 <XAxis 
                   dataKey="name" 
@@ -114,7 +146,7 @@ export function RevenueChart() {
                   dataKey="invoices" 
                   fill="#10b981"
                   radius={[4, 4, 0, 0]}
-                  name="Počet faktér"
+                  name="Počet faktur"
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -126,19 +158,19 @@ export function RevenueChart() {
           <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30 p-4 rounded-lg">
             <div className="text-sm text-blue-600 dark:text-blue-400">Celkový zisk</div>
             <div className="text-xl font-bold text-blue-700 dark:text-blue-300">
-              {formatCurrency(data.reduce((acc, month) => acc + (month.revenue - month.expenses), 0))}
+              {formatCurrency(data.reduce((acc: number, month: any) => acc + (month.revenue - (month.expenses || 0)), 0))}
             </div>
           </div>
           <div className="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 p-4 rounded-lg">
             <div className="text-sm text-green-600 dark:text-green-400">Průměrný měsíční příjem</div>
             <div className="text-xl font-bold text-green-700 dark:text-green-300">
-              {formatCurrency(data.reduce((acc, month) => acc + month.revenue, 0) / data.length)}
+              {formatCurrency(data.reduce((acc: number, month: any) => acc + month.revenue, 0) / data.length)}
             </div>
           </div>
           <div className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30 p-4 rounded-lg">
             <div className="text-sm text-purple-600 dark:text-purple-400">Celkem faktér</div>
             <div className="text-xl font-bold text-purple-700 dark:text-purple-300">
-              {data.reduce((acc, month) => acc + month.invoices, 0)}
+              {data.reduce((acc: number, month: any) => acc + month.invoices, 0)}
             </div>
           </div>
         </div>
