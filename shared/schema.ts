@@ -118,6 +118,12 @@ export const invoices = pgTable("invoices", {
   exchangeRate: decimal("exchange_rate", { precision: 10, scale: 4 }).default("1"),
   reminderSentAt: timestamp("reminder_sent_at"),
   reminderCount: integer("reminder_count").default(0),
+  // Secure sharing
+  shareToken: text("share_token").unique(),
+  shareTokenExpiresAt: timestamp("share_token_expires_at"),
+  shareViewCount: integer("share_view_count").default(0),
+  isPublicSharingEnabled: boolean("is_public_sharing_enabled").default(false),
+  shareTokenCreatedAt: timestamp("share_token_created_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

@@ -18,10 +18,14 @@ import { Header } from "@/components/layout/header";
 
 import { AuthProvider } from "@/contexts/auth-context";
 import { AuthGuard } from "@/components/auth/auth-guard";
+import PublicInvoicePage from "@/pages/public-invoice";
 
 function Router() {
   return (
     <Switch>
+      <Route path="/public/invoice/:token">
+        {(params: any) => <PublicInvoicePage token={params.token} />}
+      </Route>
       <Route path="/" component={Dashboard} />
       <Route path="/invoices" component={Invoices} />
       <Route path="/invoices/:id/edit" component={InvoiceEdit} />

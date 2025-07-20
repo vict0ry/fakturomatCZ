@@ -74,6 +74,12 @@ export interface IStorage {
   getInvoiceReminders(invoiceId: number): Promise<Reminder[]>;
   getCompanyReminders(companyId: number): Promise<Reminder[]>;
   
+  // Public invoice sharing
+  generateInvoiceShareToken(invoiceId: number, companyId: number, expiresInDays?: number): Promise<string>;
+  getInvoiceByShareToken(token: string): Promise<Invoice | undefined>;
+  incrementInvoiceShareViewCount(token: string): Promise<void>;
+  disableInvoiceSharing(invoiceId: number, companyId: number): Promise<void>;
+  
   // Company users
   getCompanyUsers(companyId: number): Promise<User[]>;
 
@@ -410,6 +416,53 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(reminders)
       .where(eq(reminders.companyId, companyId))
       .orderBy(desc(reminders.createdAt));
+  }
+  
+  // Public invoice sharing implementation
+  async generateInvoiceShareToken(invoiceId: number, companyId: number, expiresInDays: number = 30): Promise<string> {
+    const token = require('crypto').randomBytes(32).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + expiresInDays);
+    
+    await db.update(invoices)
+      .set({
+        shareToken: token,
+        shareTokenExpiresAt: expiresAt,
+        shareTokenCreatedAt: new Date(),
+        isPublicSharingEnabled: true,
+        shareViewCount: 0
+      })
+      .where(and(eq(invoices.id, invoiceId), eq(invoices.companyId, companyId)));
+    
+    return token;
+  }
+
+  async getInvoiceByShareToken(token: string): Promise<Invoice | undefined> {
+    const [invoice] = await db.select()
+      .from(invoices)
+      .where(and(
+        eq(invoices.shareToken, token),
+        eq(invoices.isPublicSharingEnabled, true),
+        gte(invoices.shareTokenExpiresAt, new Date())
+      ));
+    
+    return invoice || undefined;
+  }
+
+  async incrementInvoiceShareViewCount(token: string): Promise<void> {
+    await db.update(invoices)
+      .set({ shareViewCount: sql`${invoices.shareViewCount} + 1` })
+      .where(eq(invoices.shareToken, token));
+  }
+
+  async disableInvoiceSharing(invoiceId: number, companyId: number): Promise<void> {
+    await db.update(invoices)
+      .set({
+        isPublicSharingEnabled: false,
+        shareToken: null,
+        shareTokenExpiresAt: null
+      })
+      .where(and(eq(invoices.id, invoiceId), eq(invoices.companyId, companyId)));
   }
 
   // Invoice History

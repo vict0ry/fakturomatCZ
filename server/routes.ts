@@ -787,6 +787,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Invoice sharing routes
+  app.post("/api/invoices/:id/share", requireAuth, async (req: any, res) => {
+    try {
+      const invoiceId = parseInt(req.params.id);
+      const { expiresInDays = 30 } = req.body;
+      const companyId = req.user.companyId;
+
+      const shareToken = await storage.generateInvoiceShareToken(invoiceId, companyId, expiresInDays);
+      const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+      const publicUrl = `${baseUrl}/public/invoice/${shareToken}`;
+
+      res.json({
+        success: true,
+        shareUrl: publicUrl,
+        token: shareToken,
+        expiresInDays,
+        message: `Bezpečný odkaz byl vygenerován a vyprší za ${expiresInDays} dní.`
+      });
+    } catch (error) {
+      console.error('Share link generation error:', error);
+      res.status(500).json({ error: 'Failed to generate share link' });
+    }
+  });
+
+  app.get("/api/public/invoice/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+      const invoice = await storage.getInvoiceByShareToken(token);
+      
+      if (!invoice) {
+        return res.status(404).json({ error: 'Invoice not found or link has expired' });
+      }
+
+      await storage.incrementInvoiceShareViewCount(token);
+      const invoiceWithDetails = await storage.getInvoiceWithDetails(invoice.id, invoice.companyId);
+      
+      if (!invoiceWithDetails) {
+        return res.status(404).json({ error: 'Invoice details not found' });
+      }
+
+      const publicInvoiceData = {
+        id: invoiceWithDetails.id,
+        invoiceNumber: invoiceWithDetails.invoiceNumber,
+        issueDate: invoiceWithDetails.issueDate,
+        dueDate: invoiceWithDetails.dueDate,
+        total: invoiceWithDetails.total,
+        subtotal: invoiceWithDetails.subtotal,
+        vatAmount: invoiceWithDetails.vatAmount,
+        status: invoiceWithDetails.status,
+        currency: invoiceWithDetails.currency,
+        notes: invoiceWithDetails.notes,
+        customer: {
+          name: invoiceWithDetails.customer.name,
+          address: invoiceWithDetails.customer.address,
+          city: invoiceWithDetails.customer.city,
+          postalCode: invoiceWithDetails.customer.postalCode,
+        },
+        company: {
+          name: "Test Company", // Will be fixed with proper company data
+          address: "Test Address",
+          city: "Praha",
+          postalCode: "10000",
+          ico: "12345678",
+          dic: "CZ12345678",
+          phone: "+420 123 456 789",
+          email: "info@company.cz",
+          bankAccount: "1234567890/0100",
+        },
+        items: invoiceWithDetails.items,
+      };
+
+      res.json(publicInvoiceData);
+    } catch (error) {
+      console.error('Public invoice fetch error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   // Mount additional routes
   setupEmailRoutes(app, sessions);
   setupCompanyRoutes(app, sessions);

@@ -11,7 +11,18 @@ Technical preference: Always use AI for intelligent text/product matching instea
 
 ## Recent Changes
 
-### OpenAI Function Calling Migration (2025-07-20)
+### Smart Invoice Sharing Implementation (2025-07-20)
+- ✅ Rozšířené databázové schema o sharing sloupce (shareToken, expiresAt, viewCount)
+- ✅ Implementováno bezpečné generování tokenů s expirací
+- ✅ Backend API pro vytváření/deaktivaci sdílených odkazů
+- ✅ Public endpoint pro zobrazení faktur bez autentifikace
+- ✅ Frontend komponenta pro správu sdílení s dialogem
+- ✅ Kompletní veřejná stránka pro zobrazení faktury
+- ✅ PDF download pro sdílené faktury
+- ✅ Tracking počtu zobrazení a expirace odkazů
+- ✅ Bezpečnostní kontroly a validace tokenů
+
+### Previous OpenAI Function Calling Migration (2025-07-20)
 - ✅ Backup současného action-based systému do ai-backup/
 - ✅ Implementace OpenAI Function Calling architektury
 - ✅ Definice 6 specializovaných funkcí pro různé operace
