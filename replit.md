@@ -11,6 +11,18 @@ Technical preference: Always use AI for intelligent text/product matching instea
 
 ## Recent Changes
 
+### File Upload AI Chat + Expense Management (2025-07-20)
+- ✅ Implementováno nahrávání souborů do AI chatu (drag & drop + klik)
+- ✅ Podpora JPG, PNG, PDF souborů až 10MB
+- ✅ Vizuální feedback při nahrávání a preview příloh
+- ✅ Zobrazení příloh v chat historii s ikonami
+- ✅ Backend připraven na OpenAI Vision API pro čtení účtenek
+- ✅ Vytvořena kompletní stránka /expenses/new pro vytváření nákladů  
+- ✅ Přidán routing pro /expenses/new do React aplikace
+- ✅ Formulář s automatickým výpočtem DPH a celkové částky
+- ✅ Kategorizace nákladů (Office, Travel, IT, Utilities, atd.)
+- ✅ Integrace s databází a API endpointy pro náklady
+
 ### Smart Invoice Sharing + Email Setup (2025-07-20)
 - ✅ Rozšířené databázové schema o sharing sloupce (shareToken, expiresAt, viewCount)
 - ✅ Implementováno bezpečné generování tokenů s expirací
