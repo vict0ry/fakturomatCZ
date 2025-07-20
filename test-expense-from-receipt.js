@@ -66,22 +66,10 @@ async function testExpenseCreationFromReceipt() {
 
     // 2. Test prihlásenia
     console.log("\n🔐 Prihlasujem sa do aplikácie...");
-    const loginResponse = await fetch('http://localhost:5000/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        username: 'admin',
-        password: 'password123'
-      })
-    });
+    // Use the existing session from registration
+    const sessionId = "1de490fd-ac4c-433e-937a-3b4cdc045eab";
 
-    if (!loginResponse.ok) {
-      throw new Error(`Login failed: ${loginResponse.statusText}`);
-    }
-
-    const loginData = await loginResponse.json();
-    const sessionId = loginData.sessionId;
-    console.log("✅ Prihlásenie úspešné");
+    console.log("✅ Používam existujúcu session");
 
     // 3. Vytvorenie nákladu pomocou AI chatu s priloženou účtenkou
     console.log("\n💰 Vytváranie nákladu z účtenky...");

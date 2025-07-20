@@ -523,6 +523,85 @@ export class DatabaseStorage implements IStorage {
     .orderBy(desc(invoiceHistory.createdAt));
   }
 
+  // Expenses
+  async createExpense(expenseData: any, companyId: number): Promise<any> {
+    // Generate expense number
+    const expenseCount = await db.select({ count: sql`count(*)` })
+      .from(expenses)
+      .where(eq(expenses.companyId, companyId));
+    
+    const count = Number(expenseCount[0]?.count || 0);
+    const expenseNumber = `EXP-${String(count + 1).padStart(4, '0')}`;
+
+    const [newExpense] = await db
+      .insert(expenses)
+      .values({
+        companyId,
+        expenseNumber,
+        supplierName: expenseData.supplierName,
+        category: expenseData.category || 'Other',
+        description: expenseData.description,
+        amount: String(expenseData.amount || expenseData.total),
+        vatAmount: String(expenseData.vatAmount || '0'),
+        total: String(expenseData.total || expenseData.amount),
+        vatRate: String(expenseData.vatRate || '21'),
+        currency: expenseData.currency || 'CZK',
+        expenseDate: new Date(expenseData.expenseDate || new Date()),
+        status: expenseData.status || 'draft',
+        receiptNumber: expenseData.receiptNumber,
+        attachmentUrl: expenseData.attachmentUrl,
+        attachmentName: expenseData.attachmentName,
+        attachmentType: expenseData.attachmentType,
+        notes: expenseData.notes
+      })
+      .returning();
+    
+    return newExpense;
+  }
+
+  async getCompanyExpenses(companyId: number, filters?: any): Promise<any[]> {
+    let conditions = [eq(expenses.companyId, companyId)];
+    
+    if (filters) {
+      if (filters.status) {
+        conditions.push(eq(expenses.status, filters.status));
+      }
+      if (filters.category) {
+        conditions.push(eq(expenses.category, filters.category));
+      }
+      if (filters.dateFrom) {
+        conditions.push(gte(expenses.expenseDate, new Date(filters.dateFrom)));
+      }
+      if (filters.dateTo) {
+        conditions.push(lte(expenses.expenseDate, new Date(filters.dateTo)));
+      }
+    }
+    
+    return await db.select().from(expenses)
+      .where(and(...conditions))
+      .orderBy(desc(expenses.createdAt));
+  }
+
+  async getExpense(id: number, companyId: number): Promise<any> {
+    const [expense] = await db.select().from(expenses)
+      .where(and(eq(expenses.id, id), eq(expenses.companyId, companyId)));
+    return expense || undefined;
+  }
+
+  async updateExpense(id: number, companyId: number, updates: any): Promise<any> {
+    const [updatedExpense] = await db
+      .update(expenses)
+      .set(updates)
+      .where(and(eq(expenses.id, id), eq(expenses.companyId, companyId)))
+      .returning();
+    return updatedExpense;
+  }
+
+  async deleteExpense(id: number, companyId: number): Promise<void> {
+    await db.delete(expenses)
+      .where(and(eq(expenses.id, id), eq(expenses.companyId, companyId)));
+  }
+
   async getInvoiceCount(companyId: number, year: number): Promise<number> {
     const startOfYear = new Date(year, 0, 1);
     const endOfYear = new Date(year, 11, 31, 23, 59, 59);
