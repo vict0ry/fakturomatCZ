@@ -8,7 +8,7 @@ export async function generateInvoicePDF(
   
   // Launch headless browser with fallback options
   const browser = await puppeteer.launch({
-    headless: 'new',
+    headless: true,
     args: [
       '--no-sandbox', 
       '--disable-setuid-sandbox',
@@ -44,7 +44,7 @@ export async function generateInvoicePDF(
       displayHeaderFooter: false
     });
 
-    return pdfBuffer;
+    return Buffer.from(pdfBuffer);
   } finally {
     await browser.close();
   }

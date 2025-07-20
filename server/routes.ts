@@ -736,7 +736,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.setHeader('Content-Disposition', `attachment; filename="Faktura_${invoice.invoiceNumber}.pdf"`);
         res.send(pdfBuffer);
       } catch (puppeteerError) {
-        console.warn("Puppeteer failed, falling back to HTML:", puppeteerError.message);
+        console.warn("Puppeteer failed, falling back to HTML:", (puppeteerError as Error).message);
         
         // Fallback to HTML with print functionality
         const { generateInvoiceHTML } = await import('./services/pdf-fallback');
@@ -918,7 +918,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const aiResponse = await processUniversalAICommand(message, context, currentPath, {
         companyId: req.user.companyId,
-        userId: req.user.userId,
+        userId: req.user.id!,
         storage
       }, chatHistory, attachments);
       
@@ -1226,7 +1226,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       await storage.incrementInvoiceShareViewCount(token);
-      const invoiceWithDetails = await storage.getInvoiceWithDetails(invoice.id, invoice.companyId);
+      const invoiceWithDetails = await storage.getInvoiceWithDetails(invoice.id!, invoice.companyId!);
       
       if (!invoiceWithDetails) {
         return res.status(404).json({ error: 'Invoice details not found' });

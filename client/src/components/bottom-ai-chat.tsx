@@ -52,7 +52,7 @@ export function BottomAIChat() {
       localStorage.setItem(testKey, testValue);
       localStorage.removeItem(testKey);
     } catch (error) {
-      if (error.name === 'QuotaExceededError') {
+      if ((error as Error).name === 'QuotaExceededError') {
         console.log('Storage quota exceeded, clearing chat history');
         localStorage.removeItem('ai-chat-history');
       }
@@ -82,7 +82,7 @@ export function BottomAIChat() {
         }));
         setMessages(parsed);
       } catch (error) {
-        console.error('Failed to load chat history:', error);
+        console.error('Failed to load chat history:', error as Error);
         localStorage.removeItem('ai-chat-history');
       }
     }
@@ -102,9 +102,9 @@ export function BottomAIChat() {
         }));
         localStorage.setItem('ai-chat-history', JSON.stringify(messagesForStorage));
       } catch (error) {
-        console.warn('Failed to save chat history to localStorage:', error);
+        console.warn('Failed to save chat history to localStorage:', error as Error);
         // Clear old messages if storage is full
-        if (error.name === 'QuotaExceededError') {
+        if ((error as Error).name === 'QuotaExceededError') {
           localStorage.removeItem('ai-chat-history');
           console.log('Cleared chat history due to storage quota');
         }
