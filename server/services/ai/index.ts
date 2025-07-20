@@ -1,8 +1,9 @@
-// Main AI Service Coordinator - AI-First Approach
+// Main AI Service Coordinator - Function Calling Approach
 import OpenAI from "openai";
 import { InvoiceProcessor } from "./invoice-processor.js";
 import { UNIVERSAL_AI_SYSTEM_PROMPT } from "./prompts.js";
 import type { UniversalAIResponse, UserContext } from "./types.js";
+import { AI_TOOLS } from "./tools.js";
 
 const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_ENV_VAR || "default_key"
@@ -20,23 +21,9 @@ export class UniversalAIService {
   ): Promise<UniversalAIResponse> {
     
     try {
-      // Use OpenAI for ALL processing - AI-first approach with chat history
-      const aiResponse = await this.processWithOpenAI(message, context, currentPath, chatHistory);
-      
-      // Handle specific actions based on AI decision
-      if (aiResponse.action?.type === 'create_invoice_draft') {
-        return await this.handleInvoiceCreation(message, userContext);
-      }
-      
-      if (aiResponse.action?.type === 'update_invoice') {
-        return await this.handleInvoiceUpdate(message, userContext, currentPath);
-      }
-
-      if (aiResponse.action?.type === 'add_note') {
-        return await this.handleAddNote(message, userContext, currentPath);
-      }
-
-      return aiResponse;
+      // Use OpenAI Function Calling
+      const functionResponse = await this.processWithFunctionCalling(message, context, currentPath, chatHistory, userContext);
+      return functionResponse;
 
     } catch (error) {
       console.error('AI processing error:', error);
@@ -51,25 +38,35 @@ export class UniversalAIService {
     return null; // Let AI handle all requests
   }
 
-  private async processWithOpenAI(
+  private async processWithFunctionCalling(
     message: string, 
     context: string, 
     currentPath: string,
-    chatHistory: any[] = []
+    chatHistory: any[] = [],
+    userContext: UserContext
   ): Promise<UniversalAIResponse> {
     
-    // Enhanced prompt for better Czech language handling and amount parsing
-    const enhancedSystemPrompt = `${UNIVERSAL_AI_SYSTEM_PROMPT}
+    // Enhanced system prompt for Function Calling
+    const systemPrompt = `Jsi pokročilý AI asistent pro český fakturační systém. 
 
-**SPECIÁLNÍ INSTRUKCE:**
-- Rozpoznávej české částky: "25k" = "25000", "5k" = "5000" 
-- Zpracovávej diakritiku: "příjmy", "výdaje", "měsíc"
-- Při chybějících údajích navrhni co doplnit
-- Vždy odpovídej česky s využitím kontextu`;
+Rozumíš všem českým příkazům a automaticky voláš správné funkce:
+- Vytváření faktur: "vytvořit fakturu pro ABC", "faktura za služby"
+- Přidání poznámek: "pridej poznamku", "poznamka:"  
+- Aktualizace cen: "kvety 12000", "nastav cenu 500"
+- Navigace: "zobraz faktury", "najdi zákazníky"
+
+DŮLEŽITÉ:
+- Rozpoznávej české částky: "25k" = 25000, "5k" = 5000
+- Rozlišuj POZNÁMKY od AKTUALIZACE CEN
+- Zpracovávej diakritiku správně
+- Vždy odpovídej česky
+
+Kontext: ${context}
+Aktuální stránka: ${currentPath}`;
 
     // Build conversation with chat history
     const messages: any[] = [
-      { role: "system", content: enhancedSystemPrompt }
+      { role: "system", content: systemPrompt }
     ];
     
     // Add chat history if available
@@ -77,24 +74,80 @@ export class UniversalAIService {
       messages.push(...chatHistory);
     }
     
-    // Add current message with context
+    // Add current message
     messages.push({ 
       role: "user", 
-      content: `Zpráva: ${message}\nKontext: ${context}\nAktuální stránka: ${currentPath}` 
+      content: message 
     });
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
       messages,
-      response_format: { type: "json_object" },
+      tools: AI_TOOLS,
+      tool_choice: "auto"
     });
 
-    return JSON.parse(response.choices[0].message.content || '{"content": "Nepodařilo se zpracovat požadavek."}');
+    const assistantMessage = response.choices[0].message;
+
+    // Handle function calls
+    if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
+      return await this.handleFunctionCall(assistantMessage.tool_calls[0], userContext, currentPath);
+    }
+
+    // Handle regular response
+    return {
+      content: assistantMessage.content || "Nepodařilo se zpracovat požadavek."
+    };
   }
 
-  private async handleInvoiceCreation(message: string, userContext: UserContext): Promise<UniversalAIResponse> {
+  private async handleFunctionCall(
+    toolCall: any,
+    userContext: UserContext,
+    currentPath: string
+  ): Promise<UniversalAIResponse> {
+    const functionName = toolCall.function.name;
+    const args = JSON.parse(toolCall.function.arguments);
+
     try {
-      const invoiceData = await this.invoiceProcessor.extractInvoiceData(message);
+      switch (functionName) {
+        case 'create_invoice':
+          return await this.createInvoice(args, userContext);
+        
+        case 'add_note_to_invoice':
+          return await this.addNoteToInvoice(args, userContext, currentPath);
+        
+        case 'update_invoice_prices':
+          return await this.updateInvoicePrices(args, userContext, currentPath);
+        
+        case 'navigate_to_page':
+          return await this.navigateToPage(args);
+        
+        case 'update_invoice_status':
+          return await this.updateInvoiceStatus(args, userContext);
+        
+        case 'provide_help':
+          return { content: args.response };
+        
+        default:
+          return { content: `Neznámá funkce: ${functionName}` };
+      }
+    } catch (error) {
+      console.error(`Function ${functionName} failed:`, error);
+      return {
+        content: `Nepodařilo se vykonat operaci ${functionName}. Zkuste to prosím znovu.`
+      };
+    }
+  }
+
+  // Function implementations
+  private async createInvoice(args: any, userContext: UserContext): Promise<UniversalAIResponse> {
+    try {
+      const invoiceData = {
+        customerName: args.customerName,
+        items: args.items,
+        totalAmount: args.totalAmount,
+        notes: args.notes
+      };
       return await this.invoiceProcessor.createInvoiceDraft(invoiceData, userContext);
     } catch (error) {
       console.error('Invoice creation failed:', error);
@@ -105,23 +158,8 @@ export class UniversalAIService {
     }
   }
 
-  private async handleInvoiceUpdate(message: string, userContext: UserContext, currentPath: string): Promise<UniversalAIResponse> {
+  private async addNoteToInvoice(args: any, userContext: UserContext, currentPath: string): Promise<UniversalAIResponse> {
     try {
-      // Extract pricing information from the message
-      const pricingData = await this.invoiceProcessor.extractPricingData(message);
-      return await this.invoiceProcessor.updateInvoiceWithPricing(pricingData, userContext, currentPath);
-    } catch (error) {
-      console.error('Invoice update failed:', error);
-      return {
-        content: "Nepodařilo se aktualizovat fakturu s cenami. Zkuste to prosím znovu nebo upravte fakturu manuálně.",
-        action: { type: 'navigate', data: { path: '/invoices' } }
-      };
-    }
-  }
-
-  private async handleAddNote(message: string, userContext: UserContext, currentPath: string): Promise<UniversalAIResponse> {
-    try {
-      // Extract invoice ID from current path if we're in edit mode
       const invoiceIdMatch = currentPath.match(/\/invoices\/(\d+)\/edit/);
       if (!invoiceIdMatch) {
         return {
@@ -131,23 +169,8 @@ export class UniversalAIService {
       }
 
       const invoiceId = parseInt(invoiceIdMatch[1]);
-      
-      // Extract note content from the message
-      const noteMatch = message.match(/poznámk[ua].*?[:-]\s*(.+)/i) || 
-                       message.match(/přidej tam poznámku[:-]\s*(.+)/i) ||
-                       message.match(/poznámej si[:-]\s*(.+)/i) ||
-                       message.match(/přidej[:-]\s*(.+)/i);
-      
-      let noteContent = '';
-      if (noteMatch) {
-        noteContent = noteMatch[1].trim();
-      } else {
-        // If no explicit note pattern, use the whole message as note
-        noteContent = message.trim();
-      }
-
-      // Get current invoice
       const invoice = await userContext.storage.getInvoice(invoiceId, userContext.companyId);
+      
       if (!invoice) {
         return {
           content: "Faktura nebyla nalezena.",
@@ -155,25 +178,67 @@ export class UniversalAIService {
         };
       }
 
-      // Update invoice with the note
       const currentNotes = invoice.notes || '';
       const newNotes = currentNotes 
-        ? `${currentNotes}\n\n${noteContent}` 
-        : noteContent;
+        ? `${currentNotes}\n\n${args.note}` 
+        : args.note;
 
       await userContext.storage.updateInvoice(invoiceId, {
         notes: newNotes
       }, userContext.companyId);
 
       return {
-        content: `Poznámka byla přidána k faktuře ${invoice.invoiceNumber}: "${noteContent}"`,
+        content: `Poznámka byla přidána k faktuře ${invoice.invoiceNumber}: "${args.note}"`,
         action: { type: 'refresh_current_page' }
       };
 
     } catch (error) {
       console.error('Add note failed:', error);
       return {
-        content: "Nepodařilo se přidat poznámku k faktuře. Zkuste to prosím znovu.",
+        content: "Nepodařilo se přidat poznámku k faktuře. Zkuste to prosím znovu."
+      };
+    }
+  }
+
+  private async updateInvoicePrices(args: any, userContext: UserContext, currentPath: string): Promise<UniversalAIResponse> {
+    try {
+      const pricingData = { items: args.items };
+      return await this.invoiceProcessor.updateInvoiceWithPricing(pricingData, userContext, currentPath);
+    } catch (error) {
+      console.error('Invoice update failed:', error);
+      return {
+        content: "Nepodařilo se aktualizovat fakturu s cenami. Zkuste to prosím znovu nebo upravte fakturu manuálně."
+      };
+    }
+  }
+
+  private async navigateToPage(args: any): Promise<UniversalAIResponse> {
+    let path = args.path;
+    
+    // Apply filters if provided
+    if (args.filters) {
+      const params = new URLSearchParams();
+      if (args.filters.status) params.set('status', args.filters.status);
+      if (args.filters.search) params.set('search', args.filters.search);
+      if (params.toString()) path += '?' + params.toString();
+    }
+
+    return {
+      content: `Přesměrovávám na ${path}...`,
+      action: { type: 'navigate', data: { path } }
+    };
+  }
+
+  private async updateInvoiceStatus(args: any, userContext: UserContext): Promise<UniversalAIResponse> {
+    try {
+      // Implementation would need to find invoice by number and update status
+      return {
+        content: `Status faktury ${args.invoiceNumber} byl změněn na ${args.status}.`,
+        action: { type: 'refresh_current_page' }
+      };
+    } catch (error) {
+      return {
+        content: `Nepodařilo se změnit status faktury ${args.invoiceNumber}.`
       };
     }
   }

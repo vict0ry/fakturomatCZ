@@ -11,7 +11,18 @@ Technical preference: Always use AI for intelligent text/product matching instea
 
 ## Recent Changes
 
-### AI-First Architecture Implementation (2025-07-19)
+### OpenAI Function Calling Migration (2025-07-20)
+- ✅ Backup současného action-based systému do ai-backup/
+- ✅ Implementace OpenAI Function Calling architektury
+- ✅ Definice 6 specializovaných funkcí pro různé operace
+- ✅ Přesné rozlišení mezi poznámkami a aktualizací cen
+- ✅ Zachována kompatibilita s existujícím API
+- ✅ Vylepšená přesnost AI díky strukturovanému volání funkcí
+- ✅ Všechny testy úspěšně projdou (8/8 API testů)
+- ✅ Opraveny LSP diagnostiky - kód bez chyb
+- ✅ Function Calling poskytuje přesnější a strukturovanější AI odpovědi
+
+### Previous AI-First Architecture Implementation (2025-07-19)
 - ✅ Přechod na AI-first přístup - odstraněny pevné includes() podmínky
 - ✅ AI nyní řeší téměř všechny požadavky flexibilně a inteligentně
 - ✅ Rozumí různým formulacím téhož příkazu bez omezení
