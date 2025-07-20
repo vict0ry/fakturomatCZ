@@ -51,16 +51,26 @@ export class UniversalAIService {
     
     // If there are image attachments, process them with Vision API first
     if (attachments && attachments.length > 0) {
+      console.log('Processing attachments:', attachments.length, 'attachments found');
+      
       const imageAttachments = attachments.filter(att => 
         att.type?.startsWith('image/') || att.name?.match(/\.(jpg|jpeg|png)$/i)
       );
       
+      console.log('Image attachments found:', imageAttachments.length);
+      
       if (imageAttachments.length > 0) {
         try {
+          console.log('Starting Vision API processing...');
           const visionResult = await this.processImageWithVision(imageAttachments, message);
+          console.log('Vision API result:', visionResult);
+          
           if (visionResult) {
+            console.log('Creating expense from vision data...');
             // Extract expense data from receipt/invoice and save attachment
             return await this.createExpenseFromVision(visionResult, userContext, imageAttachments[0]);
+          } else {
+            console.log('Vision result is empty or null');
           }
         } catch (error) {
           console.error('Vision API processing failed:', error);
@@ -589,6 +599,9 @@ Kontext: ${context}`;
 
   private async processImageWithVision(imageAttachments: any[], message: string): Promise<any> {
     try {
+      console.log('Vision API processing started');
+      console.log('Image attachment structure:', JSON.stringify(imageAttachments[0], null, 2));
+      
       const openai = new OpenAI({
         apiKey: process.env.OPENAI_API_KEY
       });
@@ -598,6 +611,7 @@ Kontext: ${context}`;
       
       // Convert base64 data if needed
       const imageData = image.data || image.content;
+      console.log('Image data length:', imageData ? imageData.length : 'null');
       
       const response = await openai.chat.completions.create({
         model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
