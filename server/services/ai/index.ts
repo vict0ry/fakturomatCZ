@@ -18,12 +18,13 @@ export class UniversalAIService {
     context: string, 
     currentPath: string, 
     userContext: UserContext,
-    chatHistory: any[] = []
+    chatHistory: any[] = [],
+    attachments: any[] = []
   ): Promise<UniversalAIResponse> {
     
     try {
       // Use OpenAI Function Calling
-      const functionResponse = await this.processWithFunctionCalling(message, context, currentPath, chatHistory, userContext);
+      const functionResponse = await this.processWithFunctionCalling(message, context, currentPath, chatHistory, userContext, attachments);
       return functionResponse;
 
     } catch (error) {
@@ -44,7 +45,8 @@ export class UniversalAIService {
     context: string, 
     currentPath: string,
     chatHistory: any[] = [],
-    userContext: UserContext
+    userContext: UserContext,
+    attachments: any[] = []
   ): Promise<UniversalAIResponse> {
     
     // Enhanced system prompt for Function Calling
@@ -202,7 +204,7 @@ Kontext: ${context}`;
 
       return {
         content: `Poznámka byla přidána k faktuře ${invoice.invoiceNumber}: "${args.note}"`,
-        action: { type: 'refresh_current_page' }
+        action: { type: 'refresh_current_page', data: {} }
       };
 
     } catch (error) {

@@ -914,13 +914,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Universal AI Chat - for authenticated users
   app.post("/api/chat/universal", requireAuth, async (req: any, res) => {
     try {
-      const { message, context, currentPath, chatHistory } = req.body;
+      const { message, context, currentPath, chatHistory, attachments } = req.body;
       
       const aiResponse = await processUniversalAICommand(message, context, currentPath, {
         companyId: req.user.companyId,
         userId: req.user.userId,
         storage
-      }, chatHistory);
+      }, chatHistory, attachments);
       
       // Save chat message to history
       await storage.createChatMessage({

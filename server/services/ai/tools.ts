@@ -1,7 +1,7 @@
 // OpenAI Function Calling Tools Definition
 export const AI_TOOLS = [
   {
-    type: "function",
+    type: "function" as const,
     function: {
       name: "create_expense",
       description: "Vytvoření nového nákladu/výdaje - dodavatel, kategorie, částka, DPH",
@@ -46,7 +46,7 @@ export const AI_TOOLS = [
     }
   },
   {
-    type: "function",
+    type: "function" as const,
     function: {
       name: "update_invoice_universal",
       description: "Univerzální aktualizace faktury - splatnost, poznámky, adresy, zákazník, platební údaje, množství, status - VŠECHNO!",

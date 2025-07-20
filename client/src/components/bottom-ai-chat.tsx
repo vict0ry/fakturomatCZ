@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, MessageSquare, ChevronUp, ChevronDown, X } from 'lucide-react';
+import { Send, MessageSquare, ChevronUp, ChevronDown, X, Paperclip, FileText, Image } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthApi } from '@/hooks/use-auth-api';
 import { useLocation } from 'wouter';
@@ -13,6 +13,14 @@ interface Message {
   type: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  attachments?: FileAttachment[];
+}
+
+interface FileAttachment {
+  name: string;
+  size: number;
+  type: string;
+  content: string; // base64 encoded content
 }
 
 interface AIResponse {
@@ -29,8 +37,11 @@ export function BottomAIChat() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [, setLocation] = useLocation();
+  const [attachments, setAttachments] = useState<FileAttachment[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { apiRequest } = useAuthApi();
 
   const scrollToBottom = () => {
@@ -77,23 +88,74 @@ export function BottomAIChat() {
     // WebSocket connection logic disabled temporarily
   }, []);
 
-  const addMessage = (type: 'user' | 'assistant', content: string) => {
+  const addMessage = (type: 'user' | 'assistant', content: string, attachments?: FileAttachment[]) => {
     const newMessage: Message = {
       id: Date.now().toString(),
       type,
       content,
-      timestamp: new Date()
+      timestamp: new Date(),
+      attachments: attachments || []
     };
     setMessages(prev => [...prev, newMessage]);
     return newMessage;
   };
 
+  const handleFileUpload = (files: File[]) => {
+    const validFiles = files.filter(file => {
+      // Accept images and PDFs up to 10MB
+      const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+      return validTypes.includes(file.type) && file.size <= 10 * 1024 * 1024;
+    });
+
+    validFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          const base64Content = e.target.result.toString().split(',')[1];
+          const attachment: FileAttachment = {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            content: base64Content
+          };
+          
+          setAttachments(prev => [...prev, attachment]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer.files);
+    handleFileUpload(files);
+  };
+
   const handleSendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+    if ((!input.trim() && attachments.length === 0) || isLoading) return;
 
     const userMessage = input.trim();
+    const messageAttachments = [...attachments];
+    
     setInput('');
-    addMessage('user', userMessage);
+    setAttachments([]);
+    addMessage('user', userMessage || '📎 Příloha nahrána', messageAttachments);
     setIsLoading(true);
 
     try {
@@ -102,8 +164,9 @@ export function BottomAIChat() {
         method: 'POST',
         body: JSON.stringify({
           message: userMessage,
-          context: JSON.stringify(messages.slice(-5)), // Posledních 5 zpráv jako kontext
-          currentPath
+          context: JSON.stringify(messages.slice(-5)),
+          currentPath,
+          attachments: messageAttachments
         })
       });
 
@@ -188,6 +251,9 @@ export function BottomAIChat() {
             animate={{ opacity: 1, height: 400 }}
             exit={{ opacity: 0, height: 0 }}
             className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 shadow-2xl"
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
           >
             {/* Chat Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
@@ -252,6 +318,26 @@ export function BottomAIChat() {
                         }`}
                       >
                         <div className="whitespace-pre-wrap">{message.content}</div>
+                        
+                        {/* Attachment display */}
+                        {message.attachments && message.attachments.length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            {message.attachments.map((attachment, index) => (
+                              <div key={index} className="flex items-center space-x-2 text-xs opacity-80">
+                                {attachment.type.startsWith('image/') ? (
+                                  <Image className="w-3 h-3" />
+                                ) : (
+                                  <FileText className="w-3 h-3" />
+                                )}
+                                <span className="truncate max-w-32">{attachment.name}</span>
+                                <span className="text-xs opacity-70">
+                                  ({(attachment.size / 1024).toFixed(1)} KB)
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
                         <div
                           className={`text-xs mt-1 opacity-70 ${
                             message.type === 'user' ? 'text-orange-100' : 'text-gray-500 dark:text-gray-400'
@@ -280,6 +366,92 @@ export function BottomAIChat() {
                 </div>
               )}
             </ScrollArea>
+
+            {/* File Upload Input Area for Expanded Mode */}
+            <div className={`border-t border-gray-200 dark:border-gray-700 p-4 ${
+              isDragging ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-300' : ''
+            }`}>
+              {/* Attachments Preview */}
+              {attachments.length > 0 && (
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {attachments.map((attachment, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-800 rounded-lg px-3 py-2 text-sm"
+                    >
+                      {attachment.type.startsWith('image/') ? (
+                        <Image className="w-4 h-4 text-blue-500" />
+                      ) : (
+                        <FileText className="w-4 h-4 text-green-500" />
+                      )}
+                      <span className="truncate max-w-32">{attachment.name}</span>
+                      <button
+                        onClick={() => removeAttachment(index)}
+                        className="text-gray-500 hover:text-red-500"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex space-x-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,application/pdf"
+                  multiple
+                  onChange={(e) => e.target.files && handleFileUpload(Array.from(e.target.files))}
+                  className="hidden"
+                />
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-3"
+                  disabled={isLoading}
+                >
+                  <Paperclip className="w-4 h-4" />
+                </Button>
+
+                <Input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder={
+                    isDragging 
+                      ? "Přetáhněte soubory zde..." 
+                      : attachments.length > 0 
+                        ? "Přidejte popis k příloze..." 
+                        : "Napište zprávu nebo nahrajte soubor..."
+                  }
+                  className="flex-1"
+                  disabled={isLoading}
+                />
+                
+                <Button
+                  onClick={handleSendMessage}
+                  disabled={(!input.trim() && attachments.length === 0) || isLoading}
+                  className="bg-orange-500 hover:bg-orange-600 text-white"
+                >
+                  {isLoading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+
+              {isDragging && (
+                <div className="mt-3 text-center text-sm text-orange-600 dark:text-orange-400">
+                  📎 Přetáhněte účtenky nebo faktury (JPG, PNG, PDF - max 10MB)
+                </div>
+              )}
+            </div>
+
           </motion.div>
         )}
       </AnimatePresence>
