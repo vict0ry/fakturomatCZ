@@ -165,6 +165,21 @@ Kontext: ${context}`;
         
         case 'get_expenses':
           return await this.getExpenses(args, userContext);
+
+        case 'analyze_business_insights':
+          return await this.analyzeBusinessInsights(args, userContext);
+
+        case 'predict_payment_risk':
+          return await this.predictPaymentRisk(args, userContext);
+
+        case 'optimize_email_campaign':
+          return await this.optimizeEmailCampaign(args, userContext);
+
+        case 'generate_smart_report':
+          return await this.generateSmartReport(args, userContext);
+
+        case 'smart_expense_categorization':
+          return await this.smartExpenseCategorization(args, userContext);
         
         case 'provide_help':
           return { content: args.response };
@@ -680,6 +695,316 @@ Nepodařilo se automaticky vytvořit náklad. Můžete ho vytvořit manuálně n
           type: 'navigate', 
           data: { path: '/expenses/new' }
         }
+      };
+    }
+  }
+
+  // Advanced AI Analytics Functions - Added as class methods
+  private async analyzeBusinessInsights(args: any, userContext: UserContext): Promise<UniversalAIResponse> {
+    try {
+      const invoices = await userContext.storage.getInvoices(userContext.companyId);
+      const customers = await userContext.storage.getCustomers(userContext.companyId);
+      const expenses = await userContext.storage.getCompanyExpenses(userContext.companyId);
+
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      
+      const analysisPrompt = `Analyzuj následující obchodní data a poskytni inteligentní insights:
+
+FAKTURY (${invoices.length}): ${JSON.stringify(invoices.slice(0, 20))}
+ZÁKAZNÍCI (${customers.length}): ${JSON.stringify(customers.slice(0, 10))}  
+NÁKLADY (${expenses.length}): ${JSON.stringify(expenses.slice(0, 20))}
+
+Vytvoř JSON odpověď s těmito insights:
+{
+  "revenue_trend": "trend příjmů",
+  "top_customers": ["nejlepší zákazníci podle příjmů"],
+  "payment_patterns": "analýza platebních vzorů", 
+  "cost_analysis": "analýza nákladů a efektivity",
+  "recommendations": ["3-5 konkrétních doporučení"],
+  "risks": ["identifikovaná rizika"],
+  "opportunities": ["obchodní příležitosti"]
+}`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: analysisPrompt }],
+        response_format: { type: "json_object" },
+        max_tokens: 1500,
+      });
+
+      const insights = JSON.parse(response.choices[0].message.content);
+      
+      return {
+        content: `📊 Inteligentní analýza vašeho podnikání
+
+🔹 Trend příjmů: ${insights.revenue_trend}
+
+👥 TOP zákazníci: ${insights.top_customers.join(', ')}
+
+💰 Platební vzory: ${insights.payment_patterns}
+
+📈 Analýza nákladů: ${insights.cost_analysis}
+
+✨ Doporučení:
+• ${insights.recommendations.join('\n• ')}
+
+⚠️ Rizika:
+• ${insights.risks.join('\n• ')}
+
+🚀 Příležitosti:
+• ${insights.opportunities.join('\n• ')}`,
+        action: { type: 'navigate', data: { path: '/dashboard' } }
+      };
+    } catch (error) {
+      console.error('Business analysis failed:', error);
+      return {
+        content: "Nepodařilo se vykonat analýzu podnikání. Zkuste to později."
+      };
+    }
+  }
+
+  private async predictPaymentRisk(args: any, userContext: UserContext): Promise<UniversalAIResponse> {
+    try {
+      let customer;
+      
+      if (args.customerId) {
+        customer = await userContext.storage.getCustomer(args.customerId, userContext.companyId);
+      } else if (args.customerName) {
+        const customers = await userContext.storage.searchCustomers(args.customerName, userContext.companyId);
+        customer = customers[0];
+      }
+
+      if (!customer) {
+        return {
+          content: "Zákazník nebyl nalezen. Zadejte prosím přesné jméno nebo ID zákazníka."
+        };
+      }
+
+      const customerInvoices = await userContext.storage.getInvoices(userContext.companyId, { customerId: customer.id });
+
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      
+      const predictionPrompt = `Analyzuj platební riziko zákazníka na základě těchto údajů:
+
+ZÁKAZNÍK: ${JSON.stringify(customer)}
+HISTORIE FAKTUR: ${JSON.stringify(customerInvoices)}
+
+Vytvoř JSON odhad rizika:
+{
+  "risk_score": "1-10 (1=nízké, 10=vysoké riziko)",
+  "risk_level": "low/medium/high", 
+  "payment_history": "analýza platební historie",
+  "average_delay": "průměrné zpoždění ve dnech",
+  "recommendations": ["doporučení pro snížení rizika"],
+  "suggested_credit_limit": "doporučený úvěrový limit v Kč"
+}`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: predictionPrompt }],
+        response_format: { type: "json_object" },
+        max_tokens: 800,
+      });
+
+      const riskAnalysis = JSON.parse(response.choices[0].message.content);
+      
+      return {
+        content: `🎯 Analýza platebního rizika zákazníka ${customer.name}
+
+📊 Rizikové skóre: ${riskAnalysis.risk_score}/10 (${riskAnalysis.risk_level})
+
+📈 Platební historie: ${riskAnalysis.payment_history}
+
+⏰ Průměrné zpoždění: ${riskAnalysis.average_delay} dní
+
+💡 Doporučení:
+• ${riskAnalysis.recommendations.join('\n• ')}
+
+💰 Navrhovaný limit: ${riskAnalysis.suggested_credit_limit}`,
+        action: { type: 'navigate', data: { path: '/customers' } }
+      };
+    } catch (error) {
+      console.error('Payment risk prediction failed:', error);
+      return {
+        content: "Nepodařilo se analyzovat platební riziko. Zkuste to později."
+      };
+    }
+  }
+
+  private async optimizeEmailCampaign(args: any, userContext: UserContext): Promise<UniversalAIResponse> {
+    try {
+      const overdueInvoices = await userContext.storage.getOverdueInvoices(userContext.companyId);
+      
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      
+      const optimizationPrompt = `Optimalizuj email kampaň pro typ "${args.campaignType}":
+
+NEUHRAZENÉ FAKTURY: ${JSON.stringify(overdueInvoices.slice(0, 10))}
+
+Vytvoř JSON s optimalizací:
+{
+  "subject_lines": ["3 optimální subject lines pro ${args.campaignType}"],
+  "best_send_times": ["optimální časy odeslání"], 
+  "personalization_tips": ["tipy pro personalizaci"],
+  "email_templates": {
+    "polite_reminder": "zdvořilá upomínka",
+    "urgent_notice": "naléhavé oznámení",
+    "final_warning": "poslední varování"
+  },
+  "success_predictions": "předpoklad úspěšnosti kampaní v %"
+}`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: optimizationPrompt }],
+        response_format: { type: "json_object" },
+        max_tokens: 1200,
+      });
+
+      const optimization = JSON.parse(response.choices[0].message.content);
+      
+      return {
+        content: `📧 Optimalizace email kampaně (${args.campaignType})
+
+📝 Nejlepší subject lines:
+• ${optimization.subject_lines.join('\n• ')}
+
+⏰ Optimální časy: ${optimization.best_send_times.join(', ')}
+
+🎯 Personalizace:
+• ${optimization.personalization_tips.join('\n• ')}
+
+📈 Předpoklad úspěšnosti: ${optimization.success_predictions}`,
+        action: { type: 'navigate', data: { path: '/settings' } }
+      };
+    } catch (error) {
+      console.error('Email optimization failed:', error);
+      return {
+        content: "Nepodařilo se optimalizovat email kampaň. Zkuste to později."
+      };
+    }
+  }
+
+  private async generateSmartReport(args: any, userContext: UserContext): Promise<UniversalAIResponse> {
+    try {
+      const invoices = await userContext.storage.getInvoices(userContext.companyId);
+      const customers = await userContext.storage.getCustomers(userContext.companyId);
+      const expenses = await userContext.storage.getCompanyExpenses(userContext.companyId);
+
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      
+      const reportPrompt = `Vygeneruj inteligentní ${args.reportType} report na základě těchto dat:
+
+FAKTURY: ${JSON.stringify(invoices.slice(0, 30))}
+ZÁKAZNÍCI: ${JSON.stringify(customers.slice(0, 20))}
+NÁKLADY: ${JSON.stringify(expenses.slice(0, 30))}
+
+Vytvoř JSON report:
+{
+  "executive_summary": "shrnutí pro vedení",
+  "key_metrics": {
+    "total_revenue": "celkové příjmy v Kč",
+    "profit_margin": "zisková marže v %", 
+    "top_customer_revenue": "příjmy od TOP zákazníka",
+    "expense_ratio": "poměr nákladů k příjmům v %"
+  },
+  "trends": ["klíčové trendy"],
+  "forecasts": ["předpovědi na další období"],
+  "action_items": ["doporučené akce"],
+  "detailed_analysis": "detailní analýza"
+}`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: reportPrompt }],
+        response_format: { type: "json_object" },
+        max_tokens: 2000,
+      });
+
+      const report = JSON.parse(response.choices[0].message.content);
+      
+      return {
+        content: `📈 Inteligentní ${args.reportType.toUpperCase()} Report
+
+📋 Shrnutí pro vedení: ${report.executive_summary}
+
+📊 Klíčové metriky:
+• Celkové příjmy: ${report.key_metrics.total_revenue}
+• Zisková marže: ${report.key_metrics.profit_margin}
+• TOP zákazník: ${report.key_metrics.top_customer_revenue}
+• Poměr nákladů: ${report.key_metrics.expense_ratio}
+
+📈 Trendy:
+• ${report.trends.join('\n• ')}
+
+🔮 Předpovědi:
+• ${report.forecasts.join('\n• ')}
+
+✅ Doporučené akce:
+• ${report.action_items.join('\n• ')}
+
+🔍 Detailní analýza: ${report.detailed_analysis}`,
+        action: { type: 'navigate', data: { path: '/analytics' } }
+      };
+    } catch (error) {
+      console.error('Smart report generation failed:', error);
+      return {
+        content: "Nepodařilo se vygenerovat inteligentní report. Zkuste to později."
+      };
+    }
+  }
+
+  private async smartExpenseCategorization(args: any, userContext: UserContext): Promise<UniversalAIResponse> {
+    try {
+      const expenses = await userContext.storage.getCompanyExpenses(userContext.companyId);
+      
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      
+      const categorizationPrompt = `Kategorizuj tento náklad inteligentně:
+
+NOVÝ NÁKLAD:
+- Popis: "${args.expenseDescription}"
+- Dodavatel: "${args.supplierName}"
+
+EXISTUJÍCÍ NÁKLADY PRO KONTEXT: ${JSON.stringify(expenses.slice(0, 20))}
+
+Vytvoř JSON:
+{
+  "suggested_category": "nejlepší kategorie z: Office, Travel, Marketing, IT, Utilities, Fuel, Materials, Services, Other",
+  "confidence": "1-10 jak si jsi jistý",
+  "reasoning": "zdůvodnění volby kategorie",
+  "similar_expenses": ["podobné existující náklady"],
+  "duplicate_risk": "riziko duplicity (low/medium/high)",
+  "tax_deductible": "true/false - daňová uznatelnost"
+}`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: categorizationPrompt }],
+        response_format: { type: "json_object" },
+        max_tokens: 800,
+      });
+
+      const categorization = JSON.parse(response.choices[0].message.content);
+      
+      return {
+        content: `🏷️ Inteligentní kategorizace nákladu
+
+📝 Navrhovaná kategorie: ${categorization.suggested_category} (jistota: ${categorization.confidence}/10)
+
+💡 Zdůvodnění: ${categorization.reasoning}
+
+🔍 Podobné náklady: ${categorization.similar_expenses.join(', ')}
+
+⚠️ Riziko duplicity: ${categorization.duplicate_risk}
+
+💼 Daňová uznatelnost: ${categorization.tax_deductible ? 'Ano' : 'Ne'}`,
+        action: { type: 'navigate', data: { path: '/expenses' } }
+      };
+    } catch (error) {
+      console.error('Smart categorization failed:', error);
+      return {
+        content: "Nepodařilo se kategorizovat náklad. Zkuste to později."
       };
     }
   }

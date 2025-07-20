@@ -11,7 +11,18 @@ Technical preference: Always use AI for intelligent text/product matching instea
 
 ## Recent Changes
 
-### File Upload AI Chat + Expense Management (2025-07-20)
+### Complete AI Feature Parity Implementation (2025-07-20)
+- ✅ **Pokročilé AI analýzy** - `analyze_business_insights` funkce pro inteligentní business insights
+- ✅ **Predikce platebních rizik** - `predict_payment_risk` pro hodnocení rizika zákazníků  
+- ✅ **Optimalizace email kampaní** - `optimize_email_campaign` pro vylepšení marketingu
+- ✅ **Inteligentní reporty** - `generate_smart_report` s předpovědi a analýzami
+- ✅ **Smart kategorizace nákladů** - `smart_expense_categorization` s AI detekcí duplicit
+- ✅ **Kompletní Function Calling** - Všech 15 AI funkcí implementováno
+- ✅ **Úplná feature parita** - AI nyní umí vše co UI + pokročilé funkce navíc
+- ✅ **Zvýšené payload limity** - Express.json limit na 50MB pro Vision API
+- ✅ **Opravené storage metódy** - Všetky expense CRUD operácie funkčné
+
+### File Upload AI Chat + Expense Management (2025-07-20)  
 - ✅ Implementováno nahrávání souborů do AI chatu (drag & drop + klik)
 - ✅ Podpora JPG, PNG, PDF souborů až 10MB
 - ✅ Vizuální feedback při nahrávání a preview příloh

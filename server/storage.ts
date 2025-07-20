@@ -558,54 +558,7 @@ export class DatabaseStorage implements IStorage {
     return newExpense;
   }
 
-  async getCompanyExpenses(companyId: number, filters?: any): Promise<any[]> {
-    let conditions = [eq(expenses.companyId, companyId)];
-    
-    if (filters) {
-      if (filters.status) {
-        conditions.push(eq(expenses.status, filters.status));
-      }
-      if (filters.category) {
-        conditions.push(eq(expenses.category, filters.category));
-      }
-    }
-    
-    return await db.select().from(expenses)
-      .where(and(...conditions))
-      .orderBy(desc(expenses.createdAt));
-  }
 
-  async getExpense(id: number, companyId: number): Promise<any> {
-    const [expense] = await db.select().from(expenses)
-      .where(and(eq(expenses.id, id), eq(expenses.companyId, companyId)));
-    return expense || undefined;
-  }
-
-  async getExpenseWithDetails(id: number, companyId: number): Promise<any> {
-    return this.getExpense(id, companyId);
-  }
-
-  async updateExpense(id: number, updates: any, companyId: number): Promise<any> {
-    const [updatedExpense] = await db
-      .update(expenses)
-      .set(updates)
-      .where(and(eq(expenses.id, id), eq(expenses.companyId, companyId)))
-      .returning();
-    return updatedExpense;
-  }
-
-  async deleteExpense(id: number, companyId: number): Promise<void> {
-    await db.delete(expenses)
-      .where(and(eq(expenses.id, id), eq(expenses.companyId, companyId)));
-  }
-
-  async createExpenseItem(item: any): Promise<any> {
-    const [newItem] = await db
-      .insert(expenseItems)
-      .values(item)
-      .returning();
-    return newItem;
-  }
 
   async getInvoiceCount(companyId: number, year: number): Promise<number> {
     const startOfYear = new Date(year, 0, 1);

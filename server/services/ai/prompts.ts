@@ -168,4 +168,311 @@ export const HELP_RESPONSE = `Jsem váš inteligentní AI asistent pro český f
 • Automaticky vyhledávám v ARES databázi
 • Vytvářím nové zákazníky s kompletními údaji
 
-Stačí mi napsat, co potřebujete, a já to vyřídím!`;
+Stačí mi napsat, co potřebujete, a já to vyřídím!
+
+**🔥 NOVÉ! Pokročilé AI funkce:**
+• "analyzuj moje podnikání" - Inteligentní business insights
+• "riziko zákazníka ABC" - Predikce platebních rizik
+• "optimalizuj email kampaň" - Email marketing insights
+• "vygeneruj monthly report" - Chytrá reporty s předpovědi
+• "kategorizuj náklad" - AI kategorizace nákladů`;
+
+export const AI_TOOLS = [
+  {
+    type: "function",
+    function: {
+      name: "create_invoice",
+      description: "Vytvoř novou fakturu na základě poskytnutých údajů z přirozeného textu",
+      parameters: {
+        type: "object", 
+        properties: {
+          customerName: {
+            type: "string",
+            description: "Název zákazníka nebo firmy"
+          },
+          items: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                productName: { type: "string", description: "Název produktu/služby" },
+                quantity: { type: "string", description: "Množství jako string" },
+                unit: { type: "string", description: "Jednotka (ks, kg, hodiny, m, etc.)" },
+                description: { type: "string", description: "Popis položky" },
+                unitPrice: { type: ["number", "null"], description: "Cena za jednotku" }
+              },
+              required: ["productName", "quantity", "unit", "description"]
+            }
+          },
+          totalAmount: { type: ["number", "null"], description: "Celková částka" },
+          notes: { type: "string", description: "Poznámky k faktuře" }
+        },
+        required: ["customerName", "items"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "add_item_to_invoice",
+      description: "Přidej položku do existující faktury (pouze na stránce editace faktury)",
+      parameters: {
+        type: "object",
+        properties: {
+          description: { type: "string", description: "Popis položky" },
+          quantity: { type: "string", description: "Množství" },
+          unit: { type: "string", description: "Jednotka (ks, kg, hodiny, etc.)" },
+          unitPrice: { type: "number", description: "Cena za jednotku" },
+          vatRate: { type: "string", description: "Sazba DPH v %" }
+        },
+        required: ["description", "quantity", "unit", "unitPrice"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "add_note_to_invoice",
+      description: "Přidej poznámku k faktuře",
+      parameters: {
+        type: "object",
+        properties: {
+          note: { type: "string", description: "Text poznámky" }
+        },
+        required: ["note"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_invoice_prices",
+      description: "Aktualizuj ceny položek faktury",
+      parameters: {
+        type: "object",
+        properties: {
+          items: {
+            type: "array",
+            items: {
+              type: "object", 
+              properties: {
+                productName: { type: "string" },
+                unitPrice: { type: "number" }
+              }
+            }
+          }
+        },
+        required: ["items"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_invoice_universal",
+      description: "Univerzální aktualizace faktury (splatnost, poznámky, email, platby, množství, status)",
+      parameters: {
+        type: "object",
+        properties: {
+          updateType: { type: "string", enum: ["splatnost", "poznamky", "zakaznik", "platba", "mnozstvi", "status"] },
+          dueDate: { type: "string", description: "ISO datum pro splatnost" },
+          notes: { type: "string", description: "Text poznámky" },
+          customer: { type: "object", properties: { email: { type: "string" } } },
+          paymentDetails: { type: "object", properties: { bankAccount: { type: "string" }, variableSymbol: { type: "string" } } },
+          items: { type: "array", items: { type: "object", properties: { quantity: { type: "string" }, unitPrice: { type: "number" } } } },
+          status: { type: "string", enum: ["draft", "sent", "paid"] }
+        },
+        required: ["updateType"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "navigate_to_page",
+      description: "Naviguj na konkrétní stránku aplikace",
+      parameters: {
+        type: "object",
+        properties: {
+          path: { type: "string", description: "Cesta např. /invoices, /customers, /dashboard" },
+          filters: {
+            type: "object",
+            properties: {
+              status: { type: "string", description: "Filtr podle statusu" },
+              search: { type: "string", description: "Vyhledávací dotaz" }
+            }
+          }
+        },
+        required: ["path"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_invoice_status",
+      description: "Změň stav faktury",
+      parameters: {
+        type: "object",
+        properties: {
+          invoiceNumber: { type: "string", description: "Číslo faktury" },
+          status: { type: "string", enum: ["draft", "sent", "paid", "cancelled"], description: "Nový stav" }
+        },
+        required: ["invoiceNumber", "status"]
+      }
+    }
+  },
+  {
+    type: "function", 
+    function: {
+      name: "create_expense",
+      description: "Vytvoř nový náklad/expense na základě poskytnutých údajů",
+      parameters: {
+        type: "object",
+        properties: {
+          supplierName: { type: "string", description: "Název dodavatele" },
+          description: { type: "string", description: "Popis nákladu" },
+          amount: { type: "number", description: "Částka bez DPH" },
+          vatAmount: { type: "number", description: "Výše DPH" },
+          total: { type: "number", description: "Celková částka včetně DPH" },
+          category: { type: "string", description: "Kategorie nákladu" },
+          expenseDate: { type: "string", description: "Datum nákladu ve formátu YYYY-MM-DD" },
+          receiptNumber: { type: "string", description: "Číslo účtenky/dokladu" },
+          notes: { type: "string", description: "Poznámky" }
+        },
+        required: ["description", "total"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_expenses", 
+      description: "Zobraz seznam nákladů s možností filtrování",
+      parameters: {
+        type: "object",
+        properties: {
+          filters: {
+            type: "object",
+            properties: {
+              category: { type: "string", description: "Kategorie nákladu" },
+              dateFrom: { type: "string", description: "Datum od" },
+              dateTo: { type: "string", description: "Datum do" },
+              status: { type: "string", description: "Stav nákladu" }
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "analyze_business_insights",
+      description: "Analyzuj obchodní data a poskytni inteligentní insights a předpovědi",
+      parameters: {
+        type: "object",
+        properties: {
+          analysisType: { 
+            type: "string", 
+            enum: ["full", "revenue", "customers", "risks"], 
+            description: "Typ analýzy"
+          }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "predict_payment_risk",
+      description: "Analyzuj platební riziko konkrétního zákazníka",
+      parameters: {
+        type: "object",
+        properties: {
+          customerId: { 
+            type: "number", 
+            description: "ID zákazníka pro analýzu"
+          },
+          customerName: { 
+            type: "string", 
+            description: "Název zákazníka"
+          }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "optimize_email_campaign",
+      description: "Optimalizuj email kampaň pro upomínky a faktury",
+      parameters: {
+        type: "object",
+        properties: {
+          campaignType: { 
+            type: "string", 
+            enum: ["reminders", "invoices", "marketing"], 
+            description: "Typ kampaně"
+          }
+        }
+      }
+    }
+  },
+  {
+    type: "function", 
+    function: {
+      name: "generate_smart_report",
+      description: "Vygeneruj inteligentní report s analýzami a předpovědi",
+      parameters: {
+        type: "object",
+        properties: {
+          reportType: { 
+            type: "string", 
+            enum: ["monthly", "quarterly", "annual", "custom"], 
+            description: "Typ reportu"
+          },
+          includeForecasts: { 
+            type: "boolean", 
+            description: "Zahrnout předpovědi", 
+            default: true
+          }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "smart_expense_categorization", 
+      description: "Inteligentně kategorizuj náklady a detekuj duplicity",
+      parameters: {
+        type: "object",
+        properties: {
+          expenseDescription: { 
+            type: "string", 
+            description: "Popis nákladu pro kategorizaci"
+          },
+          supplierName: { 
+            type: "string", 
+            description: "Název dodavatele"
+          }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "provide_help",
+      description: "Poskytni nápovědu a vysvětlení funkcí systému",
+      parameters: {
+        type: "object",
+        properties: {
+          response: { type: "string", description: "Odpověď s nápovědou" }
+        },
+        required: ["response"]
+      }
+    }
+  }
+];
