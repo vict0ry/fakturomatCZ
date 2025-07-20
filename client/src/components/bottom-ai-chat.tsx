@@ -44,6 +44,21 @@ export function BottomAIChat() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { apiRequest } = useAuthApi();
 
+  // Clear localStorage if it's getting too full
+  const clearStorageIfNeeded = () => {
+    try {
+      const testKey = 'storage-test';
+      const testValue = 'x'.repeat(1024); // 1KB test
+      localStorage.setItem(testKey, testValue);
+      localStorage.removeItem(testKey);
+    } catch (error) {
+      if (error.name === 'QuotaExceededError') {
+        console.log('Storage quota exceeded, clearing chat history');
+        localStorage.removeItem('ai-chat-history');
+      }
+    }
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -54,24 +69,46 @@ export function BottomAIChat() {
 
   // Load chat history from localStorage on mount
   useEffect(() => {
+    clearStorageIfNeeded(); // Check storage quota first
+    
     const savedMessages = localStorage.getItem('ai-chat-history');
     if (savedMessages) {
       try {
         const parsed = JSON.parse(savedMessages).map((msg: any) => ({
           ...msg,
-          timestamp: new Date(msg.timestamp)
+          timestamp: new Date(msg.timestamp),
+          // Filter out removed attachments
+          attachments: msg.attachments?.filter((att: any) => att.content !== 'REMOVED_TO_SAVE_SPACE') || []
         }));
         setMessages(parsed);
       } catch (error) {
         console.error('Failed to load chat history:', error);
+        localStorage.removeItem('ai-chat-history');
       }
     }
   }, []);
 
-  // Save messages to localStorage
+  // Save messages to localStorage (without large attachments)
   useEffect(() => {
     if (messages.length > 0) {
-      localStorage.setItem('ai-chat-history', JSON.stringify(messages));
+      try {
+        // Remove large attachment content when saving to prevent quota exceeded
+        const messagesForStorage = messages.map(msg => ({
+          ...msg,
+          attachments: msg.attachments?.map(att => ({
+            ...att,
+            content: att.content.length > 1000 ? 'REMOVED_TO_SAVE_SPACE' : att.content
+          }))
+        }));
+        localStorage.setItem('ai-chat-history', JSON.stringify(messagesForStorage));
+      } catch (error) {
+        console.warn('Failed to save chat history to localStorage:', error);
+        // Clear old messages if storage is full
+        if (error.name === 'QuotaExceededError') {
+          localStorage.removeItem('ai-chat-history');
+          console.log('Cleared chat history due to storage quota');
+        }
+      }
     }
   }, [messages]);
 
