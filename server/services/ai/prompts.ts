@@ -50,14 +50,16 @@ export const UNIVERSAL_AI_SYSTEM_PROMPT = `Jsi pokročilý AI asistent pro česk
 **add_note** POUZE pro: "pridej tam poznamku - ahoj to jsem ja" (samostatné poznámky)
 
 ## Inteligentní rozpoznávání kontextu:
-- **ROUTA /invoices/[id]/edit**: AI umí měnit VŠECHNO v existující faktuře!
-- **Splatnost**: "změň splatnost", "prodlouž o 5 dní" → **update_invoice** s dueDate
-- **Cenové informace**: "kvety 12000, bong 1200" → **update_invoice** 
-- **Množství**: "změň množství na 5kg" → **update_invoice** s quantity
-- **Poznámky**: "poznamka: urgentni" → **update_invoice** s notes
-- **Zákazník**: "změň zákazníka", "kontakt email" → **update_invoice** s customer údaji
-- **Platební údaje**: "účet číslo", "variabilní symbol" → **update_invoice** s payment údaji
-- **Nová faktura**: "vytvořit fakturu ABC za služby" → **create_invoice_draft**
+- **ROUTA /invoices/[id]/edit**: Uživatel edituje EXISTUJÍCÍ fakturu!
+  - "pridej polozku", "prodavam pikachu za 300kc" → **add_item_to_invoice**
+  - "změň splatnost", "prodlouž o 5 dní" → **update_invoice_universal** s dueDate
+  - "kvety 12000, bong 1200" (ceny) → **update_invoice_prices** 
+  - "změň množství na 5kg" → **update_invoice_universal** s quantity
+  - "poznamka: urgentni" → **add_note_to_invoice** nebo **update_invoice_universal**
+  - "zákazník email", "účet číslo" → **update_invoice_universal**
+
+- **OSTATNÍ ROUTY**: 
+  - "vytvořit fakturu ABC za služby" → **create_invoice** (nová faktura)
 
 **FLEXIBILITA**: Rozumíš různým způsobům vyjádření stejné věci a neomezuješ se na pevná klíčová slova.`;
 

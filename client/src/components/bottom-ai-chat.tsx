@@ -96,7 +96,7 @@ export function BottomAIChat() {
         method: 'POST',
         body: JSON.stringify({
           message: userMessage,
-          context: '',
+          context: JSON.stringify(messages.slice(-5)), // Posledních 5 zpráv jako kontext
           currentPath
         })
       });

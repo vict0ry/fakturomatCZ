@@ -123,6 +123,9 @@ Aktuální stránka: ${currentPath}`;
         case 'update_invoice_universal':
           return await this.updateInvoiceUniversal(args, userContext, currentPath);
         
+        case 'add_item_to_invoice':
+          return await this.addItemToInvoice(args, userContext, currentPath);
+        
         case 'navigate_to_page':
           return await this.navigateToPage(args);
         
@@ -364,6 +367,78 @@ Aktuální stránka: ${currentPath}`;
       console.error('Universal invoice update failed:', error);
       return {
         content: "Nepodařilo se aktualizovat fakturu. Zkuste to prosím znovu."
+      };
+    }
+  }
+
+  private async addItemToInvoice(args: any, userContext: UserContext, currentPath: string): Promise<UniversalAIResponse> {
+    try {
+      // Find target invoice from current path
+      const invoiceIdMatch = currentPath.match(/\/invoices\/(\d+)\/edit/);
+      if (!invoiceIdMatch) {
+        return {
+          content: "Pro přidání položky musíte být na stránce editace faktury.",
+          action: { type: 'navigate', data: { path: '/invoices' } }
+        };
+      }
+
+      const invoiceId = parseInt(invoiceIdMatch[1]);
+      const invoice = await userContext.storage.getInvoice(invoiceId, userContext.companyId);
+      
+      if (!invoice) {
+        return {
+          content: "Faktura nebyla nalezena.",
+          action: { type: 'navigate', data: { path: '/invoices' } }
+        };
+      }
+
+      // Calculate totals
+      const quantity = parseFloat(args.quantity) || 1;
+      const unitPrice = args.unitPrice || 0;
+      const total = quantity * unitPrice;
+
+      // Create new invoice item
+      const newItem = {
+        invoiceId: invoiceId,
+        description: args.description,
+        quantity: args.quantity,
+        unit: args.unit,
+        unitPrice: unitPrice.toString(),
+        vatRate: '21', // Default VAT rate
+        total: total.toString()
+      };
+
+      console.log('Creating new invoice item:', newItem);
+      const createdItem = await userContext.storage.createInvoiceItem(newItem);
+
+      // Get all current items to recalculate totals
+      const allItems = await userContext.storage.getInvoiceItems(invoiceId);
+      let newSubtotal = 0;
+      
+      for (const item of allItems) {
+        const itemTotal = parseFloat(item.total || '0');
+        newSubtotal += itemTotal;
+      }
+
+      const newVatAmount = newSubtotal * 0.21;
+      const newTotal = newSubtotal + newVatAmount;
+
+      // Update invoice totals
+      await userContext.storage.updateInvoice(invoiceId, {
+        subtotal: newSubtotal.toString(),
+        vatAmount: newVatAmount.toString(), 
+        total: newTotal.toString()
+      }, userContext.companyId);
+
+      return {
+        content: `Položka "${args.description}" byla přidána k faktuře ${invoice.invoiceNumber}!\n\n• Množství: ${args.quantity} ${args.unit}\n• Cena: ${unitPrice.toLocaleString('cs-CZ')} Kč/${args.unit}\n• Celkem za položku: ${total.toLocaleString('cs-CZ')} Kč\n\nNový celkový součet faktury: ${newTotal.toLocaleString('cs-CZ')} Kč (vč. DPH)`,
+        action: { type: 'refresh_current_page' }
+      };
+
+    } catch (error) {
+      console.error('Add item to invoice failed:', error);
+      return {
+        content: "Nepodařilo se přidat položku k faktuře. Zkuste to prosím znovu."
       };
     }
   }

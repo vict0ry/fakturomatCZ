@@ -59,6 +59,35 @@ export const AI_TOOLS = [
   {
     type: "function" as const,
     function: {
+      name: "add_item_to_invoice",
+      description: "Přidat novou položku k existující faktuře",
+      parameters: {
+        type: "object",
+        properties: {
+          description: {
+            type: "string",
+            description: "Popis produktu/služby (např. Pikachu, konzultace, atd.)"
+          },
+          quantity: {
+            type: "string", 
+            description: "Množství (např. '1', '2.5', '10')"
+          },
+          unit: {
+            type: "string",
+            description: "Jednotka (ks, kg, hod, m, atd.)"
+          },
+          unitPrice: {
+            type: "number",
+            description: "Cena za jednotku"
+          }
+        },
+        required: ["description", "quantity", "unit", "unitPrice"]
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
       name: "create_invoice",
       description: "Create a new invoice for a customer with specified items and details",
       parameters: {
