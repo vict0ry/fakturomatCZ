@@ -61,7 +61,7 @@ export default function ExpensesPage() {
 
   const filteredExpenses = expenses?.filter(expense => {
     const matchesSearch = expense.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         expense.supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         expense.supplier?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          expense.expenseNumber.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || expense.status === statusFilter;
     const matchesCategory = categoryFilter === "all" || expense.category === categoryFilter;
@@ -70,7 +70,7 @@ export default function ExpensesPage() {
   }) || [];
 
   const totalExpenses = filteredExpenses.reduce((sum, expense) => sum + parseFloat(expense.total), 0);
-  const categories = [...new Set(expenses?.map(e => e.category).filter(Boolean))];
+  const categories = Array.from(new Set(expenses?.map(e => e.category).filter(Boolean) || []));
 
   if (isLoading) {
     return (

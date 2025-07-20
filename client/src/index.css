@@ -145,6 +145,54 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* Enhanced AI Chat Styles */
+.chat-message-slide-in {
+  animation: chatSlideIn 0.3s ease-out;
+}
+
+@keyframes chatSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ai-gradient-bg {
+  background: linear-gradient(135deg, #f97316, #dc2626);
+  box-shadow: 0 4px 15px 0 rgba(249, 115, 22, 0.3);
+  transition: all 0.3s ease;
+}
+
+.ai-gradient-bg:hover {
+  background: linear-gradient(135deg, #ea580c, #b91c1c);
+  box-shadow: 0 8px 25px 0 rgba(249, 115, 22, 0.4);
+  transform: translateY(-1px);
+}
+
+.glass-morphism {
+  backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark .glass-morphism {
+  background: rgba(17, 24, 39, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
   background: hsl(var(--muted-foreground));
   border-radius: 3px;
 }

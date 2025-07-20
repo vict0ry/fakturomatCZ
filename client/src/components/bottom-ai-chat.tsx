@@ -444,7 +444,41 @@ export function BottomAIChat() {
               )}
             </ScrollArea>
 
-            {/* File Upload Input Area for Expanded Mode */}
+            {/* Quick Actions for empty state */}
+            {messages.length === 0 && (
+              <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-2 mb-3">
+                  <Zap className="w-4 h-4 text-orange-500" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Rychlé akce</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {getSmartSuggestions().map((action) => {
+                    const IconComponent = action.icon;
+                    return (
+                      <Button
+                        key={action.id}
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleQuickAction(action)}
+                        className="justify-start h-auto p-3 text-left hover:bg-orange-50 dark:hover:bg-orange-900/20 border border-gray-200 dark:border-gray-700"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <IconComponent className="w-4 h-4 text-orange-500" />
+                          <div>
+                            <div className="text-sm font-medium">{action.label}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                              {action.command}
+                            </div>
+                          </div>
+                        </div>
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Enhanced Input Area */}
             <div className={`border-t border-gray-200 dark:border-gray-700 p-4 ${
               isDragging ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-300' : ''
             }`}>
@@ -495,24 +529,30 @@ export function BottomAIChat() {
                 </Button>
 
                 <Input
+                  ref={inputRef}
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    setShowSuggestions(e.target.value.length > 0 && messages.length === 0);
+                  }}
                   onKeyPress={handleKeyPress}
+                  onFocus={() => setShowSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 100)}
                   placeholder={
                     isDragging 
                       ? "Přetáhněte soubory zde..." 
                       : attachments.length > 0 
                         ? "Přidejte popis k příloze..." 
-                        : "Napište zprávu nebo nahrajte soubor..."
+                        : "Jakou akci chcete provést? (např. 'vytvoř fakturu', 'přidej náklad', 'zobraz statistiky')"
                   }
-                  className="flex-1"
+                  className="flex-1 py-3 text-base bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-orange-500 focus:border-transparent rounded-xl"
                   disabled={isLoading}
                 />
                 
                 <Button
-                  onClick={handleSendMessage}
+                  onClick={() => handleSendMessage()}
                   disabled={(!input.trim() && attachments.length === 0) || isLoading}
-                  className="bg-orange-500 hover:bg-orange-600 text-white"
+                  className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
                 >
                   {isLoading ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -533,47 +573,69 @@ export function BottomAIChat() {
         )}
       </AnimatePresence>
 
-      {/* Chat Input Bar - only show when not expanded */}
+      {/* Enhanced Collapsed Chat Bar */}
       {!isExpanded && (
-        <div className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center space-x-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleExpanded}
-                className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              >
-                <ChevronUp className="w-4 h-4" />
-              </Button>
-              
-              <div className="flex-1 relative">
-                <Input
-                  ref={inputRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  onFocus={() => setIsExpanded(true)}
-                  placeholder="Zeptejte se AI asistenta na cokoli..."
-                  disabled={isLoading}
-                  className="pr-12 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600 focus:border-orange-500 dark:focus:border-orange-500"
-                />
-                <Button
-                  onClick={handleSendMessage}
-                  disabled={!input.trim() || isLoading}
-                  size="sm"
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-orange-500 hover:bg-orange-600 text-white"
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
-              </div>
-
-              {messages.length > 0 && (
-                <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
-                  <MessageSquare className="w-4 h-4 mr-1" />
-                  {messages.length}
+        <div 
+          className="bg-gradient-to-r from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 border-t border-gray-200 dark:border-gray-700 cursor-pointer hover:from-orange-50 hover:to-red-50 dark:hover:from-orange-900/20 dark:hover:to-red-900/20 transition-all duration-300 shadow-lg backdrop-blur-sm"
+          onClick={toggleExpanded}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          <div className="max-w-4xl mx-auto p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="relative">
+                  <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center shadow-md">
+                    <Sparkles className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-gray-900 animate-pulse"></div>
                 </div>
-              )}
+                <div>
+                  <div className="font-semibold text-gray-900 dark:text-white">AI Asistent</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    {isLoading ? 'Zpracovává...' : 'Klikněte pro otevření chatu'}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                {/* Quick input for collapsed state */}
+                <div 
+                  className="flex-1 relative min-w-96"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Input
+                    ref={inputRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    onFocus={() => setIsExpanded(true)}
+                    placeholder="Napište svůj požadavek zde..."
+                    disabled={isLoading}
+                    className="pr-12 bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-600 focus:border-orange-500 dark:focus:border-orange-500 rounded-xl"
+                  />
+                  <Button
+                    onClick={() => handleSendMessage()}
+                    disabled={!input.trim() || isLoading}
+                    size="sm"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg"
+                  >
+                    {isLoading ? (
+                      <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Send className="w-3 h-3" />
+                    )}
+                  </Button>
+                </div>
+
+                {messages.length > 0 && (
+                  <Badge variant="secondary" className="text-xs">
+                    {messages.length}
+                  </Badge>
+                )}
+                <ChevronUp className="w-5 h-5 text-gray-400" />
+              </div>
             </div>
           </div>
         </div>
