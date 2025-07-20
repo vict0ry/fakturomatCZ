@@ -18,6 +18,9 @@ interface Expense {
   expenseDate: string;
   receiptNumber?: string;
   status: string;
+  attachmentUrl?: string;
+  attachmentName?: string;
+  attachmentType?: string;
   supplier?: {
     id: number;
     name: string;
@@ -284,6 +287,49 @@ export default function ExpenseDetail({ expenseId }: ExpenseDetailProps) {
             </Card>
           )}
         </div>
+
+        {/* Attachments Section */}
+        {expense.attachmentUrl && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Přílohy
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <FileText className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                    <span className="text-sm font-medium">
+                      {expense.attachmentName || 'Příloha nákladu'}
+                    </span>
+                  </div>
+                  <a 
+                    href={expense.attachmentUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-orange-600 hover:text-orange-700 underline text-sm"
+                  >
+                    Zobrazit
+                  </a>
+                </div>
+                
+                {/* Image preview if it's an image */}
+                {expense.attachmentType?.startsWith('image/') && (
+                  <div className="mt-4">
+                    <img
+                      src={expense.attachmentUrl}
+                      alt="Náhled přílohy"
+                      className="max-w-full h-48 object-contain border border-gray-200 dark:border-gray-700 rounded"
+                    />
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

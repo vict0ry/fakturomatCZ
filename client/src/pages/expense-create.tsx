@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
-import { ArrowLeft, Save, Calculator } from 'lucide-react';
+import { ArrowLeft, Save, Calculator, Upload, FileText, Image, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -52,6 +52,8 @@ export default function ExpenseCreatePage({ expenseId }: ExpenseCreatePageProps)
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
+  const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
 
   // Fetch existing expense data if editing
   const { data: existingExpense } = useQuery({
@@ -94,8 +96,36 @@ export default function ExpenseCreatePage({ expenseId }: ExpenseCreatePageProps)
         status: existingExpense.status || 'draft',
         notes: existingExpense.notes || ''
       });
+      
+      // Set existing attachment preview
+      if (existingExpense.attachmentUrl) {
+        setAttachmentPreview(existingExpense.attachmentUrl);
+      }
     }
   }, [existingExpense, form]);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setAttachmentFile(file);
+      
+      // Create preview URL for images
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setAttachmentPreview(e.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setAttachmentPreview(null);
+      }
+    }
+  };
+
+  const removeAttachment = () => {
+    setAttachmentFile(null);
+    setAttachmentPreview(null);
+  };
 
   const createExpenseMutation = useMutation({
     mutationFn: async (data: ExpenseFormData) => {
@@ -401,6 +431,97 @@ export default function ExpenseCreatePage({ expenseId }: ExpenseCreatePageProps)
             </CardContent>
           </Card>
 
+          {/* Attachment Upload Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Upload className="w-5 h-5" />
+                <span>Přílohy</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* File Upload */}
+              <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6">
+                <div className="text-center">
+                  <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                    Přetáhněte soubor sem nebo klikněte pro výběr
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    id="attachment-upload"
+                  />
+                  <label
+                    htmlFor="attachment-upload"
+                    className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    Vybrat soubor
+                  </label>
+                  <div className="text-xs text-gray-500 mt-2">
+                    Podporované formáty: JPG, PNG, PDF (max 10MB)
+                  </div>
+                </div>
+              </div>
+
+              {/* Current Attachment Display */}
+              {(attachmentPreview || existingExpense?.attachmentUrl) && (
+                <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                      Aktuální příloha
+                    </h4>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={removeAttachment}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  
+                  {/* Preview for images */}
+                  {attachmentPreview && attachmentPreview.startsWith('data:image') && (
+                    <div className="mb-2">
+                      <img
+                        src={attachmentPreview}
+                        alt="Náhled přílohy"
+                        className="max-w-full h-32 object-contain border border-gray-200 dark:border-gray-700 rounded"
+                      />
+                    </div>
+                  )}
+                  
+                  {/* File info */}
+                  <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                    {attachmentFile ? (
+                      <>
+                        <FileText className="w-4 h-4" />
+                        <span>{attachmentFile.name}</span>
+                        <span>({(attachmentFile.size / 1024 / 1024).toFixed(2)} MB)</span>
+                      </>
+                    ) : existingExpense?.attachmentName ? (
+                      <>
+                        <FileText className="w-4 h-4" />
+                        <span>{existingExpense.attachmentName}</span>
+                        <a 
+                          href={existingExpense.attachmentUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-orange-600 hover:text-orange-700 underline"
+                        >
+                          Zobrazit
+                        </a>
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <div className="flex justify-end space-x-4">
             <Button
               type="button"
@@ -419,7 +540,7 @@ export default function ExpenseCreatePage({ expenseId }: ExpenseCreatePageProps)
               ) : (
                 <Save className="w-4 h-4 mr-2" />
               )}
-              Vytvořit náklad
+              {expenseId ? 'Uložit změny' : 'Vytvořit náklad'}
             </Button>
           </div>
         </form>
