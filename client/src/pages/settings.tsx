@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -134,20 +135,32 @@ S pozdravem,
   });
 
   // Fetch company settings
-  const { data: companySettings } = useQuery({
+  const { data: companySettings, isLoading: companyLoading } = useQuery({
     queryKey: ['/api/company/settings'],
-    onSuccess: (data) => {
-      companyForm.reset(data);
-    }
+    enabled: true
   });
 
-  // Fetch email settings
-  const { data: emailSettings } = useQuery({
-    queryKey: ['/api/email/settings'],
-    onSuccess: (data) => {
-      emailForm.reset(data);
+  // Reset form when data loads
+  React.useEffect(() => {
+    if (companySettings) {
+      console.log('Company settings loaded:', companySettings);
+      companyForm.reset(companySettings);
     }
+  }, [companySettings, companyForm]);
+
+  // Fetch email settings
+  const { data: emailSettings, isLoading: emailLoading } = useQuery({
+    queryKey: ['/api/email/settings'],
+    enabled: true
   });
+
+  // Reset email form when data loads
+  React.useEffect(() => {
+    if (emailSettings) {
+      console.log('Email settings loaded:', emailSettings);
+      emailForm.reset(emailSettings);
+    }
+  }, [emailSettings, emailForm]);
 
   // Fetch company users
   const { data: companyUsers } = useQuery({
@@ -718,7 +731,7 @@ S pozdravem,
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {companyUsers?.map((user: any) => (
+                  {(companyUsers || []).map((user: any) => (
                     <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
                         <div className="font-medium">{user.firstName} {user.lastName}</div>
