@@ -711,7 +711,11 @@ Kontext: ${context}`;
         vatRate: String(expenseData.vatRate || '21'),
         expenseDate: new Date(expenseData.expenseDate),
         receiptNumber: expenseData.receiptNumber || '',
-        status: 'draft'
+        status: 'draft',
+        // Add attachment information
+        attachmentName: expenseData.attachmentName,
+        attachmentType: expenseData.attachmentType,
+        attachmentUrl: expenseData.attachmentUrl
       });
 
       return {

@@ -36,7 +36,7 @@ function Router() {
       <Route path="/customers" component={Customers} />
       <Route path="/expenses/new" component={ExpenseCreatePage} />
       <Route path="/expenses/:id/edit">
-        {(params: any) => <ExpenseCreatePage key={`edit-${params.id}`} expenseId={parseInt(params.id)} />}
+        {(params: any) => <ExpenseCreatePage key={`edit-${params.id}`} {...params} />}
       </Route>
       <Route path="/expenses/:id">
         {(params: any) => <ExpenseDetail key={`detail-${params.id}`} expenseId={parseInt(params.id)} />}

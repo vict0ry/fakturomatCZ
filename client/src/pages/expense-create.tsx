@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -45,10 +45,11 @@ const EXPENSE_CATEGORIES = [
 ];
 
 interface ExpenseCreatePageProps {
-  expenseId?: number;
+  id?: string;
 }
 
-export default function ExpenseCreatePage({ expenseId }: ExpenseCreatePageProps) {
+export default function ExpenseCreatePage({ id }: ExpenseCreatePageProps) {
+  const expenseId = id ? parseInt(id) : undefined;
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -80,7 +81,7 @@ export default function ExpenseCreatePage({ expenseId }: ExpenseCreatePageProps)
   });
 
   // Update form when existing expense data loads
-  React.useEffect(() => {
+  useEffect(() => {
     if (existingExpense) {
       form.reset({
         supplierName: existingExpense.supplier?.name || '',
