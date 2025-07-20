@@ -81,34 +81,33 @@ export default function Analytics() {
     );
   }
 
-  const mockAnalytics: AnalyticsData = {
-    revenue: {
-      current: 148500,
-      previous: 132400,
-      growth: 12.2,
-    },
-    invoices: {
-      total: 156,
-      paid: 128,
-      pending: 18,
-      overdue: 10,
-    },
-    customers: {
-      total: 67,
-      active: 58,
-      inactive: 9,
-    },
-    monthlyData: [
-      { month: 'Led', revenue: 95000, invoices: 28 },
-      { month: 'Úno', revenue: 108000, invoices: 32 },
-      { month: 'Bře', revenue: 125000, invoices: 35 },
-      { month: 'Dub', revenue: 142000, invoices: 38 },
-      { month: 'Kvě', revenue: 155000, invoices: 42 },
-      { month: 'Čer', revenue: 148500, invoices: 39 },
-    ],
-  };
+  // If no analytics data, show empty state
+  if (!analytics) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Analýzy a přehledy</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
+            Podrobné statistiky vašeho podnikání a výkonnosti
+          </p>
+        </div>
+        
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+              <div className="text-center">
+                <BarChart3 className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                <p className="text-lg font-medium">Žádná analytická data k zobrazení</p>
+                <p className="text-sm mt-2">Vytvořte faktury a náklady pro zobrazení analýz</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-  const data = analytics || mockAnalytics;
+  const data = analytics;
 
   return (
     <div className="p-6 space-y-6">

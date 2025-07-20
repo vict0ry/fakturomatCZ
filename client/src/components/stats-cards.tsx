@@ -44,9 +44,9 @@ export function StatsCards() {
           <TrendingUp className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(stats?.revenue || 0)}</div>
+          <div className="text-2xl font-bold">{formatCurrency((stats as any)?.revenue || 0)}</div>
           <p className="text-xs text-muted-foreground">
-            +20.1% od minulého měsíce
+            {(stats as any)?.revenue > 0 ? 'Skutečná data z faktur' : 'Žádné příjmy zatím'}
           </p>
         </CardContent>
       </Card>
@@ -57,9 +57,9 @@ export function StatsCards() {
           <FileText className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats?.invoiceCount || 0}</div>
+          <div className="text-2xl font-bold">{(stats as any)?.invoiceCount || 0}</div>
           <p className="text-xs text-muted-foreground">
-            +{stats?.paidInvoices || 0} uhrazeno tento měsíc
+            +{(stats as any)?.paidInvoices || 0} uhrazeno tento měsíc
           </p>
         </CardContent>
       </Card>
@@ -70,9 +70,9 @@ export function StatsCards() {
           <AlertTriangle className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(stats?.unpaidAmount || 0)}</div>
+          <div className="text-2xl font-bold">{formatCurrency((stats as any)?.unpaidAmount || 0)}</div>
           <p className="text-xs text-muted-foreground">
-            {stats?.unpaidCount || 0} faktér čeká na platbu
+            {(stats as any)?.unpaidCount || 0} faktér čeká na platbu
           </p>
         </CardContent>
       </Card>
@@ -83,9 +83,9 @@ export function StatsCards() {
           <Users className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats?.customerCount || 0}</div>
+          <div className="text-2xl font-bold">{(stats as any)?.customerCount || 0}</div>
           <p className="text-xs text-muted-foreground">
-            +2 noví tento měsíc
+            {(stats as any)?.customerCount > 0 ? 'Celkem registrovaných' : 'Žádní zákazníci zatím'}
           </p>
         </CardContent>
       </Card>
