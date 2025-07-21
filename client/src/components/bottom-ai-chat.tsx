@@ -320,14 +320,14 @@ export function BottomAIChat() {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40">
+    <div className="fixed bottom-0 left-0 right-0 z-40 max-h-screen">
       <AnimatePresence>
         {isExpanded && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 400 }}
+            animate={{ opacity: 1, height: "min(400px, 60vh)" }}
             exit={{ opacity: 0, height: 0 }}
-            className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 shadow-2xl"
+            className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 shadow-2xl max-h-[60vh] flex flex-col"
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
@@ -366,7 +366,7 @@ export function BottomAIChat() {
             </div>
 
             {/* Messages Area */}
-            <ScrollArea className="h-64 p-4">
+            <ScrollArea className="flex-1 p-4 min-h-0">
               {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 dark:text-gray-400">
                   <MessageSquare className="w-12 h-12 mb-3 opacity-50" />
