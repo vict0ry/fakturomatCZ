@@ -5,8 +5,10 @@ import { storage } from "./storage";
 import { 
   insertCompanySchema, insertUserSchema, insertCustomerSchema, 
   insertInvoiceSchema, insertInvoiceItemSchema, insertChatMessageSchema,
-  insertExpenseSchema, insertExpenseItemSchema 
+  insertExpenseSchema, insertExpenseItemSchema, invoices 
 } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 import { fetchCompanyFromAres, searchCompaniesByName } from "./services/ares";
 import { processAICommand, generateInvoiceDescription, processUniversalAICommand, processPublicAICommand } from "./services/openai";
 import { generateInvoicePDF } from "./services/pdf";
@@ -534,6 +536,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug endpoint - zobrazí všechny faktury bez filtru
+  app.get("/api/invoices/debug", requireAuth, async (req: any, res) => {
+    try {
+      const allInvoices = await db.select().from(invoices);
+      const sessionInfo = {
+        sessionCompanyId: req.user.companyId,
+        sessionUserId: req.user.userId,
+        totalInvoices: allInvoices.length,
+        invoicesByCompany: {}
+      };
+      
+      // Seskupit faktury podle companyId
+      allInvoices.forEach(inv => {
+        const cid = inv.companyId;
+        if (!sessionInfo.invoicesByCompany[cid]) {
+          sessionInfo.invoicesByCompany[cid] = [];
+        }
+        sessionInfo.invoicesByCompany[cid].push({
+          id: inv.id,
+          invoiceNumber: inv.invoiceNumber,
+          total: inv.total,
+          notes: inv.notes
+        });
+      });
+      
+      res.json(sessionInfo);
+    } catch (error) {
+      console.error("Debug error:", error);
+      res.status(500).json({ message: "Debug failed" });
+    }
+  });
+
   app.get("/api/invoices/overdue", requireAuth, async (req: any, res) => {
     try {
       const invoices = await storage.getOverdueInvoices(req.user.companyId);
@@ -723,8 +757,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/invoices/:id/pdf", requireAuth, async (req: any, res) => {
     try {
-      const id = parseInt(req.params.id);
-      const invoice = await storage.getInvoiceWithDetails(id, req.user.companyId);
+      const idParam = req.params.id;
+      let invoice;
+      
+      // Try to parse as number first (ID)
+      if (/^\d+$/.test(idParam)) {
+        const id = parseInt(idParam);
+        invoice = await storage.getInvoiceWithDetails(id, req.user.companyId);
+      }
+      
+      // If not found by ID or not a number, try by invoiceNumber
+      if (!invoice) {
+        console.log(`PDF: Looking for invoice by number: ${idParam}`);
+        const invoices = await storage.getCompanyInvoices(req.user.companyId);
+        console.log(`PDF: Found ${invoices.length} invoices for company ${req.user.companyId}`);
+        console.log(`PDF: Invoice numbers: ${invoices.map(i => i.invoiceNumber).join(', ')}`);
+        
+        const targetInvoice = invoices.find(inv => inv.invoiceNumber === idParam);
+        if (targetInvoice) {
+          console.log(`PDF: Found target invoice ID: ${targetInvoice.id}`);
+          invoice = await storage.getInvoiceWithDetails(targetInvoice.id, req.user.companyId);
+        } else {
+          console.log(`PDF: No invoice found with number: ${idParam}`);
+        }
+      }
+      
       if (!invoice) {
         return res.status(404).json({ message: "Invoice not found" });
       }

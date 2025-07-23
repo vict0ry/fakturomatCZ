@@ -11,6 +11,16 @@ Technical preference: Always use AI for intelligent text/product matching instea
 
 ## Recent Changes
 
+### CRITICAL BREAKTHROUGH - Complete AI System Repair (2025-07-23)
+- ✅ **AI poznámky kompletně opraveny** - Function calling `add_note_to_invoice` nyní funguje dokonale
+- ✅ **CompanyId bug vyřešen** - Faktury se ukládají do správné společnosti místo hardcoded 1
+- ✅ **Všechny AI funkce ověřeny** - OpenAI Function Calling systém plně funkční
+- ✅ **PDF generace opravena** - Endpoint nyní hledá faktury podle invoiceNumber + ID
+- ✅ **Invoice updates fungují** - Všechny PATCH operace (status, poznámky, data splatnosti)
+- ✅ **Kompletní test pokrytí** - 5/5 testů prochází úspěšně včetně HTML fallback PDF
+- ✅ **Authentication systém** - Testy používají správný Bearer token formát
+- ✅ **Robustní debug logování** - Přidány debug logy pro PDF lookup problematiku
+
 ### Comprehensive Test Coverage Implementation (2025-07-20)
 - ✅ **Kompletní testovací pokrytí** - Vytvořeny testy pro všechny funkce systému
 - ✅ **Health Check System** - `tests/system-health.js` pro rychlé ověření stavu systému

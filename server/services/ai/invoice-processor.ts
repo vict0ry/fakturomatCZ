@@ -415,7 +415,7 @@ Odpověz pouze "ANO" nebo "NE".`;
     const invoiceNumber = `${currentYear}${String(Date.now()).slice(-4)}`;
     
     const invoiceRecord = {
-      companyId: 1, // Default company for testing
+      companyId: userContext.companyId, // Use correct company from user context
       customerId: customerId,
       type: 'invoice' as const,
       invoiceNumber: invoiceNumber,

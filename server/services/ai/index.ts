@@ -82,20 +82,24 @@ export class UniversalAIService {
     }
     
     // Enhanced system prompt for Function Calling
-    const systemPrompt = `Jsi pokročilý AI asistent pro český fakturační systém. 
+    const systemPrompt = `Jsi pokročilý AI asistent pro český fakturační systém. VŽDY používaj funkce!
 
 AKTUÁLNÍ STRÁNKA: ${currentPath}
 
-KLÍČOVÉ PRAVIDLO:
-- Pokud jsi na /invoices/[id]/edit a uživatel říká "pridej polozku [něco] za [cena]kc" → VŽDY použij add_item_to_invoice
-- Pokud není uvedeno množství, použij quantity: "1"
-- Pokud není uvedena jednotka, použij unit: "ks" 
-- Vždy extrahuj cenu z textu
+KLÍČOVÉ PRAVIDLO - VŽDY VOLEJ FUNKCE:
+- Pro "přidej poznámku do faktury [číslo] poznámku: [text]" → VŽDY volej add_note_to_invoice 
+- Pro přidání položky → VŽDY volej add_item_to_invoice
+- Pro vytvoření faktury → VŽDY volej create_invoice
+- NIKDY nevracíš pouze textovou odpověď bez volání funkce!
 
-PŘÍKLADY:
+PŘÍKLADY POZNÁMEK:
+"přidej do faktury 20259679 poznámku: hello world test" → add_note_to_invoice(note: "hello world test", invoiceNumber: "20259679")
+"přidej poznámku urgent" → add_note_to_invoice(note: "urgent")
+
+PŘÍKLADY POLOŽEK:
 "pridej polozku testovaci za 50kc" → add_item_to_invoice(description: "testovaci", quantity: "1", unit: "ks", unitPrice: 50)
-"prodavam pikachu za 300kc" → add_item_to_invoice(description: "pikachu", quantity: "1", unit: "ks", unitPrice: 300)
-"5kg kvety za 100kc" → add_item_to_invoice(description: "kvety", quantity: "5", unit: "kg", unitPrice: 100)
+
+DŮLEŽITÉ: VŽDY VOLEJ FUNKCE - nikdy nevracej pouze text!
 
 Kontext: ${context}`;
 
@@ -130,10 +134,16 @@ Kontext: ${context}`;
 
     // Handle function calls
     if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
+      console.log('AI Function Call:', {
+        function: assistantMessage.tool_calls[0].function.name,
+        arguments: assistantMessage.tool_calls[0].function.arguments,
+        currentPath
+      });
       return await this.handleFunctionCall(assistantMessage.tool_calls[0], userContext, currentPath);
     }
 
     // Handle regular response
+    console.log('AI Regular Response (no function call):', assistantMessage.content);
     return {
       content: assistantMessage.content || "Nepodařilo se zpracovat požadavek."
     };
@@ -226,15 +236,30 @@ Kontext: ${context}`;
 
   private async addNoteToInvoice(args: any, userContext: UserContext, currentPath: string): Promise<UniversalAIResponse> {
     try {
+      let invoiceId: number | null = null;
+      
+      // Pokusit se najít invoice ID z URL
       const invoiceIdMatch = currentPath.match(/\/invoices\/(\d+)\/edit/);
-      if (!invoiceIdMatch) {
+      if (invoiceIdMatch) {
+        invoiceId = parseInt(invoiceIdMatch[1]);
+      }
+      
+      // Pokud není v URL, zkusit najít podle invoiceNumber z argumentů
+      if (!invoiceId && args.invoiceNumber) {
+        const invoices = await userContext.storage.getCompanyInvoices(userContext.companyId);
+        const targetInvoice = invoices.find(inv => inv.invoiceNumber === args.invoiceNumber);
+        if (targetInvoice) {
+          invoiceId = targetInvoice.id;
+        }
+      }
+      
+      if (!invoiceId) {
         return {
-          content: "Pro přidání poznámky k faktuře musíte být na stránce editace faktury.",
+          content: "Nemohl jsem najít fakturu. Zadejte číslo faktury nebo přejděte na stránku editace faktury.",
           action: { type: 'navigate', data: { path: '/invoices' } }
         };
       }
 
-      const invoiceId = parseInt(invoiceIdMatch[1]);
       const invoice = await userContext.storage.getInvoice(invoiceId, userContext.companyId);
       
       if (!invoice) {

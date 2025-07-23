@@ -179,6 +179,10 @@ export const AI_TOOLS = [
           note: {
             type: "string",
             description: "The note content to add to the invoice"
+          },
+          invoiceNumber: {
+            type: "string",
+            description: "The invoice number to add the note to (optional - will be extracted from URL if not provided)"
           }
         },
         required: ["note"]
