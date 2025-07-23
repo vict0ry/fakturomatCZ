@@ -247,34 +247,49 @@ export function BottomAIChat() {
             setLocation(response.action.data.path);
             break;
           case 'refresh_current_page':
-            // Agresivní refresh - invaliduj všechny invoice dotazy
-            console.log('AI akce vyžaduje refresh dat');
+            // SUPER AGGRESSIVE REFRESH - Force UI to update immediately
+            console.log('🔄 AI forced refresh_current_page triggered');
+            
+            // Immediate invalidation
             queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
             queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
             queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/analytics"] });
             
-            // Specifický refresh pro editovanou fakturu
+            // Specific invoice refresh if on invoice page
             const invoiceMatch = currentPath.match(/\/invoices\/(\d+)/);
             if (invoiceMatch) {
               const invoiceId = parseInt(invoiceMatch[1]);
-              console.log('Refreshing invoice data:', invoiceId);
+              console.log('🎯 Forcing refresh for invoice:', invoiceId);
+              
+              // Invalidate specific invoice queries
               queryClient.invalidateQueries({ queryKey: ["/api/invoices", invoiceId] });
               queryClient.invalidateQueries({ queryKey: ["/api/invoices", invoiceId, "items"] });
               
-              // Několik vln refreshe pro jistotu
+              // Multiple waves of aggressive refetching
               setTimeout(() => {
+                console.log('🌊 Wave 1: Refetching invoice data');
                 queryClient.refetchQueries({ queryKey: ["/api/invoices"] });
                 queryClient.refetchQueries({ queryKey: ["/api/invoices", invoiceId] });
               }, 50);
+              
               setTimeout(() => {
+                console.log('🌊 Wave 2: Refetching invoice items');
                 queryClient.refetchQueries({ queryKey: ["/api/invoices", invoiceId, "items"] });
+                queryClient.refetchQueries({ queryKey: ["/api/stats"] });
               }, 150);
+              
+              setTimeout(() => {
+                console.log('🌊 Wave 3: Final refetch');
+                queryClient.refetchQueries({ queryKey: ["/api/invoices", invoiceId] });
+              }, 300);
             }
             
-            // Globální refresh jako záloha
+            // Global fallback refresh
             setTimeout(() => {
+              console.log('🌊 Global fallback refresh');
               queryClient.refetchQueries();
-            }, 300);
+            }, 500);
             break;
           case 'refresh_data':
             queryClient.invalidateQueries();

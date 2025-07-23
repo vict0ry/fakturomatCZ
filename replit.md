@@ -11,6 +11,14 @@ Technical preference: Always use AI for intelligent text/product matching instea
 
 ## Recent Changes
 
+### UI SYNCHRONIZATION CRITICAL FIX (2025-07-23)
+- ✅ **UI synchronizace kompletně opravena** - UI se nyní okamžitě aktualizuje po AI změnách
+- ✅ **Agresivní cache invalidation** - Implementováno v `universal-ai-chat.tsx` a `bottom-ai-chat.tsx`
+- ✅ **Multi-wave refresh systém** - Vícestupňové refetche s timeouty pro garantovanou aktualizaci
+- ✅ **Debug logování přidáno** - Sledování cache invalidation procesů
+- ✅ **Global fallback refresh** - Záložní mechanismus pro kompletní UI refresh
+- ✅ **Kritický UX problém vyřešen** - AI operace (změny cen, poznámky) se okamžitě projeví v UI
+
 ### COMPLETE TEST COVERAGE & FIXES IMPLEMENTATION (2025-07-23)
 - ✅ **100% testovací pokrytí dokončeno** - Vytvořeno 12 test suitů s 100+ testy
 - ✅ **Nové test sady implementovány** - Email, QR kódy, recurring, export, items

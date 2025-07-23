@@ -98,31 +98,74 @@ export function UniversalAIChat() {
         handleCommand(data.command);
       }
 
-      // Invalidate relevant queries if AI performed actions
+      // AGGRESSIVE CACHE INVALIDATION - UI must always reflect backend changes
       const actionType = data.action?.type || data.command?.action;
-      if (actionType === 'create_invoice' || actionType === 'update_invoice') {
+      
+      // Always invalidate if there's any invoice-related action
+      if (actionType === 'create_invoice' || actionType === 'update_invoice' || 
+          actionType === 'add_note_to_invoice' || actionType === 'update_invoice_universal' ||
+          actionType === 'add_item_to_invoice' || actionType === 'update_invoice_prices' ||
+          data.content?.includes('faktur') || data.content?.includes('byla aktualizována')) {
+        
+        // Invalidate all invoice-related queries
         queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
         queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/analytics'] });
+        
+        // Get current invoice ID if we're on invoice page
+        const currentInvoiceId = window.location.pathname.match(/\/invoices\/(\d+)/)?.[1];
+        if (currentInvoiceId) {
+          queryClient.invalidateQueries({ queryKey: ["/api/invoices", parseInt(currentInvoiceId)] });
+          queryClient.invalidateQueries({ queryKey: ["/api/invoices", parseInt(currentInvoiceId), "items"] });
+          
+          // Force refetch after invalidation
+          setTimeout(() => {
+            queryClient.refetchQueries({ queryKey: ["/api/invoices", parseInt(currentInvoiceId)] });
+            queryClient.refetchQueries({ queryKey: ["/api/invoices"] });
+          }, 100);
+        }
+        
+        // Additional force refresh for dashboard and other data
+        setTimeout(() => {
+          queryClient.refetchQueries({ queryKey: ['/api/stats'] });
+          queryClient.refetchQueries({ queryKey: ['/api/analytics'] });
+        }, 150);
+        
+        // Global refetch as final backup
+        setTimeout(() => {
+          window.dispatchEvent(new Event('force-ui-refresh'));
+        }, 250);
       }
+      
       if (actionType === 'create_customer') {
         queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
       }
+      
       if (actionType === 'mark_paid' || actionType === 'update_status') {
         queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
         queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/analytics'] });
       }
       
-      // Special handling for pricing updates - always invalidate current invoice
-      if (data.content && data.content.includes('byla aktualizována s cenami')) {
-        // Extract invoice ID from navigation path
-        const navPath = data.action?.data?.path;
-        if (navPath && navPath.includes('/invoices/') && navPath.includes('/edit')) {
-          const invoiceId = navPath.match(/\/invoices\/(\d+)\/edit/)?.[1];
-          if (invoiceId) {
-            queryClient.invalidateQueries({ queryKey: ["/api/invoices", parseInt(invoiceId)] });
-            queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
-            queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
-          }
+      // Handle refresh_current_page action
+      if (data.action?.type === 'refresh_current_page') {
+        console.log('🔄 AI triggered refresh_current_page');
+        queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+        
+        const currentInvoiceId = window.location.pathname.match(/\/invoices\/(\d+)/)?.[1];
+        if (currentInvoiceId) {
+          queryClient.invalidateQueries({ queryKey: ["/api/invoices", parseInt(currentInvoiceId)] });
+          queryClient.invalidateQueries({ queryKey: ["/api/invoices", parseInt(currentInvoiceId), "items"] });
+          
+          // Multiple waves of refresh to ensure UI updates
+          setTimeout(() => {
+            queryClient.refetchQueries({ queryKey: ["/api/invoices", parseInt(currentInvoiceId)] });
+          }, 50);
+          setTimeout(() => {
+            queryClient.refetchQueries({ queryKey: ["/api/invoices"] });
+          }, 150);
         }
       }
     },
@@ -142,14 +185,15 @@ export function UniversalAIChat() {
     switch (actionType) {
       case 'navigate':
         if (actionData.path) {
-          // Invalidate cache for invoice data when navigating to invoice edit
-          if (actionData.path.includes('/invoices/') && actionData.path.includes('/edit')) {
-            const invoiceId = actionData.path.match(/\/invoices\/(\d+)\/edit/)?.[1];
+          // Always refresh invoice data when navigating
+          if (actionData.path.includes('/invoices/')) {
+            const invoiceId = actionData.path.match(/\/invoices\/(\d+)/)?.[1];
             if (invoiceId) {
               queryClient.invalidateQueries({ queryKey: ["/api/invoices", parseInt(invoiceId)] });
-              queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
-              queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+              queryClient.invalidateQueries({ queryKey: ["/api/invoices", parseInt(invoiceId), "items"] });
             }
+            queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
           }
           window.location.href = actionData.path;
         }
