@@ -53,29 +53,44 @@ export class UniversalAIService {
     if (attachments && attachments.length > 0) {
       console.log('Processing attachments:', attachments.length, 'attachments found');
       
-      const imageAttachments = attachments.filter(att => 
-        att.type?.startsWith('image/') || att.name?.match(/\.(jpg|jpeg|png)$/i)
+      // Support both images and PDFs
+      const processableAttachments = attachments.filter(att => 
+        att.type?.startsWith('image/') || 
+        att.type === 'application/pdf' ||
+        att.name?.match(/\.(jpg|jpeg|png|pdf)$/i)
       );
       
-      console.log('Image attachments found:', imageAttachments.length);
+      console.log('Processable attachments found:', processableAttachments.length);
       
-      if (imageAttachments.length > 0) {
+      if (processableAttachments.length > 1) {
+        // BULK PROCESSING - multiple files
+        return await this.processBulkExpenses(processableAttachments, userContext, message);
+      } else if (processableAttachments.length === 1) {
+        // SINGLE FILE PROCESSING
         try {
-          console.log('Starting Vision API processing...');
-          const visionResult = await this.processImageWithVision(imageAttachments, message);
-          console.log('Vision API result:', visionResult);
+          console.log('Starting single file processing...');
           
-          if (visionResult) {
-            console.log('Creating expense from vision data...');
-            // Extract expense data from receipt/invoice and save attachment
-            return await this.createExpenseFromVision(visionResult, userContext, imageAttachments[0]);
+          const attachment = processableAttachments[0];
+          
+          // Handle PDF differently than images
+          if (attachment.type === 'application/pdf' || attachment.name?.endsWith('.pdf')) {
+            return await this.processPDFExpense(attachment, userContext, message);
           } else {
-            console.log('Vision result is empty or null');
+            // Process image with Vision API
+            const visionResult = await this.processImageWithVision([attachment], message);
+            console.log('Vision API result:', visionResult);
+            
+            if (visionResult) {
+              console.log('Creating expense from vision data...');
+              return await this.createExpenseFromVision(visionResult, userContext, attachment);
+            } else {
+              console.log('Vision result is empty or null');
+            }
           }
         } catch (error) {
-          console.error('Vision API processing failed:', error);
+          console.error('File processing failed:', error);
           return {
-            content: 'Nepodařilo se zpracovat obrázek účtenky. Zkuste prosím nahrát obrázek znovu nebo vytvořit náklad manuálně.'
+            content: 'Nepodařilo se zpracovat soubor. Zkuste prosím nahrát soubor znovu nebo vytvořit náklad manuálně.'
           };
         }
       }
@@ -701,7 +716,7 @@ Kontext: ${context}`;
         // Store attachment info
         attachmentName: imageAttachment?.name || 'receipt-image.jpg',
         attachmentType: imageAttachment?.type || 'image/jpeg',
-        attachmentUrl: `data:${imageAttachment?.type || 'image/jpeg'};base64,${imageAttachment?.content}` // Store as base64
+        attachmentUrl: `data:${imageAttachment?.type || 'image/jpeg'};base64,${imageAttachment?.content || imageAttachment?.data}` // Store as base64
       };
 
       // Use the same logic as createExpense function to properly handle supplier
@@ -1084,6 +1099,135 @@ Vytvoř JSON:
       console.error('Smart categorization failed:', error);
       return {
         content: "Nepodařilo se kategorizovat náklad. Zkuste to později."
+      };
+    }
+  }
+
+  // NEW METHOD: Bulk expense processing
+  private async processBulkExpenses(attachments: any[], userContext: UserContext, message: string): Promise<UniversalAIResponse> {
+    try {
+      console.log('🔄 Starting bulk expense processing for', attachments.length, 'files');
+      
+      const results = [];
+      let successCount = 0;
+      let errorCount = 0;
+      
+      for (let i = 0; i < attachments.length; i++) {
+        const attachment = attachments[i];
+        console.log(`📄 Processing file ${i + 1}/${attachments.length}: ${attachment.name}`);
+        
+        try {
+          let visionData;
+          
+          if (attachment.type === 'application/pdf' || attachment.name?.endsWith('.pdf')) {
+            // For PDF, create a basic expense entry
+            visionData = {
+              supplierName: `Dodavatel z ${attachment.name}`,
+              description: `Náklad z PDF: ${attachment.name}`,
+              amount: 0,
+              total: 0,
+              vatAmount: 0,
+              vatRate: 21,
+              receiptNumber: null,
+              expenseDate: new Date().toISOString().split('T')[0],
+              category: 'Other'
+            };
+          } else {
+            // Process image with Vision API
+            visionData = await this.processImageWithVision([attachment], message);
+          }
+          
+          if (visionData) {
+            // Create expense with attachment
+            const expenseData = {
+              supplierName: visionData.supplierName || `Dodavatel ${i + 1}`,
+              description: visionData.description || `Náklad z ${attachment.name}`,
+              amount: visionData.amount || visionData.total || 0,
+              vatAmount: visionData.vatAmount || 0,
+              total: visionData.total || visionData.amount || 0,
+              vatRate: visionData.vatRate || 21,
+              category: visionData.category || 'Other',
+              expenseDate: visionData.expenseDate ? new Date(visionData.expenseDate) : new Date(),
+              receiptNumber: visionData.receiptNumber,
+              attachmentName: attachment.name,
+              attachmentType: attachment.type,
+              attachmentUrl: `data:${attachment.type};base64,${attachment.content || attachment.data}`,
+              status: 'draft',
+              companyId: userContext.companyId,
+              userId: userContext.userId
+            };
+            
+            const newExpense = await userContext.storage.createExpense(expenseData, userContext.companyId);
+            results.push(newExpense);
+            successCount++;
+            console.log(`✅ Expense ${i + 1} created successfully: ${newExpense.expenseNumber}`);
+          } else {
+            console.log(`⚠️ Failed to process file ${i + 1}: No data extracted`);
+            errorCount++;
+          }
+        } catch (error) {
+          console.error(`❌ Error processing file ${i + 1}:`, error);
+          errorCount++;
+        }
+      }
+      
+      // Return summary
+      const summary = `🎯 Bulk import dokončen!\n✅ Úspěšně vytvořeno: ${successCount} nákladů\n❌ Chyby: ${errorCount} souborů`;
+      
+      if (successCount > 0) {
+        const expenseNumbers = results.map(exp => exp.expenseNumber).join(', ');
+        return {
+          content: `${summary}\n\n📋 Vytvořené náklady: ${expenseNumbers}\n\nNáklady byly uloženy s přílohami a můžete je nyní upravit nebo schválit.`,
+          action: { type: 'navigate', data: { path: '/expenses' } }
+        };
+      } else {
+        return {
+          content: `${summary}\n\nŽádné náklady nebyly vytvořeny. Zkontrolujte, zda jsou soubory čitelné účtenky nebo faktury.`
+        };
+      }
+    } catch (error) {
+      console.error('Bulk expense processing failed:', error);
+      return {
+        content: 'Nepodařilo se zpracovat hromadný import nákladů. Zkuste prosím nahrát soubory znovu.'
+      };
+    }
+  }
+
+  // NEW METHOD: PDF expense processing
+  private async processPDFExpense(attachment: any, userContext: UserContext, message: string): Promise<UniversalAIResponse> {
+    try {
+      console.log('📄 Processing PDF expense:', attachment.name);
+      
+      // For now, create a basic expense entry from PDF
+      // TODO: In future, implement PDF text extraction
+      const expenseData = {
+        supplierName: `Dodavatel z ${attachment.name}`,
+        description: `Náklad z PDF: ${attachment.name}`,
+        amount: 0, // User will need to fill manually
+        vatAmount: 0,
+        total: 0,
+        vatRate: 21,
+        category: 'Other',
+        expenseDate: new Date(),
+        receiptNumber: null,
+        attachmentName: attachment.name,
+        attachmentType: attachment.type,
+        attachmentUrl: `data:${attachment.type};base64,${attachment.content || attachment.data}`,
+        status: 'draft',
+        companyId: userContext.companyId,
+        userId: userContext.userId
+      };
+      
+      const newExpense = await userContext.storage.createExpense(expenseData, userContext.companyId);
+      
+      return {
+        content: `📄 Náklad z PDF vytvořen úspěšně!\n\n📋 Číslo nákladu: ${newExpense.expenseNumber}\n💾 PDF příloha byla uložena\n\nProsím doplňte částku a další údaje v editaci nákladu.`,
+        action: { type: 'navigate', data: { path: `/expenses/${newExpense.id}/edit` } }
+      };
+    } catch (error) {
+      console.error('PDF expense processing failed:', error);
+      return {
+        content: 'Nepodařilo se vytvořit náklad z PDF. Zkuste prosím nahrát soubor znovu.'
       };
     }
   }

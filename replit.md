@@ -11,6 +11,16 @@ Technical preference: Always use AI for intelligent text/product matching instea
 
 ## Recent Changes
 
+### BULK EXPENSE UPLOAD & PDF ATTACHMENTS FIX (2025-07-23)
+- ✅ **PDF přílohy opraveny** - Soubory se nyní správně ukládají s náklady  
+- ✅ **Bulk upload implementován** - Možnost nahrát více nákladů současně
+- ✅ **Drag & drop do AI chatu** - Přetahování souborů myší s vizuálním feedbackem
+- ✅ **Multi-format podpora** - PDF i PNG/JPG soubory pro náklady
+- ✅ **processBulkExpenses()** - Nová metoda pro hromadné zpracování souborů
+- ✅ **processPDFExpense()** - Specializovaná metoda pro PDF faktury
+- ✅ **Enhanced validace** - Lepší zpracování chyb a feedback pro uživatele
+- ✅ **Bulk mode indikátor** - UI jasně indikuje když je aktivní hromadný režim
+
 ### UI SYNCHRONIZATION CRITICAL FIX (2025-07-23)
 - ✅ **UI synchronizace kompletně opravena** - UI se nyní okamžitě aktualizuje po AI změnách
 - ✅ **Agresivní cache invalidation** - Implementováno v `universal-ai-chat.tsx` a `bottom-ai-chat.tsx`

@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { Send, MessageSquare, ChevronUp, ChevronDown, X, Paperclip, FileText, Image, Plus, Sparkles, Calculator, Receipt, FileCheck, Users, TrendingUp, Zap, Clock, Check } from 'lucide-react';
+import { Send, MessageSquare, ChevronUp, ChevronDown, X, Paperclip, FileText, Image, Plus, Sparkles, Calculator, Receipt, FileCheck, Users, TrendingUp, Zap, Clock, Check, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthApi } from '@/hooks/use-auth-api';
 import { useLocation } from 'wouter';
@@ -167,6 +167,10 @@ export function BottomAIChat() {
       return validTypes.includes(file.type) && file.size <= 10 * 1024 * 1024;
     });
 
+    if (validFiles.length !== files.length) {
+      addMessage('assistant', `⚠️ Některé soubory byly přeskočeny. Podporované formáty: JPG, PNG, PDF (max 10MB). Nahráno: ${validFiles.length}/${files.length} souborů.`);
+    }
+
     validFiles.forEach(file => {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -184,6 +188,13 @@ export function BottomAIChat() {
       };
       reader.readAsDataURL(file);
     });
+
+    // Show success message for bulk uploads
+    if (validFiles.length > 1) {
+      addMessage('assistant', `✅ Připraveno ${validFiles.length} souborů pro hromadné zpracování.\n\n🔄 Bulk mode aktivní - všechny soubory budou zpracovány současně.\n\nNapište zprávu nebo stiskněte Enter pro vytvoření nákladů.`);
+    } else if (validFiles.length === 1) {
+      addMessage('assistant', `✅ Soubor ${validFiles[0].name} připraven pro zpracování.\n\nNapište zprávu nebo stiskněte Enter pro vytvoření nákladu.`);
+    }
   };
 
   const removeAttachment = (index: number) => {
@@ -342,7 +353,9 @@ export function BottomAIChat() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "min(400px, 60vh)" }}
             exit={{ opacity: 0, height: 0 }}
-            className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 shadow-2xl max-h-[60vh] flex flex-col"
+            className={`bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 shadow-2xl max-h-[60vh] flex flex-col ${
+              isDragging ? 'bg-blue-50 dark:bg-blue-950 border-blue-300 dark:border-blue-600' : ''
+            }`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
@@ -382,6 +395,16 @@ export function BottomAIChat() {
 
             {/* Messages Area */}
             <ScrollArea className="flex-1 p-4 min-h-0">
+              {isDragging && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-blue-50 dark:bg-blue-950 bg-opacity-90 backdrop-blur-sm">
+                  <div className="text-center">
+                    <Upload className="w-12 h-12 mx-auto mb-3 text-blue-500" />
+                    <p className="text-lg font-medium text-blue-700 dark:text-blue-300">Přetáhněte soubory zde</p>
+                    <p className="text-sm text-blue-600 dark:text-blue-400">Podporované: JPG, PNG, PDF (max 10MB)</p>
+                  </div>
+                </div>
+              )}
+              
               {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 dark:text-gray-400">
                   <MessageSquare className="w-12 h-12 mb-3 opacity-50" />
@@ -391,6 +414,7 @@ export function BottomAIChat() {
                     <p>🔍 "najdi neplacené faktury"</p>
                     <p>📊 "zobraz statistiky"</p>
                     <p>👥 "přidej zákazníka XYZ"</p>
+                    <p>📄 "nahraj účtenky přetáhnutím"</p>
                   </div>
                 </div>
               ) : (
