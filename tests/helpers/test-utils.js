@@ -138,19 +138,28 @@ async function apiRequest(endpoint, options = {}) {
       method: options.method || 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer test-session-dev',
         ...options.headers
       },
+      credentials: 'include', // Use cookies instead of Bearer token
       ...options
     };
+
+    // Remove body from options to avoid duplication
+    const { body, headers, ...restOptions } = options;
+    Object.assign(fetchOptions, restOptions);
+    
+    if (body) {
+      fetchOptions.body = body;
+    }
 
     const response = await fetch(url, fetchOptions);
     
     let data;
     try {
-      data = await response.json();
+      const responseText = await response.text();
+      data = responseText ? JSON.parse(responseText) : {};
     } catch (e) {
-      data = await response.text();
+      data = responseText || '';
     }
 
     return { response, data };

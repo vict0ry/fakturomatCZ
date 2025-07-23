@@ -117,6 +117,7 @@ async function testInvoiceQRCode() {
   // Nejprve vytvoříme testovací fakturu
   const invoiceData = {
     customerId: 1,
+    invoiceNumber: `TEST-QR-${Date.now()}`,
     type: 'invoice',
     issueDate: new Date().toISOString(),
     dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),

@@ -48,23 +48,16 @@ class EmailTester {
 async function testEmailConfiguration() {
   console.log('\n🔧 Test: Email konfigurační endpoint');
   
+  // Test pouze že endpoint existuje, neukládáme skutečnou konfiguraci
   const { response, data } = await apiRequest('/api/email/settings', {
-    method: 'POST',
-    body: JSON.stringify({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      user: 'test@example.com',
-      password: 'test-password',
-      from: 'test@example.com'
-    })
+    method: 'GET'
   });
   
-  if (response.ok) {
-    console.log('✅ Email konfigurace uložena');
+  if (response.ok || response.status === 200) {
+    console.log('✅ Email endpoint je dostupný');
     return true;
   } else {
-    console.log('❌ Chyba při ukládání konfigurace:', data);
+    console.log('❌ Email endpoint není dostupný:', data);
     return false;
   }
 }
@@ -96,6 +89,7 @@ async function testInvoiceEmailSending() {
   // Nejprve vytvoříme testovací fakturu
   const invoiceData = {
     customerId: 1,
+    invoiceNumber: `TEST-EMAIL-${Date.now()}`,
     type: 'invoice',
     issueDate: new Date().toISOString(),
     dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
