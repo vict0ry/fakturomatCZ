@@ -264,7 +264,7 @@ export default function Landing() {
     {
       name: "Jan Novák",
       company: "Novák Design",
-      text: "Od přechodu na NašeFakturace jsem ušetřil 5 hodin týdně. AI asistent je neuvěřitelný!",
+      text: "Od přechodu na Doklad.ai jsem ušetřil 5 hodin týdně. AI asistent je neuvěřitelný!",
       rating: 5
     },
     {
@@ -284,7 +284,7 @@ export default function Landing() {
   const competitors = [
     { name: "Fakturoidu", price: "299 Kč", ai: false, speed: "Pomalé", ares: true },
     { name: "iDoklad", price: "349 Kč", ai: false, speed: "Střední", ares: true },
-    { name: "NašeFakturace", price: "199 Kč", ai: true, speed: "Bleskové", ares: true, highlight: true }
+    { name: "Doklad.ai", price: "199 Kč", ai: true, speed: "Bleskové", ares: true, highlight: true }
   ];
 
   return (
@@ -299,7 +299,7 @@ export default function Landing() {
               <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
                 <FileText className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-gray-900 dark:text-white">NašeFakturace</span>
+              <span className="text-xl font-bold text-gray-900 dark:text-white">Doklad.ai</span>
             </div>
             <div className="flex items-center space-x-4">
               <Link href="/dashboard">
@@ -396,7 +396,7 @@ export default function Landing() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-              Proč přejít na NašeFakturace?
+              Proč přejít na Doklad.ai?
             </h2>
             <p className="text-gray-600 dark:text-gray-300">
               Moderní funkcionalita, kterou u konkurence nenajdete
@@ -539,10 +539,10 @@ export default function Landing() {
                 <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
                   <FileText className="h-5 w-5 text-white" />
                 </div>
-                <span className="text-xl font-bold">NašeFakturace</span>
+                <span className="text-xl font-bold">Doklad.ai</span>
               </div>
               <p className="text-gray-400">
-                AI-powered fakturace pro moderní podnikatele v České republice
+                AI-powered dokladová služba pro moderní podnikatele v České republice
               </p>
             </div>
             
@@ -575,7 +575,7 @@ export default function Landing() {
           </div>
           
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2025 NašeFakturace. Všechna práva vyhrazena.</p>
+            <p>&copy; 2025 Doklad.ai. Všechna práva vyhrazena.</p>
           </div>
         </div>
       </footer>

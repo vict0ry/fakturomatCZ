@@ -1,4 +1,4 @@
-# Invoice Management System - Replit Documentation
+# Doklad.ai - AI-Powered Czech Invoice Management System
 
 ## Overview
 
