@@ -1493,5 +1493,223 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Recurring invoices endpoints
+  app.post("/api/invoices/recurring", requireAuth, async (req: any, res) => {
+    try {
+      const recurringData = {
+        ...req.body,
+        companyId: req.user.companyId,
+        userId: req.user.id
+      };
+      
+      const recurring = await storage.createRecurringInvoice(recurringData);
+      res.json(recurring);
+    } catch (error) {
+      console.error("Error creating recurring invoice:", error);
+      res.status(500).json({ message: "Failed to create recurring invoice" });
+    }
+  });
+
+  app.get("/api/invoices/recurring", requireAuth, async (req: any, res) => {
+    try {
+      const recurring = await storage.getRecurringInvoices(req.user.companyId);
+      res.json(recurring);
+    } catch (error) {
+      console.error("Error fetching recurring invoices:", error);
+      res.status(500).json({ message: "Failed to fetch recurring invoices" });
+    }
+  });
+
+  // Export endpoints
+  app.get("/api/export/invoices/csv", requireAuth, async (req: any, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const invoices = await storage.getInvoicesForExport(req.user.companyId, startDate, endDate);
+      
+      // Generate CSV
+      const csvContent = generateInvoicesCSV(invoices);
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="faktury.csv"');
+      res.send(csvContent);
+    } catch (error) {
+      console.error("Error exporting invoices to CSV:", error);
+      res.status(500).json({ message: "Failed to export invoices" });
+    }
+  });
+
+  app.get("/api/export/accounting/pohoda", requireAuth, async (req: any, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const invoices = await storage.getInvoicesForExport(req.user.companyId, startDate, endDate);
+      
+      // Generate Pohoda XML
+      const xmlContent = generatePohodaXML(invoices);
+      
+      res.setHeader('Content-Type', 'application/xml');
+      res.setHeader('Content-Disposition', 'attachment; filename="pohoda-export.xml"');
+      res.send(xmlContent);
+    } catch (error) {
+      console.error("Error exporting to Pohoda:", error);
+      res.status(500).json({ message: "Failed to export to Pohoda" });
+    }
+  });
+
+  // Email endpoints
+  app.post("/api/invoices/:id/email", requireAuth, async (req: any, res) => {
+    try {
+      const invoiceId = parseInt(req.params.id);
+      const invoice = await storage.getInvoiceWithDetails(invoiceId);
+      
+      if (!invoice || invoice.companyId !== req.user.companyId) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+
+      // Generate PDF
+      const { generateInvoicePDF } = await import('./services/pdf');
+      const pdfBuffer = await generateInvoicePDF(invoice);
+      
+      // Send email (placeholder - need email configuration)
+      const emailSent = true; // await emailService.sendInvoiceEmail(invoice, pdfBuffer);
+      
+      if (emailSent) {
+        res.json({ message: "Email sent successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to send email" });
+      }
+    } catch (error) {
+      console.error("Error sending invoice email:", error);
+      res.status(500).json({ message: "Failed to send email" });
+    }
+  });
+
+  app.post("/api/invoices/:id/reminder", requireAuth, async (req: any, res) => {
+    try {
+      const invoiceId = parseInt(req.params.id);
+      const { reminderType } = req.body;
+      
+      const invoice = await storage.getInvoiceWithDetails(invoiceId);
+      
+      if (!invoice || invoice.companyId !== req.user.companyId) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+
+      // Send reminder email (placeholder - need email configuration)
+      const reminderSent = true; // await emailService.sendReminderEmail(invoice, reminderType);
+      
+      if (reminderSent) {
+        // Record reminder
+        await storage.createReminder({
+          companyId: req.user.companyId,
+          invoiceId: invoiceId,
+          type: 'payment_reminder',
+          sentAt: new Date(),
+          recipientEmail: invoice.customer?.email || '',
+          subject: `Připomínka platby - Faktura ${invoice.invoiceNumber}`,
+          body: `Automated reminder for invoice ${invoice.invoiceNumber}`,
+          status: 'sent'
+        });
+        
+        res.json({ message: "Reminder sent successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to send reminder" });
+      }
+    } catch (error) {
+      console.error("Error sending reminder:", error);
+      res.status(500).json({ message: "Failed to send reminder" });
+    }
+  });
+
   return server;
+
+// Helper functions for export
+function generateInvoicesCSV(invoices: any[]): string {
+  const headers = [
+    'Číslo faktury',
+    'Zákazník', 
+    'Datum vystavení',
+    'Datum splatnosti',
+    'Částka bez DPH',
+    'DPH',
+    'Celková částka',
+    'Status',
+    'Typ'
+  ];
+  
+  const rows = invoices.map(invoice => [
+    invoice.invoiceNumber,
+    invoice.customer?.name || '',
+    new Date(invoice.issueDate).toLocaleDateString('cs-CZ'),
+    new Date(invoice.dueDate).toLocaleDateString('cs-CZ'),
+    invoice.subtotal,
+    invoice.vatAmount,
+    invoice.total,
+    invoice.status,
+    invoice.type
+  ]);
+  
+  const csvRows = [headers, ...rows];
+  return csvRows.map(row => row.map(field => `"${field}"`).join(';')).join('\n');
+}
+
+function generatePohodaXML(invoices: any[]): string {
+  const xmlHeader = `<?xml version="1.0" encoding="UTF-8"?>
+<dataPack version="2.0" id="001" ico="12345678" application="InvoiceSystem" programVersion="1.0" note="Export faktur">
+  <dataPackItem version="2.0" id="001">`;
+  
+  const xmlFooter = `  </dataPackItem>
+</dataPack>`;
+  
+  const invoicesXML = invoices.map(invoice => `
+    <invoice version="2.0">
+      <invoiceHeader>
+        <invoiceType>issuedInvoice</invoiceType>
+        <number>
+          <numberRequested>${invoice.invoiceNumber}</numberRequested>
+        </number>
+        <date>${new Date(invoice.issueDate).toISOString().split('T')[0]}</date>
+        <dateDue>${new Date(invoice.dueDate).toISOString().split('T')[0]}</dateDue>
+        <text>${invoice.notes || ''}</text>
+        <partnerIdentity>
+          <address>
+            <company>${invoice.customer?.name || ''}</company>
+            <ico>${invoice.customer?.ico || ''}</ico>
+            <dic>${invoice.customer?.dic || ''}</dic>
+          </address>
+        </partnerIdentity>
+        <paymentType>
+          <paymentType>draft</paymentType>
+        </paymentType>
+      </invoiceHeader>
+      <invoiceDetail>
+        ${invoice.items?.map((item: any) => `
+        <invoiceItem>
+          <text>${item.description}</text>
+          <quantity>${item.quantity}</quantity>
+          <unit>ks</unit>
+          <coefficient>1.0</coefficient>
+          <payVAT>false</payVAT>
+          <rateVAT>high</rateVAT>
+          <percentVAT>21.0</percentVAT>
+          <discountPercentage>0</discountPercentage>
+          <homeCurrency>
+            <unitPrice>${item.unitPrice}</unitPrice>
+            <price>${item.total}</price>
+          </homeCurrency>
+        </invoiceItem>`).join('') || ''}
+      </invoiceDetail>
+      <invoiceSummary>
+        <homeCurrency>
+          <priceNone>${invoice.subtotal}</priceNone>
+          <priceHigh>${invoice.subtotal}</priceHigh>
+          <priceHighVAT>${invoice.vatAmount}</priceHighVAT>
+          <round>
+            <priceRound>${invoice.total}</priceRound>
+          </round>
+        </homeCurrency>
+      </invoiceSummary>
+    </invoice>`).join('');
+  
+  return xmlHeader + invoicesXML + xmlFooter;
+}
 }

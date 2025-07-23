@@ -1,10 +1,24 @@
 import puppeteer from "puppeteer";
 import type { Invoice, Customer, InvoiceItem } from "@shared/schema";
+import { QRGenerator } from "./qr-generator";
 
 export async function generateInvoicePDF(
   invoice: Invoice & { customer: Customer; items: InvoiceItem[] }
 ): Promise<Buffer> {
-  const htmlContent = generateInvoiceHTML(invoice);
+  // Generate QR code for payment
+  let qrCodeDataURL = '';
+  try {
+    const company = {
+      name: 'Test s.r.o.',
+      iban: 'CZ1234567890123456789012',
+      bankAccount: '123456789/0100'
+    };
+    qrCodeDataURL = await QRGenerator.generateInvoicePaymentQR(invoice, company);
+  } catch (error) {
+    console.warn('Failed to generate QR code:', error);
+  }
+  
+  const htmlContent = generateInvoiceHTML(invoice, qrCodeDataURL);
   
   // Launch headless browser with fallback options
   const browser = await puppeteer.launch({
@@ -50,7 +64,7 @@ export async function generateInvoicePDF(
   }
 }
 
-function generateInvoiceHTML(invoice: Invoice & { customer: Customer; items: InvoiceItem[] }): string {
+function generateInvoiceHTML(invoice: Invoice & { customer: Customer; items: InvoiceItem[] }, qrCodeDataURL?: string): string {
   const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleDateString('cs-CZ');
   };
