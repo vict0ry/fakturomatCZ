@@ -718,6 +718,34 @@ export default function Landing() {
           </div>
         </div>
       </footer>
+
+      {/* Admin Login Modal - Hidden button for admin access */}
+      <div className="fixed bottom-4 left-4">
+        <Button
+          variant="ghost" 
+          size="sm"
+          className="opacity-20 hover:opacity-100 text-xs"
+          onClick={async () => {
+            try {
+              const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: 'admin', password: 'admin123' })
+              });
+              
+              if (response.ok) {
+                const data = await response.json();
+                localStorage.setItem('sessionId', data.sessionId);
+                window.location.reload();
+              }
+            } catch (error) {
+              console.error('Admin login failed:', error);
+            }
+          }}
+        >
+          Admin
+        </Button>
+      </div>
     </div>
   );
 }

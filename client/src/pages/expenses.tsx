@@ -296,7 +296,7 @@ export default function ExpensesPage() {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 dark:text-gray-400">
                           <div className="flex items-center gap-2">
                             <Building className="w-4 h-4" />
-                            <span>{expense.supplier.name}</span>
+                            <span>{expense.supplier?.name || 'Neznámý dodavatel'}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4" />

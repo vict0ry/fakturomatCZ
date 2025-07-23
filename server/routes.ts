@@ -20,7 +20,7 @@ import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
 
 // Simple session middleware (in production, use proper session management)
-const sessions = new Map<string, { userId: number; companyId: number }>();
+const sessions = new Map<string, { userId: number; companyId: number; role?: string }>();
 
 // Initialize with a test session for development
 sessions.set('test-session-dev', { userId: 1, companyId: 1 });
@@ -120,7 +120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create session
       const sessionId = randomUUID();
-      sessions.set(sessionId, { userId: newUser.id, companyId: newCompany.id });
+      sessions.set(sessionId, { userId: newUser.id, companyId: newCompany.id, role: newUser.role });
       
       res.json({ 
         user: { ...newUser, password: undefined }, 
@@ -143,7 +143,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const sessionId = randomUUID();
-      sessions.set(sessionId, { userId: user.id, companyId: user.companyId! });
+      sessions.set(sessionId, { userId: user.id, companyId: user.companyId!, role: user.role });
       
       res.json({ 
         user: { ...user, password: undefined }, 
