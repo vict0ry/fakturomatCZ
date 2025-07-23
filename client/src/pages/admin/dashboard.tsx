@@ -19,7 +19,13 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  BarChart3
+  BarChart3,
+  Key,
+  Eye,
+  EyeOff,
+  Plus,
+  Trash2,
+  Edit
 } from 'lucide-react';
 
 interface UserStats {
@@ -73,6 +79,67 @@ export default function AdminDashboard() {
   // Admin settings
   const [monthlyPrice, setMonthlyPrice] = useState('199');
   const [trialDays, setTrialDays] = useState('7');
+
+  // API Tokens state
+  const [apiTokens, setApiTokens] = useState([
+    { id: 1, name: 'OpenAI API Key', key: 'OPENAI_API_KEY', value: '****', visible: false, description: 'Pro AI funkce a chat asistenta' },
+    { id: 2, name: 'Stripe Secret Key', key: 'STRIPE_SECRET_KEY', value: '****', visible: false, description: 'Pro platební brány a předplatné' },
+    { id: 3, name: 'Stripe Public Key', key: 'VITE_STRIPE_PUBLIC_KEY', value: '****', visible: false, description: 'Veřejný klíč pro frontend' },
+    { id: 4, name: 'SendGrid API Key', key: 'SENDGRID_API_KEY', value: '****', visible: false, description: 'Pro odesílání emailů' },
+    { id: 5, name: 'Database URL', key: 'DATABASE_URL', value: '****', visible: false, description: 'Připojení k databázi' }
+  ]);
+  const [newTokenName, setNewTokenName] = useState('');
+  const [newTokenKey, setNewTokenKey] = useState('');
+  const [newTokenValue, setNewTokenValue] = useState('');
+  const [newTokenDescription, setNewTokenDescription] = useState('');
+  const [isAddingToken, setIsAddingToken] = useState(false);
+
+  // API Token management functions
+  const toggleTokenVisibility = (id: number) => {
+    setApiTokens(prev => prev.map(token => 
+      token.id === id ? { ...token, visible: !token.visible } : token
+    ));
+  };
+
+  const deleteToken = (id: number) => {
+    setApiTokens(prev => prev.filter(token => token.id !== id));
+    toast({
+      title: "Token smazán",
+      description: "API token byl úspěšně odstraněn"
+    });
+  };
+
+  const addNewToken = () => {
+    if (!newTokenName || !newTokenKey || !newTokenValue) {
+      toast({
+        title: "Chyba",
+        description: "Vyplňte všechna povinná pole",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const newToken = {
+      id: Math.max(...apiTokens.map(t => t.id)) + 1,
+      name: newTokenName,
+      key: newTokenKey,
+      value: newTokenValue,
+      visible: false,
+      description: newTokenDescription
+    };
+
+    setApiTokens(prev => [...prev, newToken]);
+    setNewTokenName('');
+    setNewTokenKey('');
+    setNewTokenValue('');
+    setNewTokenDescription('');
+    setIsAddingToken(false);
+
+    toast({
+      title: "Token přidán",
+      description: "Nový API token byl úspěšně vytvořen"
+    });
+  };
 
   const handleUpdatePricing = async () => {
     try {
@@ -144,10 +211,11 @@ export default function AdminDashboard() {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Přehled</TabsTrigger>
           <TabsTrigger value="users">Uživatelé</TabsTrigger>
           <TabsTrigger value="revenue">Příjmy</TabsTrigger>
+          <TabsTrigger value="api-tokens">API Tokeny</TabsTrigger>
           <TabsTrigger value="settings">Nastavení</TabsTrigger>
         </TabsList>
 
@@ -352,6 +420,169 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* API Tokens Tab */}
+        <TabsContent value="api-tokens" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Key className="h-5 w-5 mr-2" />
+                Správa API tokenů
+              </CardTitle>
+              <CardDescription>
+                Spravujte API klíče pro externí služby jako OpenAI, Stripe, SendGrid
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Add New Token Button */}
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold">Současné API tokeny</h3>
+                  <Button 
+                    onClick={() => setIsAddingToken(true)}
+                    className="bg-orange-500 hover:bg-orange-600"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Přidat token
+                  </Button>
+                </div>
+
+                {/* Add New Token Form */}
+                {isAddingToken && (
+                  <Card className="border-2 border-orange-200">
+                    <CardHeader>
+                      <CardTitle className="text-base">Přidat nový API token</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="tokenName">Název tokenu *</Label>
+                          <Input
+                            id="tokenName"
+                            value={newTokenName}
+                            onChange={(e) => setNewTokenName(e.target.value)}
+                            placeholder="např. OpenAI API Key"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="tokenKey">Environment key *</Label>
+                          <Input
+                            id="tokenKey"
+                            value={newTokenKey}
+                            onChange={(e) => setNewTokenKey(e.target.value)}
+                            placeholder="např. OPENAI_API_KEY"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="tokenValue">Hodnota tokenu *</Label>
+                        <Input
+                          id="tokenValue"
+                          type="password"
+                          value={newTokenValue}
+                          onChange={(e) => setNewTokenValue(e.target.value)}
+                          placeholder="Zadejte API klíč"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="tokenDescription">Popis (volitelné)</Label>
+                        <Input
+                          id="tokenDescription"
+                          value={newTokenDescription}
+                          onChange={(e) => setNewTokenDescription(e.target.value)}
+                          placeholder="Stručný popis použití tokenu"
+                        />
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button onClick={addNewToken} className="bg-green-500 hover:bg-green-600">
+                          Uložit token
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => {
+                            setIsAddingToken(false);
+                            setNewTokenName('');
+                            setNewTokenKey('');
+                            setNewTokenValue('');
+                            setNewTokenDescription('');
+                          }}
+                        >
+                          Zrušit
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Existing Tokens List */}
+                <div className="space-y-3">
+                  {apiTokens.map((token) => (
+                    <Card key={token.id} className="border">
+                      <CardContent className="pt-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-3">
+                              <Key className="h-4 w-4 text-gray-500" />
+                              <div>
+                                <div className="font-semibold">{token.name}</div>
+                                <div className="text-sm text-gray-500">{token.key}</div>
+                                {token.description && (
+                                  <div className="text-xs text-gray-400 mt-1">{token.description}</div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center space-x-4">
+                            {/* Token Value */}
+                            <div className="flex items-center space-x-2">
+                              <code className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-sm font-mono">
+                                {token.visible ? token.value : '••••••••••••••••'}
+                              </code>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toggleTokenVisibility(token.id)}
+                              >
+                                {token.visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              </Button>
+                            </div>
+                            
+                            {/* Actions */}
+                            <div className="flex space-x-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => deleteToken(token.id)}
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                {/* Warning Notice */}
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="font-semibold text-yellow-800 dark:text-yellow-200">Bezpečnostní upozornění</p>
+                      <p className="text-yellow-700 dark:text-yellow-300 mt-1">
+                        API tokeny jsou citlivé údaje. Ujistěte se, že je ukládáte bezpečně a nesdílíte je s neautorizovanými osobami.
+                        V produkci se doporučuje používat Environment Variables místo uložení v databázi.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Settings Tab */}
