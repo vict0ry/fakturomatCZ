@@ -21,6 +21,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import Landing from "@/pages/landing";
 import Register from "@/pages/register";
+import { Login } from "@/components/auth/login";
 import AdminDashboard from "@/pages/admin/dashboard";
 
 import { AuthProvider } from "@/contexts/auth-context";
@@ -105,6 +106,7 @@ function AppContent() {
         {(params: any) => <PublicInvoicePage token={params.token} />}
       </Route>
       <Route path="/register" component={Register} />
+      <Route path="/login" component={Login} />
       <Route path="/" component={Landing} />
       {isAuthenticated && (
         <Route path="/dashboard">
