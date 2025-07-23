@@ -44,14 +44,21 @@ function PublicRouter() {
 function AuthenticatedRouter() {
   const { user } = useAuth();
   
+  console.log('AuthenticatedRouter user:', user); // Debug log
+  
   // Admin uživatelé mají pouze přístup k admin dashboardu
   if (user?.user?.role === 'admin') {
+    console.log('Rendering admin routes'); // Debug log
     return (
-      <Switch>
-        <Route path="/admin" component={AdminDashboard} />
-        <Route path="/" component={AdminDashboard} />
-        <Route component={AdminDashboard} />
-      </Switch>
+      <div className="min-h-screen">
+        <Switch>
+          <Route path="/admin" component={AdminDashboard} />
+          <Route path="/" component={AdminDashboard} />
+          <Route>
+            <AdminDashboard />
+          </Route>
+        </Switch>
+      </div>
     );
   }
   
