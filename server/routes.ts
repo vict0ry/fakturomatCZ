@@ -1206,7 +1206,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/expenses/:id", requireAuth, async (req: any, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const idParam = req.params.id;
+      let expenseId;
+      
+      // Try to parse as number first (ID)
+      if (/^\d+$/.test(idParam)) {
+        expenseId = parseInt(idParam);
+      } else {
+        // If not a number, try to find by expenseNumber
+        const expenses = await storage.getCompanyExpenses(req.user.companyId);
+        const targetExpense = expenses.find(exp => exp.expenseNumber === idParam);
+        if (targetExpense) {
+          expenseId = targetExpense.id;
+        } else {
+          return res.status(404).json({ message: "Expense not found" });
+        }
+      }
+      
       const processedData = {
         ...req.body,
         expenseDate: req.body.expenseDate ? new Date(req.body.expenseDate) : undefined,
@@ -1217,7 +1233,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       const expenseData = insertExpenseSchema.partial().parse(processedData);
-      const expense = await storage.updateExpense(id, expenseData, req.user.companyId);
+      const expense = await storage.updateExpense(expenseId, expenseData, req.user.companyId);
       res.json(expense);
     } catch (error) {
       console.error("Error updating expense:", error);
