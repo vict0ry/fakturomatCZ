@@ -11,6 +11,13 @@ Technical preference: Always use AI for intelligent text/product matching instea
 
 ## Recent Changes
 
+### AI INTENT RECOGNITION CRITICAL FIX (2025-07-23)
+- ✅ **Intent recognition opraveno** - AI nyní správně rozpoznává záměr uživatele
+- ✅ **Striktní pravidla záměrů** - Analýza hlavního objektu před akcí (zákazník vs faktura)
+- ✅ **Absolutní zákaz křížení** - Systém nemůže vytvořit fakturu místo zákazníka
+- ✅ **Enhanced PDF processing** - Vision API pro extrakci dat z českých faktur
+- ✅ **Kontextová analýza** - AI analyzuje OBJEKT a AKCI před voláním funkce
+
 ### COMPREHENSIVE TEST DATA GENERATED (2025-07-23)
 - ✅ **500 faktur vygenerováno** - Realistické faktury za 4 měsíce s různými statusy
 - ✅ **500 nákladů vytvořeno** - Kategorizované náklady s DPH výpočty a přílohy
