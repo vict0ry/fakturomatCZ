@@ -655,8 +655,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateExpense(id: number, expense: Partial<InsertExpense>, companyId: number): Promise<Expense> {
+    console.log('UpdateExpense called with:', { id, expense, companyId });
+    
+    // Remove undefined fields that might cause database issues
+    const cleanExpense = Object.fromEntries(
+      Object.entries(expense).filter(([_, value]) => value !== undefined)
+    );
+    
+    console.log('Clean expense data for update:', cleanExpense);
+    
     const [updatedExpense] = await db.update(expenses)
-      .set({ ...expense, updatedAt: new Date() })
+      .set({ ...cleanExpense, updatedAt: new Date() })
       .where(and(eq(expenses.id, id), eq(expenses.companyId, companyId)))
       .returning();
     return updatedExpense;

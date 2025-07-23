@@ -1394,5 +1394,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User profile endpoints
+  app.patch("/api/users/:id", requireAuth, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      
+      if (userId !== req.user.id) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      const updateData = {
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+        email: req.body.email,
+        username: req.body.username
+      };
+      
+      const updatedUser = await storage.updateUser(userId, updateData);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  // Company profile endpoints
+  app.get("/api/companies/:id", requireAuth, async (req: any, res) => {
+    try {
+      const companyId = parseInt(req.params.id);
+      
+      if (companyId !== req.user.companyId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      const company = await storage.getCompany(companyId);
+      if (!company) {
+        return res.status(404).json({ message: "Company not found" });
+      }
+      
+      res.json(company);
+    } catch (error) {
+      console.error("Error fetching company:", error);
+      res.status(500).json({ message: "Failed to fetch company" });
+    }
+  });
+
+  app.patch("/api/companies/:id", requireAuth, async (req: any, res) => {
+    try {
+      const companyId = parseInt(req.params.id);
+      
+      if (companyId !== req.user.companyId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      const updateData = {
+        name: req.body.name,
+        ico: req.body.ico,
+        dic: req.body.dic,
+        address: req.body.address,
+        city: req.body.city,
+        postalCode: req.body.postalCode,
+        phone: req.body.phone,
+        email: req.body.email,
+        website: req.body.website
+      };
+      
+      const updatedCompany = await storage.updateCompany(companyId, updateData);
+      res.json(updatedCompany);
+    } catch (error) {
+      console.error("Error updating company:", error);
+      res.status(500).json({ message: "Failed to update company" });
+    }
+  });
+
   return server;
 }

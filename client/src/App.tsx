@@ -16,6 +16,7 @@ import SettingsPage from "@/pages/settings";
 import ExpensesPage from "@/pages/expenses";
 import ExpenseCreatePage from "@/pages/expense-create";
 import ExpenseDetail from "./pages/expense-detail";
+import ProfilePage from "@/pages/ProfilePage";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 
@@ -44,6 +45,7 @@ function Router() {
       <Route path="/expenses" component={ExpensesPage} />
       <Route path="/analytics" component={Analytics} />
       <Route path="/settings" component={SettingsPage} />
+      <Route path="/profile" component={ProfilePage} />
       <Route component={NotFound} />
     </Switch>
   );

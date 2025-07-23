@@ -13,7 +13,8 @@ import {
   Calendar,
   TrendingUp,
   ChevronRight,
-  Menu
+  Menu,
+  User
 } from "lucide-react";
 
 interface SidebarProps {
@@ -55,6 +56,12 @@ export function Sidebar({ className }: SidebarProps) {
       href: "/analytics",
       icon: PieChart,
       current: location === "/analytics",
+    },
+    {
+      name: "Profil",
+      href: "/profile",
+      icon: User,
+      current: location === "/profile",
     },
     {
       name: "Nastavení",
