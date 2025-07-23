@@ -1120,18 +1120,52 @@ Vytvoř JSON:
           let visionData;
           
           if (attachment.type === 'application/pdf' || attachment.name?.endsWith('.pdf')) {
-            // For PDF, create a basic expense entry
-            visionData = {
-              supplierName: `Dodavatel z ${attachment.name}`,
-              description: `Náklad z PDF: ${attachment.name}`,
-              amount: 0,
-              total: 0,
-              vatAmount: 0,
-              vatRate: 21,
-              receiptNumber: null,
-              expenseDate: new Date().toISOString().split('T')[0],
-              category: 'Other'
-            };
+            // Process PDF with Vision API to extract data
+            try {
+              const completion = await this.invoiceProcessor.openai.chat.completions.create({
+                model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+                messages: [
+                  {
+                    role: "system",
+                    content: "Jsi expert na zpracování českých faktur a účtenek. Analyzuj dokument a extrahuj přesné údaje."
+                  },
+                  {
+                    role: "user",
+                    content: [
+                      {
+                        type: "text",
+                        text: `Analyzuj tento PDF dokument a extrahuj informace o faktuře/účtence. Vrať JSON s údaji: supplierName, description, amount (bez DPH), total (včetně DPH), vatAmount, vatRate, receiptNumber, expenseDate (YYYY-MM-DD), category (Office/Travel/Marketing/IT/Utilities/Fuel/Materials/Services/Other).`
+                      },
+                      {
+                        type: "image_url",
+                        image_url: {
+                          url: `data:${attachment.type};base64,${attachment.content || attachment.data}`
+                        }
+                      }
+                    ]
+                  }
+                ],
+                response_format: { type: "json_object" },
+                max_tokens: 1000
+              });
+
+              visionData = JSON.parse(completion.choices[0].message.content);
+              console.log('🔍 PDF Vision data extracted:', visionData);
+            } catch (error) {
+              console.error('PDF Vision API failed:', error);
+              // Fallback to basic entry
+              visionData = {
+                supplierName: `Dodavatel z ${attachment.name}`,
+                description: `Náklad z PDF: ${attachment.name}`,
+                amount: 0,
+                total: 0,
+                vatAmount: 0,
+                vatRate: 21,
+                receiptNumber: null,
+                expenseDate: new Date().toISOString().split('T')[0],
+                category: 'Other'
+              };
+            }
           } else {
             // Process image with Vision API
             visionData = await this.processImageWithVision([attachment], message);
@@ -1193,37 +1227,121 @@ Vytvoř JSON:
     }
   }
 
-  // NEW METHOD: PDF expense processing
+  // NEW METHOD: PDF expense processing with Vision API
   private async processPDFExpense(attachment: any, userContext: UserContext, message: string): Promise<UniversalAIResponse> {
     try {
-      console.log('📄 Processing PDF expense:', attachment.name);
+      console.log('📄 Processing PDF expense with AI extraction:', attachment.name);
       
-      // For now, create a basic expense entry from PDF
-      // TODO: In future, implement PDF text extraction
-      const expenseData = {
-        supplierName: `Dodavatel z ${attachment.name}`,
-        description: `Náklad z PDF: ${attachment.name}`,
-        amount: 0, // User will need to fill manually
-        vatAmount: 0,
-        total: 0,
-        vatRate: 21,
-        category: 'Other',
-        expenseDate: new Date(),
-        receiptNumber: null,
-        attachmentName: attachment.name,
-        attachmentType: attachment.type,
-        attachmentUrl: `data:${attachment.type};base64,${attachment.content || attachment.data}`,
-        status: 'draft',
-        companyId: userContext.companyId,
-        userId: userContext.userId
-      };
+      // Use OpenAI to extract text from PDF and parse invoice data
+      const prompt = `
+Analyzuj tento PDF dokument a extrahuj informace o faktuře/účtence.
+
+Vrať JSON s následujícími údaji:
+{
+  "supplierName": "název dodavatele/firmy",
+  "description": "popis služeb/zboží",
+  "amount": částka bez DPH v Kč (pouze číslo),
+  "total": celková částka včetně DPH v Kč (pouze číslo),
+  "vatAmount": částka DPH v Kč (pouze číslo),
+  "vatRate": sazba DPH v % (obvykle 21),
+  "receiptNumber": číslo faktury/dokladu,
+  "expenseDate": datum vystavení ve formátu YYYY-MM-DD,
+  "category": kategorie nákladu (Office/Travel/Marketing/IT/Utilities/Fuel/Materials/Services/Other),
+  "ico": IČO dodavatele pokud je uvedeno,
+  "dic": DIČ dodavatele pokud je uvedeno
+}
+
+Pokud nějaký údaj není jasný, použij rozumný odhad nebo null.
+`;
+
+      try {
+        // Try to use Vision API for PDF (if OpenAI supports it) or extract text first
+        const completion = await this.invoiceProcessor.openai.chat.completions.create({
+          model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+          messages: [
+            {
+              role: "system",
+              content: "Jsi expert na zpracování českých faktur a účtenek. Analyzuj dokument a extrahuj přesné údaje."
+            },
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: prompt
+                },
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: `data:${attachment.type};base64,${attachment.content || attachment.data}`
+                  }
+                }
+              ]
+            }
+          ],
+          response_format: { type: "json_object" },
+          max_tokens: 1000
+        });
+
+        const extractedData = JSON.parse(completion.choices[0].message.content);
+        console.log('🔍 Extracted PDF data:', extractedData);
+
+        // Create expense with extracted data
+        const expenseData = {
+          supplierName: extractedData.supplierName || `Dodavatel z ${attachment.name}`,
+          description: extractedData.description || `Náklad z PDF: ${attachment.name}`,
+          amount: extractedData.amount || 0,
+          vatAmount: extractedData.vatAmount || 0,
+          total: extractedData.total || extractedData.amount || 0,
+          vatRate: extractedData.vatRate || 21,
+          category: extractedData.category || 'Other',
+          expenseDate: extractedData.expenseDate ? new Date(extractedData.expenseDate) : new Date(),
+          receiptNumber: extractedData.receiptNumber || null,
+          attachmentName: attachment.name,
+          attachmentType: attachment.type,
+          attachmentUrl: `data:${attachment.type};base64,${attachment.content || attachment.data}`,
+          status: 'draft',
+          companyId: userContext.companyId,
+          userId: userContext.userId
+        };
+        
+        const newExpense = await userContext.storage.createExpense(expenseData, userContext.companyId);
+        
+        return {
+          content: `📄 Náklad z PDF úspěšně vytvořen!\n\n📋 Číslo nákladu: ${newExpense.expenseNumber}\n🏢 Dodavatel: ${expenseData.supplierName}\n💰 Částka: ${expenseData.total} Kč\n📅 Datum: ${expenseData.expenseDate.toLocaleDateString('cs-CZ')}\n💾 PDF příloha uložena\n\nNáklad můžete upravit nebo schválit.`,
+          action: { type: 'navigate', data: { path: `/expenses/${newExpense.id}/edit` } }
+        };
+        
+      } catch (visionError) {
+        console.error('Vision API failed for PDF, creating basic entry:', visionError);
+        
+        // Fallback to basic entry if Vision API fails
+        const expenseData = {
+          supplierName: `Dodavatel z ${attachment.name}`,
+          description: `Náklad z PDF: ${attachment.name}`,
+          amount: 0,
+          vatAmount: 0,
+          total: 0,
+          vatRate: 21,
+          category: 'Other',
+          expenseDate: new Date(),
+          receiptNumber: null,
+          attachmentName: attachment.name,
+          attachmentType: attachment.type,
+          attachmentUrl: `data:${attachment.type};base64,${attachment.content || attachment.data}`,
+          status: 'draft',
+          companyId: userContext.companyId,
+          userId: userContext.userId
+        };
+        
+        const newExpense = await userContext.storage.createExpense(expenseData, userContext.companyId);
+        
+        return {
+          content: `📄 Náklad z PDF vytvořen!\n\n📋 Číslo nákladu: ${newExpense.expenseNumber}\n⚠️ Nepodařilo se automaticky extrahovat údaje\n💾 PDF příloha uložena\n\nProsím doplňte částku a další údaje manuálně.`,
+          action: { type: 'navigate', data: { path: `/expenses/${newExpense.id}/edit` } }
+        };
+      }
       
-      const newExpense = await userContext.storage.createExpense(expenseData, userContext.companyId);
-      
-      return {
-        content: `📄 Náklad z PDF vytvořen úspěšně!\n\n📋 Číslo nákladu: ${newExpense.expenseNumber}\n💾 PDF příloha byla uložena\n\nProsím doplňte částku a další údaje v editaci nákladu.`,
-        action: { type: 'navigate', data: { path: `/expenses/${newExpense.id}/edit` } }
-      };
     } catch (error) {
       console.error('PDF expense processing failed:', error);
       return {
