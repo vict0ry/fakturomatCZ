@@ -62,6 +62,15 @@ export const users = pgTable("users", {
   accessLevel: text("access_level").notNull().default("read"), // read, create, accounting, admin
   isActive: boolean("is_active").default(true),
   lastLogin: timestamp("last_login"),
+  // SaaS subscription fields
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  subscriptionStatus: text("subscription_status").default("trial"), // trial, active, past_due, canceled
+  trialEndsAt: timestamp("trial_ends_at"),
+  subscriptionStartedAt: timestamp("subscription_started_at"),
+  subscriptionEndedAt: timestamp("subscription_ended_at"),
+  planType: text("plan_type").default("basic"), // basic, premium, enterprise
+  monthlyPrice: decimal("monthly_price", { precision: 10, scale: 2 }).default("199.00"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -409,3 +418,53 @@ export type InsertBankTransaction = z.infer<typeof insertBankTransactionSchema>;
 export type InsertPaymentMatchingRule = z.infer<typeof insertPaymentMatchingRuleSchema>;
 export type InsertExpense = z.infer<typeof insertExpenseSchema>;
 export type InsertExpenseItem = z.infer<typeof insertExpenseItemSchema>;
+
+// SaaS Admin & Subscription Management
+export const subscriptionPlans = pgTable("subscription_plans", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(), // Basic, Premium, Enterprise
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  currency: text("currency").notNull().default("CZK"),
+  interval: text("interval").notNull().default("month"), // month, year
+  features: json("features").notNull(), // Array of features
+  maxInvoices: integer("max_invoices").default(100),
+  maxCustomers: integer("max_customers").default(50),
+  maxUsers: integer("max_users").default(1),
+  stripeProductId: text("stripe_product_id"),
+  stripePriceId: text("stripe_price_id"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const adminSettings = pgTable("admin_settings", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  value: text("value").notNull(),
+  description: text("description"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const systemStats = pgTable("system_stats", {
+  id: serial("id").primaryKey(),
+  date: timestamp("date").notNull().defaultNow(),
+  totalUsers: integer("total_users").default(0),
+  activeUsers: integer("active_users").default(0),
+  trialUsers: integer("trial_users").default(0),
+  paidUsers: integer("paid_users").default(0),
+  totalInvoices: integer("total_invoices").default(0),
+  totalRevenue: decimal("total_revenue", { precision: 12, scale: 2 }).default("0.00"),
+  churnRate: decimal("churn_rate", { precision: 5, scale: 2 }).default("0.00"),
+});
+
+// SaaS Zod schemas
+export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans);
+export const insertAdminSettingsSchema = createInsertSchema(adminSettings);
+export const insertSystemStatsSchema = createInsertSchema(systemStats);
+
+// SaaS Types
+export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
+export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
+export type AdminSettings = typeof adminSettings.$inferSelect;
+export type InsertAdminSettings = z.infer<typeof insertAdminSettingsSchema>;
+export type SystemStats = typeof systemStats.$inferSelect;
+export type InsertSystemStats = z.infer<typeof insertSystemStatsSchema>;

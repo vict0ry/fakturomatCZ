@@ -19,6 +19,9 @@ import ExpenseDetail from "./pages/expense-detail";
 import ProfilePage from "@/pages/ProfilePage";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
+import Landing from "@/pages/landing";
+import Register from "@/pages/register";
+import AdminDashboard from "@/pages/admin/dashboard";
 
 import { AuthProvider } from "@/contexts/auth-context";
 import { AuthGuard } from "@/components/auth/auth-guard";
@@ -46,6 +49,9 @@ function Router() {
       <Route path="/analytics" component={Analytics} />
       <Route path="/settings" component={SettingsPage} />
       <Route path="/profile" component={ProfilePage} />
+      <Route path="/admin" component={AdminDashboard} />
+      <Route path="/landing" component={Landing} />
+      <Route path="/register" component={Register} />
       <Route component={NotFound} />
     </Switch>
   );

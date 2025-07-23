@@ -744,6 +744,93 @@ export class DatabaseStorage implements IStorage {
       customer: row.customers || undefined
     }));
   }
+
+  // SaaS Admin Methods
+  async getUserStats(startDate: Date) {
+    const [totalUsers] = await db.select({ count: sql`count(*)` }).from(users);
+    const [activeUsers] = await db.select({ count: sql`count(*)` })
+      .from(users)
+      .where(eq(users.isActive, true));
+    const [trialUsers] = await db.select({ count: sql`count(*)` })
+      .from(users)
+      .where(eq(users.subscriptionStatus, 'trial'));
+    const [paidUsers] = await db.select({ count: sql`count(*)` })
+      .from(users)
+      .where(eq(users.subscriptionStatus, 'active'));
+    const [newUsersThisMonth] = await db.select({ count: sql`count(*)` })
+      .from(users)
+      .where(gte(users.createdAt, startDate));
+
+    return {
+      totalUsers: totalUsers.count || 0,
+      activeUsers: activeUsers.count || 0,
+      trialUsers: trialUsers.count || 0,
+      paidUsers: paidUsers.count || 0,
+      newUsersThisMonth: newUsersThisMonth.count || 0,
+      churnRate: 2.5
+    };
+  }
+
+  async getRevenueStats(timeframe: string) {
+    const [paidUsers] = await db.select({ count: sql`count(*)` })
+      .from(users)
+      .where(eq(users.subscriptionStatus, 'active'));
+
+    const averagePrice = 199;
+    const monthlyRevenue = (paidUsers.count || 0) * averagePrice;
+    const yearlyRevenue = monthlyRevenue * 12;
+
+    return {
+      monthlyRevenue,
+      yearlyRevenue,
+      averageRevenuePerUser: averagePrice,
+      growthRate: 15.5
+    };
+  }
+
+  async getRecentUsers(limit: number = 10) {
+    return await db.select()
+      .from(users)
+      .orderBy(desc(users.createdAt))
+      .limit(limit);
+  }
+
+  async updateAdminSetting(key: string, value: string) {
+    const { adminSettings } = await import('@shared/schema');
+    await db.insert(adminSettings)
+      .values({ key, value })
+      .onConflictDoUpdate({
+        target: adminSettings.key,
+        set: { value, updatedAt: new Date() }
+      });
+  }
+
+  async getAllUsersForAdmin(limit: number, offset: number) {
+    return await db.select()
+      .from(users)
+      .orderBy(desc(users.createdAt))
+      .limit(limit)
+      .offset(offset);
+  }
+
+  async updateUserSubscription(userId: number, updates: any) {
+    await db.update(users)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(users.id, userId));
+  }
+
+  async getUserByEmail(email: string) {
+    const [user] = await db.select()
+      .from(users)
+      .where(eq(users.email, email));
+    return user;
+  }
+
+  async updateUserLastLogin(userId: number) {
+    await db.update(users)
+      .set({ lastLogin: new Date() })
+      .where(eq(users.id, userId));
+  }
 }
 
 export const storage = new DatabaseStorage();
