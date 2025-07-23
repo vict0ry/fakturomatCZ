@@ -10,9 +10,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Download, Edit, ArrowLeft, Send, Check, Clock, AlertTriangle, Plus, History, User, Mail } from "lucide-react";
+
 import type { Invoice } from "@/lib/api";
 import { InvoiceForm } from "@/components/invoice-form";
 import { useState } from "react";
+
+function formatCurrency(amount: number) {
+  return new Intl.NumberFormat('cs-CZ', {
+    style: 'currency',
+    currency: 'CZK'
+  }).format(amount);
+}
 
 export default function InvoiceDetail() {
   const [, params] = useRoute("/invoices/:id");
@@ -34,6 +42,13 @@ export default function InvoiceDetail() {
     queryKey: ["/api/invoices", invoiceId, "history"],
     queryFn: () => fetch(`/api/invoices/${invoiceId}/history`).then(res => res.json()),
     enabled: !!invoiceId && showHistory,
+  });
+
+  // Automaticky načíst faktury zákazníka
+  const { data: customerInvoices } = useQuery({
+    queryKey: ["/api/invoices", "customer", invoice?.customer?.id],
+    queryFn: () => fetch(`/api/invoices?customerId=${invoice?.customer?.id}`).then(res => res.json()),
+    enabled: !!invoice?.customer?.id,
   });
 
   const downloadPDFMutation = useMutation({
@@ -360,32 +375,41 @@ export default function InvoiceDetail() {
             {/* Customer Info */}
             <Card>
               <CardHeader>
-                <CardTitle>Zákazník</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Zákazník
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  <h3 className="font-semibold text-lg">{invoice!.customer?.name}</h3>
+                  <Button
+                    variant="link"
+                    className="p-0 h-auto font-semibold text-lg text-left hover:text-orange-600"
+                    onClick={() => setLocation(`/customers/${invoice!.customer?.id}`)}
+                  >
+                    {invoice!.customer?.name}
+                  </Button>
                   {invoice!.customer?.address && (
-                    <p className="text-neutral-600">{invoice!.customer.address}</p>
+                    <p className="text-neutral-600 dark:text-neutral-400">{invoice!.customer.address}</p>
                   )}
                   {(invoice!.customer?.city || invoice!.customer?.postalCode) && (
-                    <p className="text-neutral-600">
+                    <p className="text-neutral-600 dark:text-neutral-400">
                       {invoice!.customer.postalCode} {invoice!.customer.city}
                     </p>
                   )}
                   <div className="flex flex-wrap gap-4 pt-2">
                     {invoice!.customer?.ico && (
-                      <span className="text-sm text-neutral-500">
+                      <span className="text-sm text-neutral-500 dark:text-neutral-400">
                         <strong>IČO:</strong> {invoice!.customer.ico}
                       </span>
                     )}
                     {invoice!.customer?.dic && (
-                      <span className="text-sm text-neutral-500">
+                      <span className="text-sm text-neutral-500 dark:text-neutral-400">
                         <strong>DIČ:</strong> {invoice!.customer.dic}
                       </span>
                     )}
                     {invoice!.customer?.email && (
-                      <span className="text-sm text-neutral-500">
+                      <span className="text-sm text-neutral-500 dark:text-neutral-400">
                         <strong>Email:</strong> {invoice!.customer.email}
                       </span>
                     )}
@@ -393,6 +417,61 @@ export default function InvoiceDetail() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Historie faktur zákazníka */}
+            {customerInvoices && customerInvoices.length > 1 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <History className="h-5 w-5" />
+                    Historie faktur zákazníka ({customerInvoices.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {customerInvoices
+                      .filter((inv: any) => inv.id !== invoice?.id)
+                      .slice(0, 5)
+                      .map((inv: any) => (
+                        <div
+                          key={inv.id}
+                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+                          onClick={() => setLocation(`/invoices/${inv.id}`)}
+                        >
+                          <div>
+                            <p className="font-medium">{inv.invoiceNumber}</p>
+                            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                              {new Date(inv.issueDate).toLocaleDateString('cs-CZ')}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold">{formatCurrency(inv.total)}</p>
+                            <Badge variant={
+                              inv.status === 'paid' ? 'default' : 
+                              inv.status === 'overdue' ? 'destructive' : 
+                              inv.status === 'sent' ? 'secondary' : 'outline'
+                            }>
+                              {inv.status === 'draft' && 'Koncept'}
+                              {inv.status === 'sent' && 'Odeslána'}
+                              {inv.status === 'paid' && 'Uhrazena'}
+                              {inv.status === 'overdue' && 'Po splatnosti'}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    {customerInvoices.length > 6 && (
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => setLocation(`/invoices?customerId=${invoice!.customer?.id}`)}
+                      >
+                        Zobrazit všechny faktury zákazníka ({customerInvoices.length})
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Invoice Items */}
             <Card>

@@ -726,6 +726,24 @@ export class DatabaseStorage implements IStorage {
   async deleteExpenseItem(id: number): Promise<void> {
     await db.delete(expenseItems).where(eq(expenseItems.id, id));
   }
+
+  // Invoice by customer methods
+  async getInvoicesByCustomer(customerId: number, companyId: number): Promise<Invoice[]> {
+    const result = await db
+      .select()
+      .from(invoices)
+      .leftJoin(customers, eq(invoices.customerId, customers.id))
+      .where(and(
+        eq(invoices.customerId, customerId),
+        eq(invoices.companyId, companyId)
+      ))
+      .orderBy(desc(invoices.issueDate));
+
+    return result.map(row => ({
+      ...row.invoices,
+      customer: row.customers || undefined
+    }));
+  }
 }
 
 export const storage = new DatabaseStorage();
