@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { 
   CheckCircle, 
   Zap, 
@@ -16,8 +17,207 @@ import {
   FileText,
   Building,
   Star,
-  Globe
+  Globe,
+  Send,
+  Play
 } from 'lucide-react';
+
+// Interactive Demo Component
+function InteractiveDemo() {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [userInput, setUserInput] = useState('');
+  const [isPlaying, setIsPlaying] = useState(false);
+  
+  const demoSteps = [
+    {
+      type: 'user',
+      text: 'Vytvořit fakturu pro Novák s.r.o. na 25 000 Kč za tvorbu webových stránek',
+      delay: 0
+    },
+    {
+      type: 'ai',
+      text: 'Hledám "Novák s.r.o." v ARES registru...',
+      delay: 1000
+    },
+    {
+      type: 'ai', 
+      text: '✅ Nalezen: Novák s.r.o., IČO: 12345678, Praha',
+      delay: 2500
+    },
+    {
+      type: 'ai',
+      text: 'Vytvářím fakturu s následujícími údaji:\n• Zákazník: Novák s.r.o.\n• Částka: 25 000 Kč (+ 21% DPH)\n• Služba: Tvorba webových stránek',
+      delay: 4000
+    },
+    {
+      type: 'ai',
+      text: '🎉 Faktura #2025001 úspěšně vytvořena a odeslána!',
+      delay: 6000
+    }
+  ];
+
+  const predefinedCommands = [
+    'Vytvořit fakturu pro Novák s.r.o. na 25 000 Kč za tvorbu webových stránek',
+    'Faktura pro ABC Trading na 15 000 Kč za konzultace',
+    'Nová faktura - XYZ s.r.o., 50 000 Kč, grafický design',
+    'Vystavit fakturu Tech Solutions, 35 000 Kč, vývoj aplikace'
+  ];
+
+  const startDemo = (command?: string) => {
+    setCurrentStep(0);
+    setIsPlaying(true);
+    if (command) {
+      setUserInput(command);
+    }
+    
+    // Reset and start animation
+    setTimeout(() => {
+      animateSteps();
+    }, 100);
+  };
+
+  const animateSteps = () => {
+    demoSteps.forEach((step, index) => {
+      setTimeout(() => {
+        setCurrentStep(index + 1);
+        if (index === demoSteps.length - 1) {
+          setTimeout(() => setIsPlaying(false), 2000);
+        }
+      }, step.delay);
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Quick Start Commands */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+        {predefinedCommands.map((command, index) => (
+          <Button
+            key={index}
+            variant="outline"
+            className="h-auto p-3 text-left justify-start text-sm"
+            onClick={() => startDemo(command)}
+            disabled={isPlaying}
+          >
+            <Play className="h-4 w-4 mr-2 flex-shrink-0" />
+            <span className="truncate">{command}</span>
+          </Button>
+        ))}
+      </div>
+
+      {/* Main Demo Interface */}
+      <Card className="border-2 border-orange-200 dark:border-orange-800">
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Bot className="h-5 w-5 mr-2 text-orange-500" />
+              AI Fakturační asistent
+            </div>
+            <Badge variant="secondary" className="bg-green-100 text-green-800">
+              Online
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {/* Chat Interface */}
+          <div className="h-64 bg-gray-50 dark:bg-gray-900 rounded-lg p-4 mb-4 overflow-y-auto">
+            <div className="space-y-3">
+              {currentStep >= 1 && (
+                <div className="flex justify-end">
+                  <div className="bg-blue-500 text-white p-3 rounded-lg max-w-xs text-sm">
+                    {userInput || demoSteps[0].text}
+                  </div>
+                </div>
+              )}
+              
+              {demoSteps.slice(1, currentStep).map((step, index) => (
+                <div key={index} className="flex justify-start">
+                  <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 p-3 rounded-lg max-w-md text-sm">
+                    <div className="flex items-start">
+                      <Bot className="h-4 w-4 mr-2 mt-0.5 text-orange-500 flex-shrink-0" />
+                      <span className="whitespace-pre-line">{step.text}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              
+              {isPlaying && currentStep < demoSteps.length && (
+                <div className="flex justify-start">
+                  <div className="bg-gray-200 dark:bg-gray-700 p-3 rounded-lg">
+                    <div className="flex items-center space-x-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Input Area */}
+          <div className="flex space-x-2">
+            <Input
+              placeholder="Zkuste napsat vlastní příkaz..."
+              value={userInput}
+              onChange={(e) => setUserInput(e.target.value)}
+              disabled={isPlaying}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && !isPlaying && userInput.trim()) {
+                  startDemo();
+                }
+              }}
+            />
+            <Button 
+              onClick={() => startDemo()}
+              disabled={isPlaying || !userInput.trim()}
+              size="icon"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          {!isPlaying && currentStep === 0 && (
+            <p className="text-xs text-gray-500 mt-2 text-center">
+              Klikněte na příklad výše nebo napište vlastní příkaz
+            </p>
+          )}
+          
+          {currentStep > 0 && !isPlaying && (
+            <div className="text-center mt-4">
+              <div className="text-sm text-gray-500 mb-2">
+                <Clock className="h-4 w-4 inline mr-1" />
+                Celková doba: 28 sekund
+              </div>
+              <Button onClick={() => startDemo(userInput)} variant="outline" size="sm">
+                Spustit znovu
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Demo Benefits */}
+      <div className="grid md:grid-cols-3 gap-4 mt-6">
+        <div className="text-center p-4 bg-white dark:bg-gray-800 rounded-lg border">
+          <Zap className="h-8 w-8 text-orange-500 mx-auto mb-2" />
+          <h3 className="font-semibold mb-1">Rychlost</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-300">30 sekund místo 10 minut</p>
+        </div>
+        <div className="text-center p-4 bg-white dark:bg-gray-800 rounded-lg border">
+          <Building className="h-8 w-8 text-orange-500 mx-auto mb-2" />
+          <h3 className="font-semibold mb-1">ARES integrace</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-300">Automatické doplnění</p>
+        </div>
+        <div className="text-center p-4 bg-white dark:bg-gray-800 rounded-lg border">
+          <Bot className="h-8 w-8 text-orange-500 mx-auto mb-2" />
+          <h3 className="font-semibold mb-1">AI asistent</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-300">Rozumí češtině perfektně</p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Landing() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -139,7 +339,17 @@ export default function Landing() {
                 Začít 7 dní zdarma
               </Button>
             </Link>
-            <Button size="lg" variant="outline" className="text-lg px-8 py-4">
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="text-lg px-8 py-4"
+              onClick={() => {
+                // Scroll to demo section
+                document.getElementById('demo-section')?.scrollIntoView({ 
+                  behavior: 'smooth' 
+                });
+              }}
+            >
               <Globe className="mr-2 h-5 w-5" />
               Živá ukázka
             </Button>
@@ -164,7 +374,7 @@ export default function Landing() {
       </section>
 
       {/* AI Demo Section */}
-      <section className="py-16 bg-gray-50 dark:bg-gray-800">
+      <section id="demo-section" className="py-16 bg-gray-50 dark:bg-gray-800">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
@@ -176,32 +386,7 @@ export default function Landing() {
           </div>
           
           <div className="max-w-4xl mx-auto">
-            <Card className="border-2 border-orange-200 dark:border-orange-800">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Bot className="h-5 w-5 mr-2 text-orange-500" />
-                  AI Fakturační asistent
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                    <p className="text-blue-800 dark:text-blue-200">
-                      <strong>Vy:</strong> "Vytvořit fakturu pro Novák s.r.o. na 25 000 Kč za tvorbu webových stránek"
-                    </p>
-                  </div>
-                  <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg">
-                    <p className="text-orange-800 dark:text-orange-200">
-                      <strong>AI:</strong> "Nalezl jsem Novák s.r.o. v ARES registru. Vytvářím fakturu na 25 000 Kč za tvorbu webových stránek. Hotovo! ✅"
-                    </p>
-                  </div>
-                  <div className="text-center text-sm text-gray-500">
-                    <Clock className="h-4 w-4 inline mr-1" />
-                    Celková doba: 28 sekund
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <InteractiveDemo />
           </div>
         </div>
       </section>
