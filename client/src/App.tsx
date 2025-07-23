@@ -25,14 +25,26 @@ import AdminDashboard from "@/pages/admin/dashboard";
 
 import { AuthProvider } from "@/contexts/auth-context";
 import { AuthGuard } from "@/components/auth/auth-guard";
+import { useAuth } from "@/hooks/useAuth";
 import PublicInvoicePage from "@/pages/public-invoice";
 
-function Router() {
+function PublicRouter() {
   return (
     <Switch>
       <Route path="/public/invoice/:token">
         {(params: any) => <PublicInvoicePage token={params.token} />}
       </Route>
+      <Route path="/landing" component={Landing} />
+      <Route path="/register" component={Register} />
+      <Route path="/" component={Landing} />
+      <Route component={NotFound} />
+    </Switch>
+  );
+}
+
+function AuthenticatedRouter() {
+  return (
+    <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/invoices" component={Invoices} />
       <Route path="/invoices/:id/edit" component={InvoiceEdit} />
@@ -50,10 +62,46 @@ function Router() {
       <Route path="/settings" component={SettingsPage} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/admin" component={AdminDashboard} />
-      <Route path="/landing" component={Landing} />
-      <Route path="/register" component={Register} />
       <Route component={NotFound} />
     </Switch>
+  );
+}
+
+function AppContent() {
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  // For public routes, show without auth
+  if (!isAuthenticated) {
+    return <PublicRouter />;
+  }
+
+  // For authenticated users
+  return (
+    <AuthGuard>
+      <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
+        <Header />
+        
+        <div className="flex">
+          <Sidebar />
+          
+          <main className="flex-1 overflow-hidden">
+            <div className="h-screen overflow-y-auto pb-20">
+              <AuthenticatedRouter />
+            </div>
+          </main>
+        </div>
+        
+        <BottomAIChat />
+      </div>
+    </AuthGuard>
   );
 }
 
@@ -63,29 +111,10 @@ function App() {
       <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
         <AuthProvider>
           <TooltipProvider>
-          <AuthGuard>
-            <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
-              <Header />
-              
-              <div className="flex">
-                <Sidebar />
-                
-                <main className="flex-1 overflow-hidden">
-                  <div className="h-screen overflow-y-auto pb-20">
-                    <Router />
-                  </div>
-                </main>
-              </div>
-              
-              <BottomAIChat />
-              
-
-            </div>
-          </AuthGuard>
-          
-          <Toaster />
-        </TooltipProvider>
-      </AuthProvider>
+            <AppContent />
+            <Toaster />
+          </TooltipProvider>
+        </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
