@@ -58,9 +58,9 @@ function InteractiveDemo() {
 
   const predefinedCommands = [
     'Vytvořit fakturu pro Novák s.r.o. na 25 000 Kč za tvorbu webových stránek',
-    'Faktura pro ABC Trading na 15 000 Kč za konzultace',
-    'Nová faktura - XYZ s.r.o., 50 000 Kč, grafický design',
-    'Vystavit fakturu Tech Solutions, 35 000 Kč, vývoj aplikace'
+    'Zaúčtovat náklad z této účtenky (nahraj foto)',
+    'Vytvořit náklad 5 000 Kč za kancelářské potřeby',
+    'Zpracovat tuto PDF fakturu do nákladů'
   ];
 
   const startDemo = (command?: string) => {
@@ -198,11 +198,16 @@ function InteractiveDemo() {
       </Card>
 
       {/* Demo Benefits */}
-      <div className="grid md:grid-cols-3 gap-4 mt-6">
+      <div className="grid md:grid-cols-4 gap-4 mt-6">
         <div className="text-center p-4 bg-white dark:bg-gray-800 rounded-lg border">
           <Zap className="h-8 w-8 text-orange-500 mx-auto mb-2" />
           <h3 className="font-semibold mb-1">Rychlost</h3>
           <p className="text-sm text-gray-600 dark:text-gray-300">30 sekund místo 10 minut</p>
+        </div>
+        <div className="text-center p-4 bg-white dark:bg-gray-800 rounded-lg border">
+          <FileText className="h-8 w-8 text-orange-500 mx-auto mb-2" />
+          <h3 className="font-semibold mb-1">Vision AI</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-300">Foto účtenky → náklad</p>
         </div>
         <div className="text-center p-4 bg-white dark:bg-gray-800 rounded-lg border">
           <Building className="h-8 w-8 text-orange-500 mx-auto mb-2" />
@@ -211,8 +216,8 @@ function InteractiveDemo() {
         </div>
         <div className="text-center p-4 bg-white dark:bg-gray-800 rounded-lg border">
           <Bot className="h-8 w-8 text-orange-500 mx-auto mb-2" />
-          <h3 className="font-semibold mb-1">AI asistent</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-300">Rozumí češtině perfektně</p>
+          <h3 className="font-semibold mb-1">PDF zpracování</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-300">Drag & drop → náklad</p>
         </div>
       </div>
     </div>
@@ -230,33 +235,33 @@ export default function Landing() {
   const features = [
     {
       icon: <Bot className="h-6 w-6" />,
-      title: "AI Asistent",
-      description: "Vytvářejte faktury pouze hlasem - 'Vytvořit fakturu pro Novák s.r.o. na 25 000 Kč za webové stránky'"
+      title: "AI Asistent pro faktury i náklady",
+      description: "Vytvářejte faktury i náklady pomocí AI za 30 sekund. Stačí říct co potřebujete."
     },
     {
       icon: <FileText className="h-6 w-6" />,
-      title: "Rychlá fakturace",
-      description: "Vytvoření faktury do 30 sekund s automatickým výpočtem DPH a professional designem"
+      title: "Vision AI pro účtenky",
+      description: "Vyfotěte účtenku telefonem - AI automaticky vytáhne data a zaúčtuje náklad s DPH."
     },
     {
       icon: <Building className="h-6 w-6" />,
-      title: "ARES integrace",
-      description: "Automatické doplnění údajů zákazníků z Czech business registru"
+      title: "ARES integrace", 
+      description: "Automatické doplnění údajů zákazníků z Czech business registru jedním klikem."
     },
     {
-      icon: <BarChart3 className="h-6 w-6" />,
-      title: "Smart analytics",
-      description: "Pokročilé přehledy příjmů, výdajů a predikce cash flow pomocí AI"
+      icon: <Zap className="h-6 w-6" />,
+      title: "PDF zpracování",
+      description: "Nahrajte PDF fakturu - AI automaticky vytvoří náklad s přesnými údaji a kategorizací."
     },
     {
       icon: <CreditCard className="h-6 w-6" />,
       title: "Platební tracking",
-      description: "Sledování plateb s automatickými upomínkami a synchronizací s bankou"
+      description: "Sledování plateb s automatickými upomínkami a synchronizací s bankou."
     },
     {
-      icon: <Shield className="h-6 w-6" />,
-      title: "Bezpečnost",
-      description: "Enterprise úroveň zabezpečení s šifrováním a backup v cloudu"
+      icon: <BarChart3 className="h-6 w-6" />,
+      title: "Smart analytics",
+      description: "AI-powered business insights, předpovědi cash flow a automatická kategorizace nákladů."
     }
   ];
 
@@ -323,13 +328,13 @@ export default function Landing() {
           </Badge>
           
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
-            Fakturujte pomocí 
+            Fakturujte a účtujte pomocí 
             <span className="text-orange-500"> umělé inteligence</span>
           </h1>
           
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto">
-            Řekněte AI co chcete fakturovat a ona vytvoří profesionální fakturu za 30 sekund. 
-            Žádné dlouhé formuláře, jen jednoduchý rozhovor.
+            Řekněte AI co chcete fakturovat nebo vyfotěte účtenku - vytvoří fakturu či náklad za 30 sekund. 
+            Žádné dlouhé formuláře, jen jednoduchý rozhovor nebo foto.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
@@ -391,8 +396,70 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Vision AI Demo Section */}
+      <section className="py-16 bg-white dark:bg-gray-900">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+              Tak jednoduché je zpracování nákladů
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300">
+              Vyfotěte účtenku nebo nahrajte PDF - AI vše zpracuje automaticky
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            {/* Vision AI for receipts */}
+            <Card className="border-2 border-blue-200 dark:border-blue-800">
+              <CardHeader>
+                <CardTitle className="flex items-center text-blue-600 dark:text-blue-400">
+                  <FileText className="h-5 w-5 mr-2" />
+                  Vision AI pro účtenky
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg text-sm">
+                    <strong>Krok 1:</strong> Vyfotěte účtenku telefonem 📱
+                  </div>
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg text-sm">
+                    <strong>AI čte:</strong> "Tesco, 1 250 Kč, kancelářské potřeby, DPH 21%"
+                  </div>
+                  <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-sm">
+                    <strong>Výsledek:</strong> Náklad automaticky zaúčtován ✅
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* PDF Processing */}
+            <Card className="border-2 border-green-200 dark:border-green-800">
+              <CardHeader>
+                <CardTitle className="flex items-center text-green-600 dark:text-green-400">
+                  <FileText className="h-5 w-5 mr-2" />
+                  PDF zpracování
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg text-sm">
+                    <strong>Krok 1:</strong> Přetáhněte PDF fakturu do chatu
+                  </div>
+                  <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-sm">
+                    <strong>AI extrahuje:</strong> Dodavatel, částka, položky, DPH
+                  </div>
+                  <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-sm">
+                    <strong>Výsledek:</strong> Náklad s kompletními údaji ✅
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
       {/* Features Grid */}
-      <section className="py-16">
+      <section className="py-16 bg-gray-50 dark:bg-gray-800">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
