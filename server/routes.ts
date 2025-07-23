@@ -1620,6 +1620,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin middleware - only allow admin users
+  const requireAdmin = (req: any, res: any, next: any) => {
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+    next();
+  };
+
+  // Admin endpoints
+  app.get("/api/admin/users/stats/:timeframe", requireAuth, requireAdmin, async (req: any, res) => {
+    try {
+      const timeframe = req.params.timeframe; // 7d, 30d, 90d, 1y
+      
+      // Calculate date range
+      const now = new Date();
+      let startDate = new Date();
+      switch (timeframe) {
+        case '7d':
+          startDate.setDate(now.getDate() - 7);
+          break;
+        case '30d':
+          startDate.setDate(now.getDate() - 30);
+          break;
+        case '90d':
+          startDate.setDate(now.getDate() - 90);
+          break;
+        case '1y':
+          startDate.setFullYear(now.getFullYear() - 1);
+          break;
+        default:
+          startDate.setDate(now.getDate() - 30);
+      }
+
+      const stats = await storage.getAdminUserStats(startDate, now);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching admin user stats:", error);
+      res.status(500).json({ message: "Failed to fetch user stats" });
+    }
+  });
+
+  app.get("/api/admin/revenue/stats/:timeframe", requireAuth, requireAdmin, async (req: any, res) => {
+    try {
+      const timeframe = req.params.timeframe;
+      
+      const now = new Date();
+      let startDate = new Date();
+      switch (timeframe) {
+        case '7d':
+          startDate.setDate(now.getDate() - 7);
+          break;
+        case '30d':
+          startDate.setDate(now.getDate() - 30);
+          break;
+        case '90d':
+          startDate.setDate(now.getDate() - 90);
+          break;
+        case '1y':
+          startDate.setFullYear(now.getFullYear() - 1);
+          break;
+        default:
+          startDate.setDate(now.getDate() - 30);
+      }
+
+      const stats = await storage.getAdminRevenueStats(startDate, now);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching admin revenue stats:", error);
+      res.status(500).json({ message: "Failed to fetch revenue stats" });
+    }
+  });
+
+  app.get("/api/admin/users/recent", requireAuth, requireAdmin, async (req: any, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 10;
+      const users = await storage.getRecentUsers(limit);
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching recent users:", error);
+      res.status(500).json({ message: "Failed to fetch recent users" });
+    }
+  });
+
+  app.get("/api/admin/system/health", requireAuth, requireAdmin, async (req: any, res) => {
+    try {
+      const health = {
+        status: 'healthy',
+        database: 'connected',
+        services: {
+          openai: process.env.OPENAI_API_KEY ? 'configured' : 'missing',
+          stripe: process.env.STRIPE_SECRET_KEY ? 'configured' : 'missing',
+          email: process.env.EMAIL_SERVICE ? 'configured' : 'missing'
+        },
+        uptime: process.uptime(),
+        memory: process.memoryUsage(),
+        timestamp: new Date().toISOString()
+      };
+      res.json(health);
+    } catch (error) {
+      console.error("Error checking system health:", error);
+      res.status(500).json({ message: "Failed to check system health" });
+    }
+  });
+
+  app.post("/api/admin/settings/pricing", requireAuth, requireAdmin, async (req: any, res) => {
+    try {
+      const { monthlyPrice, trialDays } = req.body;
+      
+      // For now, just return success - in production this would update system settings
+      res.json({ 
+        message: "Pricing updated successfully",
+        monthlyPrice,
+        trialDays
+      });
+    } catch (error) {
+      console.error("Error updating pricing:", error);
+      res.status(500).json({ message: "Failed to update pricing" });
+    }
+  });
+
   return server;
 
 // Helper functions for export

@@ -9,7 +9,7 @@ import {
   type InsertInvoiceHistory, type InsertExpense, type InsertExpenseItem
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, sql, ilike, gte, lte, count } from "drizzle-orm";
+import { eq, desc, and, sql, ilike, gte, lte, count, or, isNull, not } from "drizzle-orm";
 
 export interface IStorage {
   // Companies
@@ -830,6 +830,72 @@ export class DatabaseStorage implements IStorage {
     await db.update(users)
       .set({ lastLogin: new Date() })
       .where(eq(users.id, userId));
+  }
+
+  // Admin methods
+  async getAdminUserStats(startDate: Date, endDate: Date) {
+    const totalUsersQuery = await db.select({ count: sql`count(*)` }).from(users);
+    const totalUsers = totalUsersQuery[0]?.count || 0;
+
+    const newUsersQuery = await db.select({ count: sql`count(*)` })
+      .from(users)
+      .where(gte(users.createdAt, startDate));
+    const newUsers = newUsersQuery[0]?.count || 0;
+
+    const activeUsersQuery = await db.select({ count: sql`count(*)` })
+      .from(users)
+      .where(eq(users.subscriptionStatus, 'active'));
+    const activeUsers = activeUsersQuery[0]?.count || 0;
+
+    const trialUsersQuery = await db.select({ count: sql`count(*)` })
+      .from(users)
+      .where(eq(users.subscriptionStatus, 'trial'));
+    const trialUsers = trialUsersQuery[0]?.count || 0;
+
+    return {
+      totalUsers,
+      newUsers,
+      activeUsers,
+      trialUsers,
+      conversionRate: totalUsers > 0 ? ((activeUsers / totalUsers) * 100).toFixed(1) : '0'
+    };
+  }
+
+  async getAdminRevenueStats(startDate: Date, endDate: Date) {
+    const activeUsersQuery = await db.select({ count: sql`count(*)` })
+      .from(users)
+      .where(eq(users.subscriptionStatus, 'active'));
+    const activeUsers = activeUsersQuery[0]?.count || 0;
+
+    const averagePrice = 199; // Default price
+    const monthlyRevenue = activeUsers * averagePrice;
+    const yearlyRevenue = monthlyRevenue * 12;
+
+    // Calculate previous period for growth
+    const periodLength = endDate.getTime() - startDate.getTime();
+    const prevStartDate = new Date(startDate.getTime() - periodLength);
+    
+    const prevActiveQuery = await db.select({ count: sql`count(*)` })
+      .from(users)
+      .where(and(
+        eq(users.subscriptionStatus, 'active'),
+        lte(users.subscriptionStartedAt, startDate)
+      ));
+    const prevActiveUsers = prevActiveQuery[0]?.count || 0;
+    const prevRevenue = prevActiveUsers * averagePrice;
+
+    const growth = prevRevenue > 0 ? 
+      (((monthlyRevenue - prevRevenue) / prevRevenue) * 100).toFixed(1) : 
+      '0';
+
+    return {
+      monthlyRevenue,
+      yearlyRevenue,
+      activeSubscriptions: activeUsers,
+      averageRevenuePerUser: averagePrice,
+      growth: `${growth}%`,
+      churnRate: '2.5%' // Mock for now
+    };
   }
 }
 

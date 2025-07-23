@@ -192,11 +192,22 @@ export default function AdminDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
-          <p className="text-gray-600 dark:text-gray-300">Správa SaaS systému NašeFakturace</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">🔧 Admin Panel - Doklad.ai</h1>
+          <p className="text-gray-600 dark:text-gray-300">Administrace SaaS systému - uživatelé, příjmy, konfigurace</p>
         </div>
         
         <div className="flex items-center space-x-2">
+          <Badge variant="outline" className="text-orange-600 border-orange-200">
+            Admin Role
+          </Badge>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => window.location.href = '/api/auth/logout'}
+            className="text-red-600 border-red-200 hover:bg-red-50"
+          >
+            Odhlásit se
+          </Button>
           <select 
             value={selectedTimeframe}
             onChange={(e) => setSelectedTimeframe(e.target.value)}
@@ -207,6 +218,19 @@ export default function AdminDashboard() {
             <option value="90d">Posledních 90 dní</option>
             <option value="1y">Poslední rok</option>
           </select>
+        </div>
+      </div>
+
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4 mb-6">
+        <div className="flex items-start space-x-3">
+          <AlertTriangle className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+          <div className="text-sm">
+            <p className="font-semibold text-blue-800 dark:text-blue-200">Administrátorský přístup</p>
+            <p className="text-blue-700 dark:text-blue-300 mt-1">
+              Jste přihlášeni jako admin. Toto rozhraní slouží pouze pro správu systému. 
+              Běžné funkce (faktury, zákazníci) jsou dostupné pouze pro klientské účty.
+            </p>
+          </div>
         </div>
       </div>
 

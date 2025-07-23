@@ -42,6 +42,20 @@ function PublicRouter() {
 }
 
 function AuthenticatedRouter() {
+  const { user } = useAuth();
+  
+  // Admin uživatelé mají pouze přístup k admin dashboardu
+  if (user?.user?.role === 'admin') {
+    return (
+      <Switch>
+        <Route path="/admin" component={AdminDashboard} />
+        <Route path="/" component={AdminDashboard} />
+        <Route component={AdminDashboard} />
+      </Switch>
+    );
+  }
+  
+  // Běžní uživatelé mají přístup ke klientským funkcím
   return (
     <Switch>
       <Route path="/dashboard" component={Dashboard} />
@@ -60,7 +74,6 @@ function AuthenticatedRouter() {
       <Route path="/analytics" component={Analytics} />
       <Route path="/settings" component={SettingsPage} />
       <Route path="/profile" component={ProfilePage} />
-      <Route path="/admin" component={AdminDashboard} />
       <Route path="/" component={Dashboard} />
       <Route component={NotFound} />
     </Switch>
@@ -68,7 +81,7 @@ function AuthenticatedRouter() {
 }
 
 function AppContent() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   
   if (isLoading) {
     return (
@@ -83,7 +96,18 @@ function AppContent() {
     return <PublicRouter />;
   }
 
-  // For authenticated users
+  // Admin uživatelé mají speciální rozhraní bez sidebaru a headeru
+  if (user?.user?.role === 'admin') {
+    return (
+      <AuthGuard>
+        <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
+          <AuthenticatedRouter />
+        </div>
+      </AuthGuard>
+    );
+  }
+
+  // Běžní uživatelé mají plné rozhraní
   return (
     <AuthGuard>
       <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
