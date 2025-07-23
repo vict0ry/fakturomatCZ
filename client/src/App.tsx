@@ -53,7 +53,7 @@ function AuthenticatedRouter() {
       <div className="min-h-screen">
         <Switch>
           <Route path="/admin" component={AdminDashboard} />
-          <Route path="/" component={AdminDashboard} />
+          <Route path="/dashboard" component={AdminDashboard} />
           <Route>
             <AdminDashboard />
           </Route>
@@ -81,7 +81,7 @@ function AuthenticatedRouter() {
       <Route path="/analytics" component={Analytics} />
       <Route path="/settings" component={SettingsPage} />
       <Route path="/profile" component={ProfilePage} />
-      <Route path="/" component={Dashboard} />
+      <Route path="/dashboard" component={Dashboard} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -98,41 +98,64 @@ function AppContent() {
     );
   }
 
-  // For public routes, show without auth
-  if (!isAuthenticated) {
-    return <PublicRouter />;
-  }
-
-  // Admin uživatelé mají speciální rozhraní bez sidebaru a headeru
-  if (user?.user?.role === 'admin') {
-    return (
-      <AuthGuard>
-        <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
-          <AuthenticatedRouter />
-        </div>
-      </AuthGuard>
-    );
-  }
-
-  // Běžní uživatelé mají plné rozhraní
+  // Landing page je vždy dostupná
   return (
-    <AuthGuard>
-      <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
-        <Header />
-        
-        <div className="flex">
-          <Sidebar />
-          
-          <main className="flex-1 overflow-hidden">
-            <div className="h-screen overflow-y-auto pb-20">
-              <AuthenticatedRouter />
+    <Switch>
+      <Route path="/public/invoice/:token">
+        {(params: any) => <PublicInvoicePage token={params.token} />}
+      </Route>
+      <Route path="/register" component={Register} />
+      <Route path="/" component={Landing} />
+      {isAuthenticated && (
+        <Route path="/dashboard">
+          {user?.user?.role === 'admin' ? (
+            <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
+              <AdminDashboard />
             </div>
-          </main>
-        </div>
-        
-        <BottomAIChat />
-      </div>
-    </AuthGuard>
+          ) : (
+            <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
+              <Header />
+              <div className="flex">
+                <Sidebar />
+                <main className="flex-1 overflow-hidden">
+                  <div className="h-screen overflow-y-auto pb-20">
+                    <Dashboard />
+                  </div>
+                </main>
+              </div>
+              <BottomAIChat />
+            </div>
+          )}
+        </Route>
+      )}
+      {isAuthenticated && user?.user?.role === 'admin' && (
+        <Route path="/admin">
+          <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
+            <AdminDashboard />
+          </div>
+        </Route>
+      )}
+      {isAuthenticated && user?.user?.role !== 'admin' && (
+        <>
+          <Route path="/invoices/:id/edit" component={InvoiceEdit} />
+          <Route path="/invoices/:id" component={InvoiceDetail} />
+          <Route path="/invoices" component={Invoices} />
+          <Route path="/customers" component={Customers} />
+          <Route path="/expenses/new" component={ExpenseCreatePage} />
+          <Route path="/expenses/:id/edit">
+            {(params: any) => <ExpenseCreatePage key={`edit-${params.id}`} id={params.id} />}
+          </Route>
+          <Route path="/expenses/:id">
+            {(params: any) => <ExpenseDetail key={`detail-${params.id}`} expenseId={parseInt(params.id)} />}
+          </Route>
+          <Route path="/expenses" component={ExpensesPage} />
+          <Route path="/analytics" component={Analytics} />
+          <Route path="/settings" component={SettingsPage} />
+          <Route path="/profile" component={ProfilePage} />
+        </>
+      )}
+      <Route component={NotFound} />
+    </Switch>
   );
 }
 

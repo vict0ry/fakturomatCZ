@@ -736,7 +736,7 @@ export default function Landing() {
               if (response.ok) {
                 const data = await response.json();
                 localStorage.setItem('sessionId', data.sessionId);
-                window.location.reload();
+                window.location.href = '/dashboard';
               }
             } catch (error) {
               console.error('Admin login failed:', error);
