@@ -3,13 +3,7 @@
  * Run with: node tests/run-all.js
  */
 
-import { runAPITests } from './api.test.js';
-import { runDatabaseTests } from './database.test.js';
-import { runAITests } from './ai.test.js';
-import { runPDFTests } from './pdf.test.js';
-import { runIntegrationTests } from './integration.test.js';
-import { runExpenseTests } from './expense.test.js';
-import { runAdvancedFeatureTests } from './advanced-features.test.js';
+import { runCompleteSystemTest } from './complete-system.test.js';
 
 class TestSuite {
   constructor() {
@@ -88,26 +82,13 @@ class TestSuite {
 }
 
 async function runAllTests() {
-  const suite = new TestSuite();
+  console.log('🎯 SPOUŠTÍM KOMPLETNÍ SYSTÉMOVÝ TEST');
+  console.log('='.repeat(50));
+  console.log('ℹ️  Nyní používáme nový kompletní test runner');
+  console.log('   který zahrnuje všechny funkce systému');
+  console.log('='.repeat(50));
   
-  console.log('🚀 Starting Complete Application Test Suite');
-  console.log('📋 Testing all core functionalities...\n');
-  
-  // Wait for server to be ready
-  console.log('⏳ Waiting for server to be ready...');
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  
-  // Run all test suites
-  await suite.runSuite('API Tests', runAPITests);
-  await suite.runSuite('Database Tests', runDatabaseTests);
-  await suite.runSuite('AI Tests', runAITests);
-  await suite.runSuite('PDF Tests', runPDFTests);
-  await suite.runSuite('Integration Tests', runIntegrationTests);
-  
-  // Final summary
-  const allPassed = suite.summary();
-  
-  return allPassed;
+  return await runCompleteSystemTest();
 }
 
 // Run if called directly

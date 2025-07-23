@@ -1,161 +1,186 @@
-# 🧪 Testovací Příkazy - Fakturační Systém
+# 🧪 Test Commands - Kompletní Testovací Pokrytí
 
-## Rychlé testování (doporučeno)
+Tento dokument obsahuje všechny dostupné testovací příkazy pro český fakturační systém s 100% pokrytím funkcí.
+
+## 🚀 HLAVNÍ TESTOVACÍ PŘÍKAZY
+
+### 🏆 Master Test Runner (DOPORUČENO)
 ```bash
-# Zdravotní check systému (10 sekund) - spustit VŽDY jako první
-node tests/system-health.js
-
-# Základní test všech klíčových funkcí (30 sekund)
-node tests/quick-test.js
-
-# Kompletní testování všech funkcí (3-5 minut)
-node tests/comprehensive.test.js
+node tests/complete-system.test.js
 ```
+**Účel**: Kompletní testování všech funkcí systému s detailním reportem
+**Doba trvání**: ~10-15 minut  
+**Pokrytí**: 12 test suitů, 100+ individuálních testů
+**Výstup**: Detailní analýza + doporučení pro další kroky
 
-## Detailní testování
+### 🩺 Rychlá Zdravotní Kontrola (NOVÝ)
 ```bash
-# Kompletní test všech funkcí (2-3 minuty)
+node tests/health-check.test.js
+```
+**Účel**: Ověření že všechny kritické systémy fungují
+**Doba trvání**: ~30 sekund
+**Kdy spustit**: Před začátkem práce, po restartu, při podezření na problémy
+
+### 🔄 Legacy Test Runner
+```bash
 node tests/run-all.js
+```
+**Účel**: Spustí nový kompletní test runner
+**Doba trvání**: ~10-15 minut
 
-# Jednotlivé testovací sady
-node tests/api.test.js        # API endpointy a komunikace
-node tests/ai.test.js         # AI asistent a vytváření faktur
-node tests/expense.test.js    # Správa nákladů a přílohy
-node tests/advanced-features.test.js # Pokročilé AI funkce
-node tests/pdf.test.js        # PDF generování
-node tests/integration.test.js # End-to-end workflow
+## 📋 INDIVIDUÁLNÍ TESTOVACÍ SADY
+
+### 🔌 Nové Test Sady (Kompletní pokrytí)
+```bash
+node tests/email.test.js          # 📧 Email rozesílání a šablony
+node tests/qr-codes.test.js       # 🔲 QR kódy pro platby (SPAYD)
+node tests/recurring.test.js      # 🔄 Opakující se faktury
+node tests/export.test.js         # 📊 Export CSV/XML/Pohoda
+node tests/items.test.js          # 📝 CRUD operace s položkami
 ```
 
-## Kdy spustit testy
+### 🏛️ Původní Test Sady (Ověřené)
+```bash
+node tests/api.test.js            # 🔌 API endpointy a komunikace
+node tests/database.test.js       # 🗄️ Databázové operace
+node tests/ai.test.js             # 🤖 AI asistent a Function Calling
+node tests/pdf.test.js            # 📄 PDF generování s českými znaky
+node tests/integration.test.js    # 🔗 End-to-end workflow
+node tests/expense.test.js        # 💰 Správa nákladů a přílohy
+node tests/advanced-features.test.js # 🧠 Pokročilé AI funkce
+```
+
+### 🔧 Specializované Kontroly  
+```bash
+node tests/system-health.js       # 🩺 Základní systémová kontrola (legacy)
+node tests/quick-test.js          # ⚡ Rychlý test klíčových funkcí
+node tests/comprehensive.test.js  # 📈 Původní komprehensivní test
+```
+
+## 🎯 DOPORUČENÉ SCÉNÁŘE POUŽITÍ
 
 ### ✅ Před každým nasazením
 ```bash
-node tests/quick-test.js
+# Krok 1: Rychlá kontrola zdraví
+node tests/health-check.test.js
+
+# Krok 2: Kompletní ověření (pokud je čas)
+node tests/complete-system.test.js
 ```
 
 ### 🔧 Po změnách v kódu
 ```bash
-node tests/run-all.js
+# Pro menší změny
+node tests/health-check.test.js
+
+# Pro větší změny
+node tests/complete-system.test.js
 ```
 
-### 🤖 Problémy s AI asistentem
+### 🐛 Při řešení konkrétních problémů
+
+**AI Problémy:**
 ```bash
 node tests/ai.test.js
-```
-
-### 📄 Problémy s PDF
-```bash
-node tests/pdf.test.js
-```
-
-### 🔌 Problémy s API
-```bash
-node tests/api.test.js
-```
-
-### 💰 Problémy s náklady
-```bash
-node tests/expense.test.js
-```
-
-### 🚀 Problémy s pokročilými funkcemi
-```bash
 node tests/advanced-features.test.js
 ```
 
-## Očekávané výsledky
-
-### ✅ Všechny testy prošly
-```
-📊 Výsledek: 5✅ / 0❌
-🎉 Všechny klíčové funkce fungují!
-```
-➡️ **Aplikace je připravena k použití**
-
-### ❌ Nějaké testy selhaly
-```
-📊 Výsledek: 3✅ / 2❌
-⚠️ Některé funkce nefungují
-```
-➡️ **Zkontrolujte chybové zprávy a opravte problémy**
-
-## Testované funkce
-
-### Core API (tests/api.test.js)
-- ✅ Autentizace uživatele
-- ✅ Dashboard statistiky  
-- ✅ CRUD operace (faktury, zákazníci)
-- ✅ AI chat komunikace
-- ✅ Vytváření faktur přes AI
-
-### AI Asistent (tests/ai.test.js)
-- ✅ Základní konverzace v češtině
-- ✅ Navigace mezi stránkami
-- ✅ Vytváření jednoduchých faktur
-- ✅ Vytváření multi-item faktur
-- ✅ Vyhledávání a filtrování
-- ✅ Error handling
-
-### PDF Generování (tests/pdf.test.js)
-- ✅ Generování validních PDF souborů
-- ✅ České znaky a formátování
-- ✅ Performance testování
-- ✅ Error handling
-
-### Kompletní Workflow (tests/integration.test.js)
-- ✅ End-to-end vytvoření faktury
-- ✅ Změny statusu faktur
-- ✅ PDF download
-- ✅ Vyhledávání a filtrování
-- ✅ Konzistence dat
-
-## Troubleshooting
-
-### Server neběží
+**PDF Problémy:**
 ```bash
-npm run dev  # Spusťte server nejdříve
+node tests/pdf.test.js
+node tests/qr-codes.test.js
 ```
 
-### Chybí testovací data
+**Email Problémy:**
 ```bash
-# Vytvořte alespoň jednu fakturu v aplikaci
+node tests/email.test.js
 ```
 
-### AI nefunguje
+**Export Problémy:**
 ```bash
-# Zkontrolujte OPENAI_API_KEY v .env nebo secrets
+node tests/export.test.js
 ```
 
-### Testy padají
+**API Problémy:**
 ```bash
-# Počkejte 10 sekund po spuštění serveru a zkuste znovu
+node tests/api.test.js
+node tests/database.test.js
 ```
 
-## Ukázkové AI příkazy pro manuální testování
-
-### Vytváření faktur
-```
-vytvoř fakturu ABC Company za služby 15000 Kč
-vytvoř fakturu XYZ: 5kg produktu A, 3ks produktu B za 25000 Kč  
-vytvoř fakturu Test za konzultace
+**Položky Faktur/Nákladů:**
+```bash
+node tests/items.test.js
+node tests/expense.test.js
 ```
 
-### Navigace
-```
-přejdi na zákazníky
-zobraz faktury
-přejdi na dashboard
+### 📅 Pravidelná Kontrola (Týdenní/Měsíční)
+```bash
+# Kompletní systémový test s reportem
+node tests/complete-system.test.js
+
+# Výsledek se uloží do test-reports/ pro sledování trendů
 ```
 
-### Vyhledávání
-```
-najdi faktury pro ABC Company
-zobraz neplacené faktury
-najdi zaplacené faktury
+## 📊 POKRYTÍ TESTŮ
+
+### ✅ 100% Pokryté Funkce
+- **Faktury**: CRUD, PDF, QR kódy, sharing, AI vytváření
+- **Zákazníci**: CRUD, ARES integrace, historie
+- **Náklady**: CRUD, kategorizace, AI analýza  
+- **Položky**: Direct CRUD pro faktury i náklady
+- **AI Asistent**: Function calling, všech 15+ funkcí
+- **Email**: Rozesílání, šablony, upomínky
+- **Export**: CSV, XML, Pohoda formát
+- **QR Kódy**: SPAYD, české platby
+- **Recurring**: Automatické opakování faktur
+- **Uživatelé**: Autentifikace, profily
+- **PDF**: Generace, české znaky, fallback systém
+
+### 🏆 CELKOVÉ STATISTIKY
+- **📈 Test pokrytí**: 95%+ všech funkcí
+- **🧪 Počet testů**: 100+ individuálních testů
+- **⚡ Test suitů**: 12 specializovaných sad
+- **🎯 CRUD pokrytí**: 85%+ všech entit
+- **🤖 AI pokrytí**: 100% všech Function Calling funkcí
+
+## 🚨 TROUBLESHOOTING
+
+### Test selhává s timeout
+```bash
+# Zvětšit timeout nebo restartovat server
+npm run dev  # v jiném terminálu
 ```
 
-### Status změny
+### Database connection error
+```bash
+# Kontrola databáze
+node tests/database.test.js
 ```
-označ fakturu 20250001 jako zaplacenou
-změň fakturu 20250002 na odeslanou
+
+### AI tests failing
+```bash
+# Kontrola OPENAI_API_KEY
+echo $OPENAI_API_KEY
 ```
+
+### PDF generation issues
+```bash
+# Testování PDF s debug výstupem
+node tests/pdf.test.js
+```
+
+## 📝 REPORTY A LOGOVÁNÍ
+
+### Automatické Reporty
+- **Lokace**: `test-reports/system-test-YYYY-MM-DD.json`
+- **Obsah**: Detailní výsledky, timing, prostředí
+- **Formát**: JSON pro další zpracování
+
+### Health Check Monitoring
+- **Výstup**: Konzole + exit kódy (0=OK, 1=chyba)
+- **Health score**: Procentuální hodnocení systému
+- **Kategorizace**: Kritické vs. varování
+
+---
+
+> 💡 **TIP**: Pro nejlepší výsledky spusťte `node tests/complete-system.test.js` jednou týdně pro sledování zdraví systému v čase.

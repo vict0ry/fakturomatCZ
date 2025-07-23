@@ -127,6 +127,53 @@ async function authenticateTestUser() {
   }
 }
 
+/**
+ * API request with auth token for new test format
+ */
+async function apiRequest(endpoint, options = {}) {
+  try {
+    const url = endpoint.startsWith('http') ? endpoint : `${BASE_URL}${endpoint}`;
+    
+    const fetchOptions = {
+      method: options.method || 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer test-session-dev',
+        ...options.headers
+      },
+      ...options
+    };
+
+    const response = await fetch(url, fetchOptions);
+    
+    let data;
+    try {
+      data = await response.json();
+    } catch (e) {
+      data = await response.text();
+    }
+
+    return { response, data };
+  } catch (error) {
+    throw new Error(`API request failed: ${error.message}`);
+  }
+}
+
+// Legacy functions for compatibility
+async function authenticateUser() {
+  return await authenticateTestUser();
+}
+
+async function createTestData() {
+  // Stub for compatibility
+  return true;
+}
+
+async function clearTestData() {
+  // Stub for compatibility
+  return true;
+}
+
 export {
   testApiEndpoint,
   logTest,
@@ -135,5 +182,9 @@ export {
   sleep,
   checkServerHealth,
   authenticateTestUser,
+  apiRequest,
+  authenticateUser,
+  createTestData,
+  clearTestData,
   BASE_URL
 };
