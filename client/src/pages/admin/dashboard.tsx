@@ -203,7 +203,23 @@ export default function AdminDashboard() {
           <Button 
             variant="outline" 
             size="sm"
-            onClick={() => window.location.href = '/api/auth/logout'}
+            onClick={async () => {
+              try {
+                await fetch('/api/auth/logout', { 
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
+                  }
+                });
+                localStorage.removeItem('sessionId');
+                window.location.href = '/';
+              } catch (error) {
+                console.error('Logout failed:', error);
+                // Fallback - clear session and redirect anyway
+                localStorage.removeItem('sessionId');
+                window.location.href = '/';
+              }
+            }}
             className="text-red-600 border-red-200 hover:bg-red-50"
           >
             Odhlásit se
