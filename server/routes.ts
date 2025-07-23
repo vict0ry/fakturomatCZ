@@ -102,21 +102,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const { company, user } = req.body;
+      const { personal, company, payment } = req.body;
       
-      // Create company
-      const companyData = insertCompanySchema.parse(company);
-      const newCompany = await storage.createCompany(companyData);
+      // Map frontend company data to backend schema
+      const companyData = {
+        name: company.companyName,
+        ico: company.ico,
+        dic: company.dic,
+        address: company.address,
+        city: company.city,
+        postalCode: company.postalCode,
+        phone: company.phone,
+        bankAccount: company.bankAccount,
+        email: personal.email // Use personal email for company
+      };
       
-      // Create user
-      const hashedPassword = await bcrypt.hash(user.password, 10);
-      const userData = insertUserSchema.parse({
-        ...user,
+      // Validate and create company
+      const validatedCompanyData = insertCompanySchema.parse(companyData);
+      const newCompany = await storage.createCompany(validatedCompanyData);
+      
+      // Create user with trial settings
+      const hashedPassword = await bcrypt.hash(personal.password, 10);
+      const trialEndsAt = new Date();
+      trialEndsAt.setDate(trialEndsAt.getDate() + 7); // 7-day trial
+      
+      const userData = {
+        username: personal.email, // Use email as username
+        email: personal.email,
         password: hashedPassword,
+        firstName: personal.firstName,
+        lastName: personal.lastName,
         companyId: newCompany.id,
-        role: 'admin'
-      });
-      const newUser = await storage.createUser(userData);
+        role: 'admin',
+        subscriptionStatus: 'trial',
+        trialEndsAt: trialEndsAt,
+        subscriptionStartedAt: new Date()
+      };
+      
+      const validatedUserData = insertUserSchema.parse(userData);
+      const newUser = await storage.createUser(validatedUserData);
       
       // Create session
       const sessionId = randomUUID();
