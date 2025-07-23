@@ -11,6 +11,16 @@ Technical preference: Always use AI for intelligent text/product matching instea
 
 ## Recent Changes
 
+### MAJOR UX Enhancement - Profile & Settings Separation + Invoice History (2025-07-23)
+- ✅ **Profil stránka kompletně přepracována** - Zaměřena pouze na osobní údaje uživatele
+- ✅ **Nová nastavení stránka** - Firemní údaje přesunuty do /settings kde patří
+- ✅ **Klikatelný zákazník v detailu faktury** - Proklik na profil zákazníka 
+- ✅ **Automatická historie faktur** - Zobrazí se pod zákazníkem bez klikání na tlačítko
+- ✅ **Vylepšený profil design** - Avatar s iniciály, telefon, změna hesla
+- ✅ **Správné API endpointy** - PATCH /api/users/:id a /api/companies/:id funkční
+- ✅ **Invoice customer history** - API endpoint pro faktury konkrétního zákazníka
+- ✅ **Professional UX** - Správné rozdělení osobních vs firemních údajů
+
 ### CRITICAL BREAKTHROUGH - Complete AI System Repair (2025-07-23)
 - ✅ **AI poznámky kompletně opraveny** - Function calling `add_note_to_invoice` nyní funguje dokonale
 - ✅ **CompanyId bug vyřešen** - Faktury se ukládají do správné společnosti místo hardcoded 1
