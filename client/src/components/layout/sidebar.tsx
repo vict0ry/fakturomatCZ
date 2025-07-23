@@ -28,10 +28,10 @@ export function Sidebar({ className }: SidebarProps) {
 
   const navigation = [
     {
-      name: "Dashboard",
-      href: "/",
+      name: "Dashboard", 
+      href: "/dashboard",
       icon: Home,
-      current: location === "/",
+      current: location === "/" || location === "/dashboard",
     },
     {
       name: "Faktury",

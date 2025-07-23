@@ -102,7 +102,7 @@ export default function Landing() {
               <span className="text-xl font-bold text-gray-900 dark:text-white">NašeFakturace</span>
             </div>
             <div className="flex items-center space-x-4">
-              <Link href="/login">
+              <Link href="/dashboard">
                 <Button variant="ghost">Přihlášení</Button>
               </Link>
               <Link href="/register">

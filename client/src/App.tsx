@@ -34,7 +34,6 @@ function PublicRouter() {
       <Route path="/public/invoice/:token">
         {(params: any) => <PublicInvoicePage token={params.token} />}
       </Route>
-      <Route path="/landing" component={Landing} />
       <Route path="/register" component={Register} />
       <Route path="/" component={Landing} />
       <Route component={NotFound} />
@@ -45,7 +44,7 @@ function PublicRouter() {
 function AuthenticatedRouter() {
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
+      <Route path="/dashboard" component={Dashboard} />
       <Route path="/invoices" component={Invoices} />
       <Route path="/invoices/:id/edit" component={InvoiceEdit} />
       <Route path="/invoices/:id" component={InvoiceDetail} />
@@ -62,6 +61,7 @@ function AuthenticatedRouter() {
       <Route path="/settings" component={SettingsPage} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/admin" component={AdminDashboard} />
+      <Route path="/" component={Dashboard} />
       <Route component={NotFound} />
     </Switch>
   );
