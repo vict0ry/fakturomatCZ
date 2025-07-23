@@ -28,7 +28,9 @@ function InteractiveDemo() {
   const [userInput, setUserInput] = useState('');
   const [isPlaying, setIsPlaying] = useState(false);
   
-  const demoSteps = [
+  const [currentDemo, setCurrentDemo] = useState('invoice'); // 'invoice' or 'receipt'
+  
+  const invoiceDemoSteps = [
     {
       type: 'user',
       text: 'Vytvořit fakturu pro Novák s.r.o. na 25 000 Kč za tvorbu webových stránek',
@@ -56,12 +58,51 @@ function InteractiveDemo() {
     }
   ];
 
-  const predefinedCommands = [
-    'Vytvořit fakturu pro Novák s.r.o. na 25 000 Kč za tvorbu webových stránek',
-    'Zaúčtovat náklad z této účtenky (nahraj foto)',
-    'Vytvořit náklad 5 000 Kč za kancelářské potřeby',
-    'Zpracovat tuto PDF fakturu do nákladů'
+  const receiptDemoSteps = [
+    {
+      type: 'user',
+      text: '📱 [Nahráno foto účtenky]',
+      delay: 0
+    },
+    {
+      type: 'ai',
+      text: 'Analyzuji účtenku pomocí Vision AI...',
+      delay: 1000
+    },
+    {
+      type: 'ai',
+      text: '📄 Rozpoznáno:\n• Obchod: TESCO STORES ČR\n• Datum: 23.01.2025\n• Částka: 1 847 Kč\n• DPH: 21% (321 Kč)',
+      delay: 2500
+    },
+    {
+      type: 'ai',
+      text: '🔍 Detekované položky:\n• Kancelářské potřeby: 650 Kč\n• Čistící prostředky: 420 Kč\n• Káva do kanceláře: 777 Kč',
+      delay: 4500
+    },
+    {
+      type: 'ai',
+      text: '✅ Náklad automaticky zaúčtován!\nKategorie: Kancelářské potřeby\nDodavatel: TESCO STORES ČR\nČástka: 1 847 Kč vč. DPH',
+      delay: 6500
+    }
   ];
+
+  const demoSteps = currentDemo === 'invoice' ? invoiceDemoSteps : receiptDemoSteps;
+
+  const invoiceCommands = [
+    'Vytvořit fakturu pro Novák s.r.o. na 25 000 Kč za tvorbu webových stránek',
+    'Faktura pro ABC Trading na 15 000 Kč za konzultace',
+    'Nová faktura - XYZ s.r.o., 50 000 Kč, grafický design',
+    'Vystavit fakturu Tech Solutions, 35 000 Kč, vývoj aplikace'
+  ];
+
+  const receiptCommands = [
+    '📱 Nahrát foto účtenky z TESCO',
+    '📸 Vyfotit účtenku z benzínky',
+    '📄 Zpracovat účtenku z restaurace',
+    '📱 Extrakce dat z účtenky Albert'
+  ];
+
+  const predefinedCommands = currentDemo === 'invoice' ? invoiceCommands : receiptCommands;
 
   const startDemo = (command?: string) => {
     setCurrentStep(0);
@@ -74,6 +115,13 @@ function InteractiveDemo() {
     setTimeout(() => {
       animateSteps();
     }, 100);
+  };
+
+  const switchDemo = (demoType: 'invoice' | 'receipt') => {
+    setCurrentDemo(demoType);
+    setCurrentStep(0);
+    setIsPlaying(false);
+    setUserInput('');
   };
 
   const animateSteps = () => {
@@ -89,6 +137,30 @@ function InteractiveDemo() {
 
   return (
     <div className="space-y-6">
+      {/* Demo Type Switcher */}
+      <div className="flex justify-center mb-6">
+        <div className="bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+          <Button
+            variant={currentDemo === 'invoice' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => switchDemo('invoice')}
+            className={currentDemo === 'invoice' ? 'bg-orange-500 text-white' : ''}
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Demo faktury
+          </Button>
+          <Button
+            variant={currentDemo === 'receipt' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => switchDemo('receipt')}
+            className={currentDemo === 'receipt' ? 'bg-orange-500 text-white' : ''}
+          >
+            📱
+            Demo účtenky
+          </Button>
+        </div>
+      </div>
+
       {/* Quick Start Commands */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
         {predefinedCommands.map((command, index) => (
