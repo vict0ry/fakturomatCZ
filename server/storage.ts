@@ -523,41 +523,6 @@ export class DatabaseStorage implements IStorage {
     .orderBy(desc(invoiceHistory.createdAt));
   }
 
-  // Expenses - Remove duplicates and fix implementation
-  async createExpense(expenseData: any, companyId: number): Promise<any> {
-    const expenseCount = await db.select({ count: sql`count(*)` })
-      .from(expenses)
-      .where(eq(expenses.companyId, companyId));
-    
-    const count = Number(expenseCount[0]?.count || 0);
-    const expenseNumber = expenseData.expenseNumber || `EXP-${String(count + 1).padStart(4, '0')}`;
-
-    const [newExpense] = await db
-      .insert(expenses)
-      .values({
-        companyId,
-        expenseNumber,
-        supplierId: expenseData.supplierId || null,
-        category: expenseData.category || 'Other',
-        description: expenseData.description,
-        amount: expenseData.amount,
-        vatAmount: expenseData.vatAmount || 0,
-        total: expenseData.total,
-        vatRate: expenseData.vatRate || 21,
-        currency: expenseData.currency || 'CZK',
-        expenseDate: expenseData.expenseDate || new Date(),
-        status: expenseData.status || 'draft',
-        receiptNumber: expenseData.receiptNumber,
-        attachmentUrl: expenseData.attachmentUrl,
-        attachmentName: expenseData.attachmentName,
-        attachmentType: expenseData.attachmentType,
-        notes: expenseData.notes
-      })
-      .returning();
-    
-    return newExpense;
-  }
-
 
 
   async getInvoiceCount(companyId: number, year: number): Promise<number> {
@@ -819,12 +784,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId));
   }
 
-  async getUserByEmail(email: string) {
-    const [user] = await db.select()
-      .from(users)
-      .where(eq(users.email, email));
-    return user;
-  }
+
 
   async updateUserLastLogin(userId: number) {
     await db.update(users)

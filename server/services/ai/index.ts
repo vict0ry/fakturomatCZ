@@ -507,7 +507,7 @@ Kontext: ${context}`;
         // Use the most recent invoice (highest ID)
         invoice = recentInvoices.sort((a: any, b: any) => b.id - a.id)[0];
         invoiceId = invoice.id;
-        console.log(`Using most recent invoice: ${invoice.id}`);oice.invoiceNumber} (ID: ${invoiceId})`);
+        console.log(`Using most recent invoice: ${invoice.invoiceNumber} (ID: ${invoiceId})`);
       }
 
       // Calculate totals
