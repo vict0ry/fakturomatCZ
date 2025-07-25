@@ -99,7 +99,6 @@ function AppContent() {
     );
   }
 
-  // Landing page je vždy dostupná
   return (
     <Switch>
       <Route path="/public/invoice/:token">
@@ -107,7 +106,30 @@ function AppContent() {
       </Route>
       <Route path="/register" component={Register} />
       <Route path="/login" component={Login} />
-      <Route path="/" component={Landing} />
+      <Route path="/">
+        {isAuthenticated ? (
+          user?.user?.role === 'admin' ? (
+            <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
+              <AdminDashboard />
+            </div>
+          ) : (
+            <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
+              <Header />
+              <div className="flex">
+                <Sidebar />
+                <main className="flex-1 overflow-hidden">
+                  <div className="h-screen overflow-y-auto pb-20">
+                    <Dashboard />
+                  </div>
+                </main>
+              </div>
+              <BottomAIChat />
+            </div>
+          )
+        ) : (
+          <Landing />
+        )}
+      </Route>
       {isAuthenticated && (
         <Route path="/dashboard">
           {user?.user?.role === 'admin' ? (
