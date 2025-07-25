@@ -315,7 +315,7 @@ Kontext: ${context}`;
   private async updateInvoicePrices(args: any, userContext: UserContext, currentPath: string): Promise<UniversalAIResponse> {
     try {
       const pricingData = { items: args.items };
-      return await this.invoiceProcessor.updateInvoiceWithPricing(pricingData, userContext, currentPath);
+      return await this.invoiceProcessor.updateInvoiceWithData(pricingData, userContext, currentPath);
     } catch (error) {
       console.error('Invoice update failed:', error);
       return {
@@ -507,7 +507,7 @@ Kontext: ${context}`;
         // Use the most recent invoice (highest ID)
         invoice = recentInvoices.sort((a: any, b: any) => b.id - a.id)[0];
         invoiceId = invoice.id;
-        console.log(`Using most recent invoice: ${invoice.invoiceNumber} (ID: ${invoiceId})`);
+        console.log(`Using most recent invoice: ${invoice.id}`);oice.invoiceNumber} (ID: ${invoiceId})`);
       }
 
       // Calculate totals
@@ -1128,7 +1128,8 @@ Vytvoř JSON:
           if (attachment.type === 'application/pdf' || attachment.name?.endsWith('.pdf')) {
             // Process PDF with Vision API to extract data
             try {
-              const completion = await this.invoiceProcessor.openai.chat.completions.create({
+              const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+              const completion = await openai.chat.completions.create({
                 model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
                 messages: [
                   {
