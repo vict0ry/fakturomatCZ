@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Send, MessageSquare, ChevronUp, ChevronDown, X, Paperclip, FileText, Image, Plus, Sparkles, Calculator, Receipt, FileCheck, Users, TrendingUp, Zap, Clock, Check, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthApi } from '@/hooks/use-auth-api';
+import { useAuth } from '@/hooks/useAuth';
 import { useLocation } from 'wouter';
 import { queryClient } from '@/lib/queryClient';
 
@@ -66,6 +67,7 @@ export function BottomAIChat() {
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { apiRequest } = useAuthApi();
+  const { user } = useAuth();
 
   // Clear localStorage if it's getting too full
   const clearStorageIfNeeded = () => {
@@ -77,7 +79,12 @@ export function BottomAIChat() {
     } catch (error) {
       if ((error as Error).name === 'QuotaExceededError') {
         console.log('Storage quota exceeded, clearing chat history');
-        localStorage.removeItem('ai-chat-history');
+        // Remove all AI chat histories to free up space
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('ai-chat-history')) {
+            localStorage.removeItem(key);
+          }
+        });
       }
     }
   };
@@ -90,11 +97,14 @@ export function BottomAIChat() {
     scrollToBottom();
   }, [messages]);
 
-  // Load chat history from localStorage on mount
+  // Load chat history from localStorage on mount (user-specific)
   useEffect(() => {
+    if (!user?.id) return;
+    
     clearStorageIfNeeded(); // Check storage quota first
     
-    const savedMessages = localStorage.getItem('ai-chat-history');
+    const chatKey = `ai-chat-history-user-${user.id}`;
+    const savedMessages = localStorage.getItem(chatKey);
     if (savedMessages) {
       try {
         const parsed = JSON.parse(savedMessages).map((msg: any) => ({
@@ -106,15 +116,16 @@ export function BottomAIChat() {
         setMessages(parsed);
       } catch (error) {
         console.error('Failed to load chat history:', error as Error);
-        localStorage.removeItem('ai-chat-history');
+        localStorage.removeItem(chatKey);
       }
     }
-  }, []);
+  }, [user?.id]);
 
-  // Save messages to localStorage (without large attachments)
+  // Save messages to localStorage (without large attachments, user-specific)
   useEffect(() => {
-    if (messages.length > 0) {
+    if (messages.length > 0 && user?.id) {
       try {
+        const chatKey = `ai-chat-history-user-${user.id}`;
         // Remove large attachment content when saving to prevent quota exceeded
         const messagesForStorage = messages.map(msg => ({
           ...msg,
@@ -123,17 +134,18 @@ export function BottomAIChat() {
             content: att.content.length > 1000 ? 'REMOVED_TO_SAVE_SPACE' : att.content
           }))
         }));
-        localStorage.setItem('ai-chat-history', JSON.stringify(messagesForStorage));
+        localStorage.setItem(chatKey, JSON.stringify(messagesForStorage));
       } catch (error) {
         console.warn('Failed to save chat history to localStorage:', error as Error);
         // Clear old messages if storage is full
         if ((error as Error).name === 'QuotaExceededError') {
-          localStorage.removeItem('ai-chat-history');
+          const chatKey = `ai-chat-history-user-${user.id}`;
+          localStorage.removeItem(chatKey);
           console.log('Cleared chat history due to storage quota');
         }
       }
     }
-  }, [messages]);
+  }, [messages, user?.id]);
 
   // Focus input when expanded
   useEffect(() => {

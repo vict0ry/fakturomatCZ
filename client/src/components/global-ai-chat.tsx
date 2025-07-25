@@ -6,6 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Send, MessageSquare, X, Minimize2, Maximize2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthApi } from '@/hooks/use-auth-api';
+import { useAuth } from '@/hooks/useAuth';
 import { useLocation } from 'wouter';
 
 interface Message {
@@ -32,6 +33,7 @@ export function GlobalAIChat() {
   const [, setLocation] = useLocation();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { apiRequest } = useAuthApi();
+  const { user } = useAuth();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -41,9 +43,12 @@ export function GlobalAIChat() {
     scrollToBottom();
   }, [messages]);
 
-  // Load chat history from localStorage on mount
+  // Load chat history from localStorage on mount (user-specific)
   useEffect(() => {
-    const savedMessages = localStorage.getItem('ai-chat-history');
+    if (!user?.id) return;
+    
+    const chatKey = `ai-chat-history-user-${user.id}`;
+    const savedMessages = localStorage.getItem(chatKey);
     if (savedMessages) {
       try {
         const parsed = JSON.parse(savedMessages).map((msg: any) => ({
@@ -55,14 +60,15 @@ export function GlobalAIChat() {
         console.error('Failed to load chat history:', error);
       }
     }
-  }, []);
+  }, [user?.id]);
 
-  // Save messages to localStorage
+  // Save messages to localStorage (user-specific)
   useEffect(() => {
-    if (messages.length > 0) {
-      localStorage.setItem('ai-chat-history', JSON.stringify(messages));
+    if (messages.length > 0 && user?.id) {
+      const chatKey = `ai-chat-history-user-${user.id}`;
+      localStorage.setItem(chatKey, JSON.stringify(messages));
     }
-  }, [messages]);
+  }, [messages, user?.id]);
 
   const addMessage = (type: 'user' | 'assistant', content: string) => {
     const newMessage: Message = {
@@ -128,7 +134,10 @@ export function GlobalAIChat() {
 
   const clearHistory = () => {
     setMessages([]);
-    localStorage.removeItem('ai-chat-history');
+    if (user?.id) {
+      const chatKey = `ai-chat-history-user-${user.id}`;
+      localStorage.removeItem(chatKey);
+    }
   };
 
   if (!isOpen) {
