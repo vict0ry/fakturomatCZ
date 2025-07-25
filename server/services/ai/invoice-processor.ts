@@ -49,8 +49,8 @@ export class InvoiceProcessor {
     }
 
     try {
-      // Find or create customer
-      const customerId = await this.findOrCreateCustomer(invoiceData.customerName, userContext);
+      // Find or create customer with ARES lookup
+      const { customerId, customerInfo, aresInfo } = await this.findOrCreateCustomerWithInfo(invoiceData.customerName, userContext);
       
       // Create invoice draft
       const invoice = await this.createInvoice(invoiceData, customerId, userContext);
@@ -58,15 +58,7 @@ export class InvoiceProcessor {
       // Create invoice items
       await this.createInvoiceItems(invoice.id, invoiceData.items, userContext);
       
-      // Generate response
-      const itemsText = invoiceData.items.map(item => 
-        `• ${item.quantity} ${item.unit} ${item.productName}`
-      ).join('\n');
-      
-      const amountText = invoiceData.totalAmount 
-        ? `• Celková částka: ${invoiceData.totalAmount.toLocaleString('cs-CZ')} Kč`
-        : `• Částka: bude potřeba doplnit`;
-
+      // Generate response with ARES information
       const itemCount = invoiceData.items.length;
       const multiItemNote = itemCount > 1 ? ` Faktura obsahuje ${itemCount} položky.` : '';
       const amountNote = !invoiceData.totalAmount ? ' Částka bude potřeba doplnit v editačním formuláři.' : '';
@@ -82,9 +74,17 @@ export class InvoiceProcessor {
       if (itemCount > 1) {
         itemDetails = ` Položky: ${invoiceData.items.map(item => `${item.quantity} ${item.unit} ${item.productName}`).join(', ')}.`;
       }
+
+      // ARES verification information
+      let aresMessage = '';
+      if (aresInfo) {
+        aresMessage = ` ✅ Zákazník ověřen v ARES registru: ${aresInfo.name}${aresInfo.ico ? ', IČO: ' + aresInfo.ico : ''}${aresInfo.address ? ', ' + aresInfo.address : ''}.`;
+      } else if (!customerInfo.existingCustomer) {
+        aresMessage = ` ⚠️ Zákazník nebyl nalezen v ARES registru - údaje bude třeba doplnit ručně.`;
+      }
       
       return {
-        content: `Faktura pro zákazníka "${invoiceData.customerName}" byla úspěšně vytvořena! Číslo faktury: ${invoice.invoiceNumber}.${multiItemNote}${itemDetails}${amountDisplay}${amountNote} Nyní můžete fakturu dokončit v editačním formuláři.`,
+        content: `Faktura pro zákazníka "${invoiceData.customerName}" byla úspěšně vytvořena! Číslo faktury: ${invoice.invoiceNumber}.${aresMessage}${multiItemNote}${itemDetails}${amountDisplay}${amountNote} Nyní můžete fakturu dokončit v editačním formuláři.`,
         action: { type: 'navigate', data: { path: `/invoices/${invoice.id}/edit` } }
       };
 
@@ -364,12 +364,25 @@ Odpověz pouze "ANO" nebo "NE".`;
   }
 
   private async findOrCreateCustomer(customerName: string, userContext: UserContext): Promise<number> {
+    const result = await this.findOrCreateCustomerWithInfo(customerName, userContext);
+    return result.customerId;
+  }
+
+  private async findOrCreateCustomerWithInfo(customerName: string, userContext: UserContext): Promise<{
+    customerId: number;
+    customerInfo: { existingCustomer: boolean };
+    aresInfo: any;
+  }> {
     // Try to find existing customer first
     const customers = await userContext.storage.searchCustomers(customerName, userContext.companyId);
     console.log('Found existing customers:', customers.length);
 
     if (customers.length > 0) {
-      return customers[0].id;
+      return {
+        customerId: customers[0].id,
+        customerInfo: { existingCustomer: true },
+        aresInfo: null
+      };
     }
 
     // Search ARES for company info
@@ -379,9 +392,11 @@ Odpověz pouze "ANO" nebo "NE".`;
     // Try to extract ICO from company name or search by name
     const icoMatch = customerName.match(/\d{8}/);
     if (icoMatch) {
+      console.log('Searching ARES by ICO:', icoMatch[0]);
       aresData = await fetchCompanyFromAres(icoMatch[0]);
     } else {
       // Search by company name
+      console.log('Searching ARES by name:', customerName);
       const aresResults = await searchCompaniesByName(customerName);
       if (aresResults.length > 0) {
         aresData = aresResults[0];
@@ -405,7 +420,12 @@ Odpověz pouze "ANO" nebo "NE".`;
 
     const customer = await userContext.storage.createCustomer(customerData);
     console.log('Created new customer:', customer.id);
-    return customer.id;
+    
+    return {
+      customerId: customer.id,
+      customerInfo: { existingCustomer: false },
+      aresInfo: aresData
+    };
   }
 
   private async createInvoice(invoiceData: InvoiceData, customerId: number, userContext: UserContext) {
