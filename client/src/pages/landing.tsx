@@ -379,7 +379,7 @@ export default function Landing() {
               <span className="text-xl font-bold text-gray-900 dark:text-white">Doklad.ai</span>
             </div>
             <div className="flex items-center space-x-4">
-              <Link href="/dashboard">
+              <Link href="/login">
                 <Button variant="ghost">Přihlášení</Button>
               </Link>
               <Link href="/register">
@@ -718,34 +718,6 @@ export default function Landing() {
           </div>
         </div>
       </footer>
-
-      {/* Admin Login Modal - Hidden button for admin access */}
-      <div className="fixed bottom-4 left-4">
-        <Button
-          variant="ghost" 
-          size="sm"
-          className="opacity-20 hover:opacity-100 text-xs"
-          onClick={async () => {
-            try {
-              const response = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: 'admin', password: 'admin123' })
-              });
-              
-              if (response.ok) {
-                const data = await response.json();
-                localStorage.setItem('sessionId', data.sessionId);
-                window.location.href = '/dashboard';
-              }
-            } catch (error) {
-              console.error('Admin login failed:', error);
-            }
-          }}
-        >
-          Admin
-        </Button>
-      </div>
     </div>
   );
 }
