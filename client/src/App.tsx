@@ -139,21 +139,164 @@ function AppContent() {
       )}
       {isAuthenticated && user?.user?.role !== 'admin' && (
         <>
-          <Route path="/invoices/:id/edit" component={InvoiceEdit} />
-          <Route path="/invoices/:id" component={InvoiceDetail} />
-          <Route path="/invoices" component={Invoices} />
-          <Route path="/customers" component={Customers} />
-          <Route path="/expenses/new" component={ExpenseCreatePage} />
+          <Route path="/invoices/:id/edit">
+            <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
+              <Header />
+              <div className="flex">
+                <Sidebar />
+                <main className="flex-1 overflow-hidden">
+                  <div className="h-screen overflow-y-auto pb-20">
+                    <InvoiceEdit />
+                  </div>
+                </main>
+              </div>
+              <BottomAIChat />
+            </div>
+          </Route>
+          <Route path="/invoices/:id">
+            <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
+              <Header />
+              <div className="flex">
+                <Sidebar />
+                <main className="flex-1 overflow-hidden">
+                  <div className="h-screen overflow-y-auto pb-20">
+                    <InvoiceDetail />
+                  </div>
+                </main>
+              </div>
+              <BottomAIChat />
+            </div>
+          </Route>
+          <Route path="/invoices">
+            <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
+              <Header />
+              <div className="flex">
+                <Sidebar />
+                <main className="flex-1 overflow-hidden">
+                  <div className="h-screen overflow-y-auto pb-20">
+                    <Invoices />
+                  </div>
+                </main>
+              </div>
+              <BottomAIChat />
+            </div>
+          </Route>
+          <Route path="/customers">
+            <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
+              <Header />
+              <div className="flex">
+                <Sidebar />
+                <main className="flex-1 overflow-hidden">
+                  <div className="h-screen overflow-y-auto pb-20">
+                    <Customers />
+                  </div>
+                </main>
+              </div>
+              <BottomAIChat />
+            </div>
+          </Route>
+          <Route path="/expenses/new">
+            <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
+              <Header />
+              <div className="flex">
+                <Sidebar />
+                <main className="flex-1 overflow-hidden">
+                  <div className="h-screen overflow-y-auto pb-20">
+                    <ExpenseCreatePage />
+                  </div>
+                </main>
+              </div>
+              <BottomAIChat />
+            </div>
+          </Route>
           <Route path="/expenses/:id/edit">
-            {(params: any) => <ExpenseCreatePage key={`edit-${params.id}`} id={params.id} />}
+            {(params: any) => (
+              <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
+                <Header />
+                <div className="flex">
+                  <Sidebar />
+                  <main className="flex-1 overflow-hidden">
+                    <div className="h-screen overflow-y-auto pb-20">
+                      <ExpenseCreatePage key={`edit-${params.id}`} id={params.id} />
+                    </div>
+                  </main>
+                </div>
+                <BottomAIChat />
+              </div>
+            )}
           </Route>
           <Route path="/expenses/:id">
-            {(params: any) => <ExpenseDetail key={`detail-${params.id}`} expenseId={parseInt(params.id)} />}
+            {(params: any) => (
+              <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
+                <Header />
+                <div className="flex">
+                  <Sidebar />
+                  <main className="flex-1 overflow-hidden">
+                    <div className="h-screen overflow-y-auto pb-20">
+                      <ExpenseDetail key={`detail-${params.id}`} expenseId={parseInt(params.id)} />
+                    </div>
+                  </main>
+                </div>
+                <BottomAIChat />
+              </div>
+            )}
           </Route>
-          <Route path="/expenses" component={ExpensesPage} />
-          <Route path="/analytics" component={Analytics} />
-          <Route path="/settings" component={SettingsPage} />
-          <Route path="/profile" component={ProfilePage} />
+          <Route path="/expenses">
+            <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
+              <Header />
+              <div className="flex">
+                <Sidebar />
+                <main className="flex-1 overflow-hidden">
+                  <div className="h-screen overflow-y-auto pb-20">
+                    <ExpensesPage />
+                  </div>
+                </main>
+              </div>
+              <BottomAIChat />
+            </div>
+          </Route>
+          <Route path="/analytics">
+            <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
+              <Header />
+              <div className="flex">
+                <Sidebar />
+                <main className="flex-1 overflow-hidden">
+                  <div className="h-screen overflow-y-auto pb-20">
+                    <Analytics />
+                  </div>
+                </main>
+              </div>
+              <BottomAIChat />
+            </div>
+          </Route>
+          <Route path="/settings">
+            <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
+              <Header />
+              <div className="flex">
+                <Sidebar />
+                <main className="flex-1 overflow-hidden">
+                  <div className="h-screen overflow-y-auto pb-20">
+                    <SettingsPage />
+                  </div>
+                </main>
+              </div>
+              <BottomAIChat />
+            </div>
+          </Route>
+          <Route path="/profile">
+            <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
+              <Header />
+              <div className="flex">
+                <Sidebar />
+                <main className="flex-1 overflow-hidden">
+                  <div className="h-screen overflow-y-auto pb-20">
+                    <ProfilePage />
+                  </div>
+                </main>
+              </div>
+              <BottomAIChat />
+            </div>
+          </Route>
         </>
       )}
       <Route component={NotFound} />
