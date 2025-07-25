@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/auth-context";
+import { useAuth } from "@/hooks/useAuth";
 import { Register } from "./register";
 import { Receipt, Eye, EyeOff } from "lucide-react";
+import { useLocation } from "wouter";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Uživatelské jméno je povinné"),
@@ -22,7 +23,7 @@ export function Login() {
   const [showRegister, setShowRegister] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
 
   const form = useForm<LoginFormData>({
@@ -50,12 +51,18 @@ export function Login() {
       }
 
       const result = await response.json();
-      login(result.user, result.sessionId);
+      
+      // Uložení session do localStorage
+      localStorage.setItem('sessionId', result.sessionId);
+      localStorage.setItem('user', JSON.stringify(result.user));
       
       toast({
         title: "Úspěšně přihlášen",
         description: `Vítejte zpět, ${result.user.firstName}!`,
       });
+      
+      // Přesměrování na dashboard
+      navigate('/dashboard');
     } catch (error: any) {
       toast({
         title: "Chyba při přihlášení",

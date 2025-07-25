@@ -133,7 +133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         firstName: personal.firstName,
         lastName: personal.lastName,
         companyId: newCompany.id,
-        role: 'admin',
+        role: 'user', // Běžný uživatel místo admin
         subscriptionStatus: 'trial',
         trialEndsAt: trialEndsAt,
         subscriptionStartedAt: new Date()
