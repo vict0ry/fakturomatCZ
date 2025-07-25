@@ -69,6 +69,14 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
   const [showCustomerResults, setShowCustomerResults] = useState(false);
   const { toast } = useToast();
 
+  // Initialize customer data for editing
+  useEffect(() => {
+    if (invoice && invoice.customer) {
+      setSelectedCustomer(invoice.customer);
+      setCustomerSearch(invoice.customer.name || "");
+    }
+  }, [invoice]);
+
   const today = new Date().toISOString().split('T')[0];
   const defaultDueDate = new Date();
   defaultDueDate.setDate(defaultDueDate.getDate() + 14); // 14 days from today
@@ -468,7 +476,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                 <div className="space-y-4 md:space-y-6">
                   <div className="space-y-2">
                     <Label htmlFor="customer" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Vyhledat zákazníka *
+                      {selectedCustomer ? "Změnit zákazníka" : "Vyhledat zákazníka *"}
                     </Label>
                     <div className="relative">
                       <Input

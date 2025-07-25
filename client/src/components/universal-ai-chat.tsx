@@ -177,15 +177,29 @@ export function UniversalAIChat() {
       }
 
       // Always refresh after AI operations that modify data
-      if (message.includes('poznámku') || message.includes('note') || message.includes('aktualizuj') || message.includes('změň')) {
-        console.log('🔄 AI modified data - triggering UI refresh');
+      if (message.includes('poznámku') || message.includes('note') || message.includes('aktualizuj') || message.includes('změň') || message.includes('add') || message.includes('update')) {
+        console.log('🔄 AI modified data - triggering aggressive UI refresh');
         setTimeout(() => {
           queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
           const currentInvoiceId = window.location.pathname.match(/\/invoices\/(\d+)/)?.[1];
           if (currentInvoiceId) {
+            console.log('🔄 Force refreshing invoice:', currentInvoiceId);
+            queryClient.refetchQueries({ queryKey: ["/api/invoices", parseInt(currentInvoiceId)] });
+            queryClient.invalidateQueries({ queryKey: ["/api/invoices", parseInt(currentInvoiceId)] });
+          }
+        }, 100);
+        setTimeout(() => {
+          const currentInvoiceId = window.location.pathname.match(/\/invoices\/(\d+)/)?.[1];
+          if (currentInvoiceId) {
             queryClient.refetchQueries({ queryKey: ["/api/invoices", parseInt(currentInvoiceId)] });
           }
-        }, 200);
+        }, 500);
+        setTimeout(() => {
+          const currentInvoiceId = window.location.pathname.match(/\/invoices\/(\d+)/)?.[1];
+          if (currentInvoiceId) {
+            queryClient.refetchQueries({ queryKey: ["/api/invoices", parseInt(currentInvoiceId)] });
+          }
+        }, 1000);
       }
     },
     onError: (error: any) => {
