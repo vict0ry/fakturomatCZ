@@ -151,9 +151,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         company: newCompany,
         sessionId 
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Registration error:", error);
-      res.status(400).json({ message: "Registration failed" });
+      
+      // Handle specific database errors
+      if (error.code === '23505') {
+        if (error.detail?.includes('username')) {
+          return res.status(400).json({ 
+            message: "Uživatel s tímto emailem již existuje. Zkuste jiný email nebo se přihlaste." 
+          });
+        }
+        if (error.detail?.includes('email')) {
+          return res.status(400).json({ 
+            message: "Email je již zaregistrován. Zkuste jiný email nebo se přihlaste." 
+          });
+        }
+      }
+      
+      // Handle validation errors
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ 
+          message: "Neplatné údaje: " + error.issues.map((i: any) => i.message).join(', ')
+        });
+      }
+      
+      res.status(400).json({ 
+        message: "Registrace selhala. Zkontrolujte prosím všechny údaje a zkuste to znovu." 
+      });
     }
   });
 

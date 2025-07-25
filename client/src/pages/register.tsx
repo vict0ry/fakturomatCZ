@@ -111,9 +111,9 @@ export default function Register() {
         });
         navigate('/login');
       } else {
-        const errorText = await response.text();
-        console.error('Registration failed:', response.status, errorText);
-        throw new Error(`Registration failed: ${errorText}`);
+        const errorData = await response.json();
+        console.error('Registration failed:', response.status, errorData);
+        throw new Error(errorData.message || 'Registrace selhala');
       }
     } catch (error) {
       console.error('Registration failed:', error);
