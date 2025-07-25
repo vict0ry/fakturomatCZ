@@ -11,6 +11,14 @@ Technical preference: Always use AI for intelligent text/product matching instea
 
 ## Recent Changes
 
+### ARES TRANSPARENCY CRITICAL FIX (2025-07-25)
+- ✅ **AI nyní transparentně hlásí ARES ověření** - Uživatelé vidí kdy je firma nalezena v ARES registru
+- ✅ **Zobrazení oficiálních údajů** - AI ukazuje IČO, název a adresu z ARES databáze
+- ✅ **Varování při nenalezení** - Systém upozorní když firma není v ARES registru
+- ✅ **Enhanced invoice creation reporting** - Kompletní informace o zákazníkovi během vytváření faktury
+- ✅ **findOrCreateCustomerWithInfo metoda** - Nová funkce vrací detailní ARES data
+- ✅ **Improved user experience** - Uživatelé už nemusí hádat zda byla firma ověřena
+
 ### AI INTENT RECOGNITION CRITICAL FIX (2025-07-23)
 - ✅ **Intent recognition opraveno** - AI nyní správně rozpoznává záměr uživatele
 - ✅ **Striktní pravidla záměrů** - Analýza hlavního objektu před akcí (zákazník vs faktura)
