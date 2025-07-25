@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { Register } from "./register";
+
 import { Receipt, Eye, EyeOff } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -20,7 +20,6 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export function Login() {
-  const [showRegister, setShowRegister] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [, navigate] = useLocation();
@@ -74,9 +73,7 @@ export function Login() {
     }
   };
 
-  if (showRegister) {
-    return <Register onBack={() => setShowRegister(false)} />;
-  }
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -158,9 +155,9 @@ export function Login() {
               <Button
                 variant="link"
                 className="p-0 h-auto font-normal"
-                onClick={() => setShowRegister(true)}
+                onClick={() => navigate('/register')}
               >
-                Zaregistrujte se
+                Začít 7 dní zdarma
               </Button>
             </p>
           </div>

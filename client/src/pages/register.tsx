@@ -95,8 +95,24 @@ export default function Register() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          personal: personalData,
-          company: companyData,
+          user: {
+            firstName: personalData.firstName,
+            lastName: personalData.lastName,
+            email: personalData.email,
+            password: personalData.password,
+            username: personalData.email // Používáme email jako username
+          },
+          company: {
+            name: companyData.companyName,
+            ico: companyData.ico,
+            dic: companyData.dic,
+            address: companyData.address,
+            city: companyData.city,
+            postalCode: companyData.postalCode,
+            phone: companyData.phone,
+            email: companyData.companyName ? personalData.email : personalData.email,
+            bankAccount: companyData.bankAccount
+          },
           payment: paymentData,
           trialDays: 7
         })
