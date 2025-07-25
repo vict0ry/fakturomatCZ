@@ -89,22 +89,31 @@ export default function Register() {
 
     try {
       // Create account with 7-day trial
-      const response = await apiRequest('POST', '/api/auth/register', {
-        personal: personalData,
-        company: companyData,
-        payment: paymentData,
-        trialDays: 7
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          personal: personalData,
+          company: companyData,
+          payment: paymentData,
+          trialDays: 7
+        })
       });
 
       if (response.ok) {
+        const result = await response.json();
+        console.log('Registration successful:', result);
         toast({
           title: "Účet vytvořen!",
           description: "Máte 7 dní zdarma. Přihlaste se a začněte fakturovat.",
         });
         navigate('/login');
       } else {
-        const error = await response.text();
-        throw new Error(error);
+        const errorText = await response.text();
+        console.error('Registration failed:', response.status, errorText);
+        throw new Error(`Registration failed: ${errorText}`);
       }
     } catch (error) {
       console.error('Registration failed:', error);
