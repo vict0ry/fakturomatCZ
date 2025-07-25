@@ -102,44 +102,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const { personal, company, payment } = req.body;
+      console.log("Registration request body:", JSON.stringify(req.body, null, 2));
+      console.log("Keys in req.body:", Object.keys(req.body));
       
-      // Map frontend company data to backend schema
-      const companyData = {
-        name: company.companyName,
-        ico: company.ico,
-        dic: company.dic,
-        address: company.address,
-        city: company.city,
-        postalCode: company.postalCode,
-        phone: company.phone,
-        bankAccount: company.bankAccount,
-        email: personal.email // Use personal email for company
-      };
+      // Handle both old format (personal,company,payment) and new format (user,company)
+      let userData, companyData;
+      
+      if (req.body.user && req.body.company) {
+        // New format from direct API call
+        console.log("Using new format (user,company)");
+        userData = req.body.user;
+        const company = req.body.company;
+        
+        companyData = {
+          name: company.name,
+          ico: company.ico,
+          dic: company.dic,
+          address: company.address,
+          city: company.city,
+          postalCode: company.postalCode,
+          phone: company.phone,
+          email: company.email || userData.email, // Use company email or fallback to user email
+          country: company.country || "CZ"
+        };
+      } else if (req.body.personal && req.body.company) {
+        // Old format from registration form
+        userData = req.body.personal;
+        companyData = {
+          name: req.body.company.companyName || req.body.company.name,
+          ico: req.body.company.ico,
+          dic: req.body.company.dic,
+          address: req.body.company.address,
+          city: req.body.company.city,
+          postalCode: req.body.company.postalCode,
+          phone: req.body.company.phone,
+          bankAccount: req.body.company.bankAccount,
+          email: req.body.personal.email
+        };
+      } else {
+        throw new Error("Invalid request format - missing user/personal or company data");
+      }
       
       // Validate and create company
       const validatedCompanyData = insertCompanySchema.parse(companyData);
       const newCompany = await storage.createCompany(validatedCompanyData);
       
       // Create user with trial settings
-      const hashedPassword = await bcrypt.hash(personal.password, 10);
+      const hashedPassword = await bcrypt.hash(userData.password, 10);
       const trialEndsAt = new Date();
       trialEndsAt.setDate(trialEndsAt.getDate() + 7); // 7-day trial
       
-      const userData = {
-        username: personal.email, // Use email as username
-        email: personal.email,
+      const userDataForDb = {
+        username: userData.username || userData.email,
+        email: userData.email,
         password: hashedPassword,
-        firstName: personal.firstName,
-        lastName: personal.lastName,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
         companyId: newCompany.id,
-        role: 'user', // Běžný uživatel místo admin
+        role: 'user',
         subscriptionStatus: 'trial',
         trialEndsAt: trialEndsAt,
         subscriptionStartedAt: new Date()
       };
       
-      const validatedUserData = insertUserSchema.parse(userData);
+      const validatedUserData = insertUserSchema.parse(userDataForDb);
       const newUser = await storage.createUser(validatedUserData);
       
       // Create session
