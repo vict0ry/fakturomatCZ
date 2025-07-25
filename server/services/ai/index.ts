@@ -4,7 +4,7 @@ import { InvoiceProcessor } from "./invoice-processor.js";
 import { extractUniversalUpdate } from './universal-update-extractor.js';
 import { UNIVERSAL_AI_SYSTEM_PROMPT } from "./prompts.js";
 import type { UniversalAIResponse, UserContext } from "./types.js";
-import { AI_TOOLS } from "./prompts.js";
+import { AI_TOOLS } from "./prompts";
 
 const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_ENV_VAR || "default_key"
@@ -268,7 +268,7 @@ Kontext: ${context}`;
       // Pokud není v URL, zkusit najít podle invoiceNumber z argumentů
       if (!invoiceId && args.invoiceNumber) {
         const invoices = await userContext.storage.getCompanyInvoices(userContext.companyId);
-        const targetInvoice = invoices.find(inv => inv.invoiceNumber === args.invoiceNumber);
+        const targetInvoice = invoices.find((inv: any) => inv.invoiceNumber === args.invoiceNumber);
         if (targetInvoice) {
           invoiceId = targetInvoice.id;
         }
@@ -435,7 +435,7 @@ Kontext: ${context}`;
               'paid': 'zaplaceno',
               'cancelled': 'zrušeno'
             };
-            responseMessage += `\n• Status změněn na: ${statusMap[args.status] || args.status}`;
+            responseMessage += `\n• Status změněn na: ${(statusMap as any)[args.status] || args.status}`;
           }
           break;
 
@@ -832,7 +832,7 @@ Vytvoř JSON odpověď s těmito insights:
         max_tokens: 1500,
       });
 
-      const insights = JSON.parse(response.choices[0].message.content);
+      const insights = JSON.parse(response.choices[0].message.content || '{}');
       
       return {
         content: `📊 Inteligentní analýza vašeho podnikání
@@ -906,7 +906,7 @@ Vytvoř JSON odhad rizika:
         max_tokens: 800,
       });
 
-      const riskAnalysis = JSON.parse(response.choices[0].message.content);
+      const riskAnalysis = JSON.parse(response.choices[0].message.content || '{}');
       
       return {
         content: `🎯 Analýza platebního rizika zákazníka ${customer.name}
@@ -961,7 +961,7 @@ Vytvoř JSON s optimalizací:
         max_tokens: 1200,
       });
 
-      const optimization = JSON.parse(response.choices[0].message.content);
+      const optimization = JSON.parse(response.choices[0].message.content || '{}');
       
       return {
         content: `📧 Optimalizace email kampaně (${args.campaignType})
@@ -1021,7 +1021,7 @@ Vytvoř JSON report:
         max_tokens: 2000,
       });
 
-      const report = JSON.parse(response.choices[0].message.content);
+      const report = JSON.parse(response.choices[0].message.content || '{}');
       
       return {
         content: `📈 Inteligentní ${args.reportType.toUpperCase()} Report
@@ -1085,7 +1085,7 @@ Vytvoř JSON:
         max_tokens: 800,
       });
 
-      const categorization = JSON.parse(response.choices[0].message.content);
+      const categorization = JSON.parse(response.choices[0].message.content || '{}');
       
       return {
         content: `🏷️ Inteligentní kategorizace nákladu
@@ -1156,7 +1156,7 @@ Vytvoř JSON:
                 max_tokens: 1000
               });
 
-              visionData = JSON.parse(completion.choices[0].message.content);
+              visionData = JSON.parse(completion.choices[0].message.content || '{}');
               console.log('🔍 PDF Vision data extracted:', visionData);
             } catch (error) {
               console.error('PDF Vision API failed:', error);
@@ -1263,7 +1263,8 @@ Pokud nějaký údaj není jasný, použij rozumný odhad nebo null.
 
       try {
         // Try to use Vision API for PDF (if OpenAI supports it) or extract text first
-        const completion = await this.invoiceProcessor.openai.chat.completions.create({
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+        const completion = await openai.chat.completions.create({
           model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
           messages: [
             {
@@ -1290,7 +1291,7 @@ Pokud nějaký údaj není jasný, použij rozumný odhad nebo null.
           max_tokens: 1000
         });
 
-        const extractedData = JSON.parse(completion.choices[0].message.content);
+        const extractedData = JSON.parse(completion.choices[0].message.content || '{}');
         console.log('🔍 Extracted PDF data:', extractedData);
 
         // Create expense with extracted data

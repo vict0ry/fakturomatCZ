@@ -99,7 +99,7 @@ export interface IStorage {
   // Expenses
   getExpense(id: number, companyId: number): Promise<Expense | undefined>;
   getExpenseWithDetails(id: number, companyId: number): Promise<(Expense & { items: ExpenseItem[], supplier: Customer }) | undefined>;
-  createExpense(expense: InsertExpense): Promise<Expense>;
+  createExpense(expense: InsertExpense, companyId?: number): Promise<Expense>;
   updateExpense(id: number, expense: Partial<InsertExpense>, companyId: number): Promise<Expense>;
   getCompanyExpenses(companyId: number, filters?: {
     status?: string;
@@ -742,7 +742,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.subscriptionStatus, 'active'));
 
     const averagePrice = 199;
-    const monthlyRevenue = (paidUsers.count || 0) * averagePrice;
+    const monthlyRevenue = Number(paidUsers.count || 0) * averagePrice;
     const yearlyRevenue = monthlyRevenue * 12;
 
     return {
@@ -817,7 +817,7 @@ export class DatabaseStorage implements IStorage {
       newUsers,
       activeUsers,
       trialUsers,
-      conversionRate: totalUsers > 0 ? ((activeUsers / totalUsers) * 100).toFixed(1) : '0'
+      conversionRate: Number(totalUsers) > 0 ? ((Number(activeUsers) / Number(totalUsers)) * 100).toFixed(1) : '0'
     };
   }
 
@@ -828,7 +828,7 @@ export class DatabaseStorage implements IStorage {
     const activeUsers = activeUsersQuery[0]?.count || 0;
 
     const averagePrice = 199; // Default price
-    const monthlyRevenue = activeUsers * averagePrice;
+    const monthlyRevenue = Number(activeUsers) * averagePrice;
     const yearlyRevenue = monthlyRevenue * 12;
 
     // Calculate previous period for growth
@@ -842,7 +842,7 @@ export class DatabaseStorage implements IStorage {
         lte(users.subscriptionStartedAt, startDate)
       ));
     const prevActiveUsers = prevActiveQuery[0]?.count || 0;
-    const prevRevenue = prevActiveUsers * averagePrice;
+    const prevRevenue = Number(prevActiveUsers) * averagePrice;
 
     const growth = prevRevenue > 0 ? 
       (((monthlyRevenue - prevRevenue) / prevRevenue) * 100).toFixed(1) : 

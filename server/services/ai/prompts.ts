@@ -179,7 +179,7 @@ Stačí mi napsat, co potřebujete, a já to vyřídím!
 
 export const AI_TOOLS = [
   {
-    type: "function",
+    type: "function" as const,
     function: {
       name: "create_invoice",
       description: "Vytvoř novou fakturu na základě poskytnutých údajů z přirozeného textu",
@@ -212,7 +212,7 @@ export const AI_TOOLS = [
     }
   },
   {
-    type: "function",
+    type: "function" as const,
     function: {
       name: "add_item_to_invoice",
       description: "Přidej položku do existující faktury (pouze na stránce editace faktury)",
@@ -230,7 +230,7 @@ export const AI_TOOLS = [
     }
   },
   {
-    type: "function",
+    type: "function" as const,
     function: {
       name: "add_note_to_invoice",
       description: "Přidej poznámku k faktuře",
@@ -244,7 +244,7 @@ export const AI_TOOLS = [
     }
   },
   {
-    type: "function",
+    type: "function" as const,
     function: {
       name: "update_invoice_prices",
       description: "Aktualizuj ceny položek faktury",
@@ -267,7 +267,7 @@ export const AI_TOOLS = [
     }
   },
   {
-    type: "function",
+    type: "function" as const,
     function: {
       name: "update_invoice_universal",
       description: "Univerzální aktualizace faktury (splatnost, poznámky, email, platby, množství, status)",
@@ -287,7 +287,7 @@ export const AI_TOOLS = [
     }
   },
   {
-    type: "function",
+    type: "function" as const,
     function: {
       name: "navigate_to_page",
       description: "Naviguj na konkrétní stránku aplikace",
@@ -308,7 +308,7 @@ export const AI_TOOLS = [
     }
   },
   {
-    type: "function",
+    type: "function" as const,
     function: {
       name: "update_invoice_status",
       description: "Změň stav faktury",
@@ -323,7 +323,7 @@ export const AI_TOOLS = [
     }
   },
   {
-    type: "function", 
+    type: "function" as const, 
     function: {
       name: "create_expense",
       description: "Vytvoř nový náklad/expense na základě poskytnutých údajů",
@@ -345,7 +345,7 @@ export const AI_TOOLS = [
     }
   },
   {
-    type: "function",
+    type: "function" as const,
     function: {
       name: "get_expenses", 
       description: "Zobraz seznam nákladů s možností filtrování",
@@ -366,7 +366,7 @@ export const AI_TOOLS = [
     }
   },
   {
-    type: "function",
+    type: "function" as const,
     function: {
       name: "analyze_business_insights",
       description: "Analyzuj obchodní data a poskytni inteligentní insights a předpovědi",
@@ -383,7 +383,7 @@ export const AI_TOOLS = [
     }
   },
   {
-    type: "function",
+    type: "function" as const,
     function: {
       name: "predict_payment_risk",
       description: "Analyzuj platební riziko konkrétního zákazníka",
@@ -403,7 +403,7 @@ export const AI_TOOLS = [
     }
   },
   {
-    type: "function",
+    type: "function" as const,
     function: {
       name: "optimize_email_campaign",
       description: "Optimalizuj email kampaň pro upomínky a faktury",
@@ -420,7 +420,7 @@ export const AI_TOOLS = [
     }
   },
   {
-    type: "function", 
+    type: "function" as const, 
     function: {
       name: "generate_smart_report",
       description: "Vygeneruj inteligentní report s analýzami a předpovědi",
@@ -442,7 +442,7 @@ export const AI_TOOLS = [
     }
   },
   {
-    type: "function",
+    type: "function" as const,
     function: {
       name: "smart_expense_categorization", 
       description: "Inteligentně kategorizuj náklady a detekuj duplicity",
@@ -462,7 +462,7 @@ export const AI_TOOLS = [
     }
   },
   {
-    type: "function",
+    type: "function" as const,
     function: {
       name: "provide_help",
       description: "Poskytni nápovědu a vysvětlení funkcí systému",
