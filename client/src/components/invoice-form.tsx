@@ -19,6 +19,7 @@ import type { Customer, Invoice, InvoiceItem } from "@/lib/api";
 const invoiceItemSchema = z.object({
   description: z.string().min(1, "Popis je povinný"),
   quantity: z.string().min(1, "Množství je povinné"),
+  unit: z.string().default("ks"),
   unitPrice: z.string().min(1, "Jednotková cena je povinná"),
   vatRate: z.string().default("21"),
   total: z.string().default("0"),
@@ -104,6 +105,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
       items: invoice?.items?.map(item => ({
         description: item.description,
         quantity: item.quantity,
+        unit: (item as any).unit || "ks",
         unitPrice: item.unitPrice,
         vatRate: item.vatRate,
         total: item.total,
@@ -111,6 +113,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
         {
           description: "",
           quantity: "1",
+          unit: "ks",
           unitPrice: "0",
           vatRate: "21",
           total: "0",
@@ -147,8 +150,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
   const selectCustomer = (customer: Customer) => {
     setSelectedCustomer(customer);
     setCustomerSearch(customer.name);
-    // If customer doesn't have ID (from ARES), set a temporary value
-    setValue("customerId", customer.id || -1);
+    setValue("customerId", customer.id);
     clearErrors("customerId"); // Clear validation error
     setShowCustomerResults(false);
   };
@@ -201,14 +203,15 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
     append({
       description: "",
       quantity: "1",
+      unit: "ks",
       unitPrice: "0",
       vatRate: "21",
       total: "0",
     });
   };
 
-  const updateItem = (index: number, field: string, value: any) => {
-    setValue(`items.${index}.${field}`, value);
+  const updateItem = (index: number, field: keyof typeof invoiceItemSchema.shape, value: any) => {
+    setValue(`items.${index}.${field}` as any, value);
   };
 
   const removeItem = (index: number) => {
@@ -238,7 +241,8 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
   };
 
   const handleFormSubmit = (data: InvoiceFormData) => {
-    if (!selectedCustomer) {
+    // For edit mode, don't require customer selection if we already have customerId
+    if (!selectedCustomer && (!invoice || !invoice.customerId)) {
       toast({
         title: "Chyba",
         description: "Musíte vybrat zákazníka.",
@@ -247,14 +251,18 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
       return;
     }
 
-    // For ARES customers without ID, create them first
-    if (!selectedCustomer.id) {
-      // Include customer data in submission
-      onSubmit({
-        ...data,
-        customer: selectedCustomer,
-        customerId: -1 // Flag for new customer
-      });
+    // If editing existing invoice and no new customer selected, use existing data
+    if (invoice && invoice.customerId && !selectedCustomer) {
+      onSubmit(data);
+      return;
+    }
+
+    // For new customers from ARES without ID, create them first
+    if (selectedCustomer && !selectedCustomer.id) {
+      const dataWithCustomer = data as any;
+      dataWithCustomer.customer = selectedCustomer;
+      dataWithCustomer.customerId = -1; // Flag for new customer
+      onSubmit(dataWithCustomer);
     } else {
       onSubmit(data);
     }

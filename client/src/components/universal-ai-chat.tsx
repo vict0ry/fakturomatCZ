@@ -149,26 +149,43 @@ export function UniversalAIChat() {
         queryClient.invalidateQueries({ queryKey: ['/api/analytics'] });
       }
       
-      // Handle refresh_current_page action
-      if (data.action?.type === 'refresh_current_page') {
-        console.log('🔄 AI triggered refresh_current_page');
+      // Handle refresh_current_page action and AI changes
+      if (data.action?.type === 'refresh_current_page' || data.action?.type === 'navigate') {
+        console.log('🔄 AI triggered refresh_current_page or navigation');
         queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
         queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
         queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
         
         const currentInvoiceId = window.location.pathname.match(/\/invoices\/(\d+)/)?.[1];
         if (currentInvoiceId) {
+          console.log('🔄 Refreshing invoice:', currentInvoiceId);
           queryClient.invalidateQueries({ queryKey: ["/api/invoices", parseInt(currentInvoiceId)] });
           queryClient.invalidateQueries({ queryKey: ["/api/invoices", parseInt(currentInvoiceId), "items"] });
           
-          // Multiple waves of refresh to ensure UI updates
+          // Aggressive cache invalidation with multiple waves
           setTimeout(() => {
             queryClient.refetchQueries({ queryKey: ["/api/invoices", parseInt(currentInvoiceId)] });
-          }, 50);
-          setTimeout(() => {
             queryClient.refetchQueries({ queryKey: ["/api/invoices"] });
-          }, 150);
+          }, 100);
+          setTimeout(() => {
+            queryClient.refetchQueries({ queryKey: ["/api/invoices", parseInt(currentInvoiceId)] });
+          }, 300);
+          setTimeout(() => {
+            queryClient.refetchQueries({ queryKey: ["/api/invoices", parseInt(currentInvoiceId)] });
+          }, 600);
         }
+      }
+
+      // Always refresh after AI operations that modify data
+      if (message.includes('poznámku') || message.includes('note') || message.includes('aktualizuj') || message.includes('změň')) {
+        console.log('🔄 AI modified data - triggering UI refresh');
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+          const currentInvoiceId = window.location.pathname.match(/\/invoices\/(\d+)/)?.[1];
+          if (currentInvoiceId) {
+            queryClient.refetchQueries({ queryKey: ["/api/invoices", parseInt(currentInvoiceId)] });
+          }
+        }, 200);
       }
     },
     onError: (error: any) => {
