@@ -23,12 +23,12 @@ export class EmailService {
 
   constructor() {
     // Konfigurace pro doklad.ai doménu
-    this.fromEmail = process.env.SMTP_USER || 'noreply@doklad.ai';
+    this.fromEmail = process.env.SMTP_USER ? `${process.env.SMTP_USER}@doklad.ai` : 'noreply@doklad.ai';
     this.fromName = process.env.SMTP_FROM_NAME || 'Doklad.ai';
 
     const config: EmailConfig = {
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587'),
+      host: process.env.SMTP_HOST || 'localhost',
+      port: parseInt(process.env.SMTP_PORT || '25'),
       secure: process.env.SMTP_PORT === '465',
       auth: {
         user: process.env.SMTP_USER || '',
