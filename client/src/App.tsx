@@ -17,6 +17,7 @@ import ExpensesPage from "@/pages/expenses";
 import ExpenseCreatePage from "@/pages/expense-create";
 import ExpenseDetail from "./pages/expense-detail";
 import ProfilePage from "@/pages/ProfilePage";
+import EmailSettings from "@/pages/EmailSettings";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import Landing from "@/pages/landing";
@@ -85,6 +86,7 @@ function AuthenticatedRouter() {
       <Route path="/expenses" component={ExpensesPage} />
       <Route path="/analytics" component={Analytics} />
       <Route path="/settings" component={SettingsPage} />
+      <Route path="/email-settings" component={EmailSettings} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/dashboard" component={Dashboard} />
       <Route component={NotFound} />

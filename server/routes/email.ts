@@ -172,7 +172,16 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     if (success) {
       res.json({ message: 'Pokud email existuje, byl odeslán odkaz pro obnovení hesla' });
     } else {
-      res.status(500).json({ message: 'Chyba při odesílání emailu' });
+      // Pro development - ukážeme token v odpovědi pokud email nejde odeslat
+      if (process.env.NODE_ENV === 'development') {
+        res.json({ 
+          message: 'SMTP není nakonfigurován. Pro testování použijte tento odkaz:', 
+          resetLink: `http://localhost:5000/reset-password?token=${passwordResetToken}`,
+          info: 'V produkci by byl odkaz odeslán emailem'
+        });
+      } else {
+        res.status(500).json({ message: 'Chyba při odesílání emailu' });
+      }
     }
 
   } catch (error) {

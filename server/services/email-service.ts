@@ -80,7 +80,9 @@ export class EmailService {
 
   async sendPasswordResetEmail(user: any, resetToken: string): Promise<boolean> {
     if (!this.isConfigured()) {
-      console.error('Email service not configured');
+      console.log('🔧 Email service not configured - SMTP credentials needed');
+      console.log('📧 Password reset token generated but email cannot be sent');
+      console.log(`Token for ${user.email}: ${resetToken}`);
       return false;
     }
 
