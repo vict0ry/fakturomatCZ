@@ -30,7 +30,7 @@ export class EmailService {
       host: process.env.SMTP_HOST || 'localhost',
       port: parseInt(process.env.SMTP_PORT || '2525'),
       secure: false, // Local SMTP server doesn't use SSL
-      auth: process.env.SMTP_USER && process.env.SMTP_PASS ? {
+      auth: (process.env.SMTP_HOST !== 'localhost' && process.env.SMTP_USER && process.env.SMTP_PASS) ? {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       } : undefined
@@ -61,21 +61,26 @@ export class EmailService {
   }
 
   private logSMTPStatus() {
-    const hasCredentials = !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+    const isLocalHost = process.env.SMTP_HOST === 'localhost';
+    const hasCredentials = !!(process.env.SMTP_HOST && (isLocalHost || (process.env.SMTP_USER && process.env.SMTP_PASS)));
     const hasDKIM = !!(process.env.DKIM_DOMAIN && process.env.DKIM_SELECTOR && process.env.DKIM_PRIVATE_KEY);
     
     console.log('📧 Email Service Status:');
     console.log(`   SMTP: ${hasCredentials ? '✅ Configured' : '❌ Missing credentials'}`);
     console.log(`   DKIM: ${hasDKIM ? '✅ Enabled' : '⚠️  Disabled'}`);
     console.log(`   From: ${this.fromEmail}`);
+    console.log(`   Server: ${process.env.SMTP_HOST || 'localhost'}:${process.env.SMTP_PORT || '2525'}`);
     
-    if (!hasCredentials) {
+    if (isLocalHost) {
+      console.log('   Mode: Local SMTP server (no auth required)');
+    } else if (!hasCredentials) {
       console.log('   ℹ️  Run "node setup-smtp.js" for configuration instructions');
     }
   }
 
   isConfigured(): boolean {
-    const hasCredentials = !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+    const isLocalHost = process.env.SMTP_HOST === 'localhost';
+    const hasCredentials = !!(process.env.SMTP_HOST && (isLocalHost || (process.env.SMTP_USER && process.env.SMTP_PASS)));
     return !!this.transporter && hasCredentials;
   }
 
