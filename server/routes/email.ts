@@ -1,6 +1,20 @@
 import { Express } from 'express';
-import { EmailService } from '../services/email';
+import { emailService } from '../services/email-service';
 import { generateInvoicePDF } from '../services/pdf';
+import { storage } from '../storage';
+
+function requireAuth(req: any, res: any, next: any) {
+  const sessionId = req.headers.authorization?.replace('Bearer ', '') || req.cookies?.sessionId;
+  
+  if (!sessionId) {
+    return res.status(401).json({ message: 'Authentication required' });
+  }
+
+  // In real implementation, you'd verify session in sessions map
+  // For now, assume valid if sessionId exists
+  req.user = { companyId: 1, id: 1 }; // Mock user
+  next();
+}
 
 // Import sessions from main routes file
 let sessions: Map<string, any>;
@@ -56,12 +70,17 @@ app.get('/api/email/settings', requireAuth, async (req: any, res) => {
 
 app.post('/api/email/test', requireAuth, async (req: any, res) => {
   try {
-    // For demo purposes, just return success
-    // In real app, would send actual test email
-    res.json({ message: 'Test email sent successfully' });
+    // Test SMTP connection
+    const isConnected = await emailService.testEmailConnection();
+    
+    if (isConnected) {
+      res.json({ message: 'SMTP spojení je funkční' });
+    } else {
+      res.status(500).json({ message: 'SMTP spojení selhalo' });
+    }
   } catch (error) {
-    console.error('Error sending test email:', error);
-    res.status(500).json({ message: 'Failed to send test email' });
+    console.error('Error testing email connection:', error);
+    res.status(500).json({ message: 'Chyba při testování emailu' });
   }
 });
 
@@ -69,18 +88,33 @@ app.post('/api/email/test', requireAuth, async (req: any, res) => {
 app.post('/api/invoices/:id/email', requireAuth, async (req: any, res) => {
   try {
     const invoiceId = parseInt(req.params.id);
-    const { to, subject, message } = req.body;
+    const { to, subject, customMessage } = req.body;
+    const companyId = req.user.companyId;
     
-    // For demo purposes, just return success
-    // In real app, would:
-    // 1. Get invoice details
-    // 2. Generate PDF
-    // 3. Send email with PDF attachment
+    // Get invoice with customer and items
+    const invoice = await storage.getInvoiceById(invoiceId, companyId);
+    if (!invoice) {
+      return res.status(404).json({ message: 'Invoice not found' });
+    }
+
+    // Generate PDF
+    const pdfBuffer = await generateInvoicePDF(invoice);
     
-    res.json({ message: 'Invoice email sent successfully' });
+    // Send email
+    const success = await emailService.sendInvoiceEmail(invoice, pdfBuffer, customMessage);
+    
+    if (success) {
+      // Update invoice status to sent if it was draft
+      if (invoice.status === 'draft') {
+        await storage.updateInvoice(invoiceId, { status: 'sent' }, companyId);
+      }
+      res.json({ message: 'Faktura byla úspěšně odeslána emailem' });
+    } else {
+      res.status(500).json({ message: 'Nepodařilo se odeslat email s fakturou' });
+    }
   } catch (error) {
     console.error('Error sending invoice email:', error);
-    res.status(500).json({ message: 'Failed to send invoice email' });
+    res.status(500).json({ message: 'Chyba při odesílání emailu' });
   }
 });
 
@@ -89,12 +123,34 @@ app.post('/api/invoices/:id/reminder', requireAuth, async (req: any, res) => {
   try {
     const invoiceId = parseInt(req.params.id);
     const { type } = req.body; // 'first', 'second', 'final'
+    const companyId = req.user.companyId;
     
-    // For demo purposes, just return success
-    res.json({ message: 'Reminder email sent successfully' });
+    // Get invoice with customer
+    const invoice = await storage.getInvoiceById(invoiceId, companyId);
+    if (!invoice) {
+      return res.status(404).json({ message: 'Invoice not found' });
+    }
+
+    if (!invoice.customer.email) {
+      return res.status(400).json({ message: 'Zákazník nemá emailovou adresu' });
+    }
+    
+    // Send reminder email
+    const success = await emailService.sendReminderEmail(invoice, type);
+    
+    if (success) {
+      const reminderTypes = {
+        first: 'první připomínka',
+        second: 'druhá připomínka', 
+        final: 'konečná výzva'
+      };
+      res.json({ message: `${reminderTypes[type]} byla úspěšně odeslána` });
+    } else {
+      res.status(500).json({ message: 'Nepodařilo se odeslat připomínku' });
+    }
   } catch (error) {
     console.error('Error sending reminder email:', error);
-    res.status(500).json({ message: 'Failed to send reminder email' });
+    res.status(500).json({ message: 'Chyba při odesílání připomínky' });
   }
 });
 

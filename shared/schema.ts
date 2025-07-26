@@ -62,6 +62,11 @@ export const users = pgTable("users", {
   accessLevel: text("access_level").notNull().default("read"), // read, create, accounting, admin
   isActive: boolean("is_active").default(true),
   lastLogin: timestamp("last_login"),
+  // Email functionality
+  emailConfirmed: boolean("email_confirmed").default(false),
+  emailConfirmationToken: text("email_confirmation_token"),
+  passwordResetToken: text("password_reset_token"),
+  passwordResetExpires: timestamp("password_reset_expires"),
   // SaaS subscription fields
   stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id"),

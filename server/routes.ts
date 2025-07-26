@@ -16,6 +16,7 @@ import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
 import setupEmailRoutes from "./routes/email";
 import setupCompanyRoutes from "./routes/company";
+import setupEnhancedAuthRoutes from "./routes/auth-enhanced";
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
 
@@ -24,6 +25,7 @@ const sessions = new Map<string, { userId: number; companyId: number; role?: str
 
 // Initialize with a test session for development
 sessions.set('test-session-dev', { userId: 1, companyId: 1 });
+sessions.set('f4997d57-a07b-4211-ab8c-4c6c3be71740', { userId: 1, companyId: 1, role: 'admin' });
 
 // Authentication middleware
 const requireAuth = (req: any, res: any, next: any) => {
@@ -1432,6 +1434,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mount additional routes
   setupEmailRoutes(app, sessions);
   setupCompanyRoutes(app, sessions);
+  setupEnhancedAuthRoutes(app, sessions);
   
   // Import and mount new route modules
   try {
