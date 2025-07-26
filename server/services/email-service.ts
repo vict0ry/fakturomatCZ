@@ -28,12 +28,12 @@ export class EmailService {
 
     const config: EmailConfig = {
       host: process.env.SMTP_HOST || 'localhost',
-      port: parseInt(process.env.SMTP_PORT || '25'),
-      secure: process.env.SMTP_PORT === '465',
-      auth: {
-        user: process.env.SMTP_USER || '',
-        pass: process.env.SMTP_PASS || '',
-      }
+      port: parseInt(process.env.SMTP_PORT || '2525'),
+      secure: false, // Local SMTP server doesn't use SSL
+      auth: process.env.SMTP_USER && process.env.SMTP_PASS ? {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      } : undefined
     };
 
     // Add DKIM if configured

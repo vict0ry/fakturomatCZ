@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { LocalSMTPServer } from "./services/local-smtp-server.ts";
 
 const app = express();
 
@@ -75,6 +76,14 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
+  // Start local SMTP server on port 2525
+  const smtpServer = new LocalSMTPServer(2525);
+  try {
+    await smtpServer.start();
+  } catch (error) {
+    console.warn('⚠️  Failed to start local SMTP server:', (error as Error).message);
+  }
+
   server.listen({
     port,
     host: "0.0.0.0",
