@@ -98,6 +98,7 @@ export class EmailService {
       console.log('🔧 Email service not configured - SMTP credentials needed');
       console.log('📧 Password reset token generated but email cannot be sent');
       console.log(`Token for ${user.email}: ${resetToken}`);
+      console.log('ℹ️  Run "./configure-production-smtp.sh" to set up real email sending');
       return false;
     }
 
