@@ -3,26 +3,13 @@ import { emailService } from '../services/email-service';
 import { generateInvoicePDF } from '../services/pdf';
 import { storage } from '../storage';
 
-function requireAuth(req: any, res: any, next: any) {
-  const sessionId = req.headers.authorization?.replace('Bearer ', '') || req.cookies?.sessionId;
-  
-  if (!sessionId) {
-    return res.status(401).json({ message: 'Authentication required' });
-  }
-
-  // In real implementation, you'd verify session in sessions map
-  // For now, assume valid if sessionId exists
-  req.user = { companyId: 1, id: 1 }; // Mock user
-  next();
-}
-
 // Import sessions from main routes file
 let sessions: Map<string, any>;
 
 function requireAuth(req: any, res: any, next: any) {
-  const sessionId = req.headers.authorization?.replace('Bearer ', '');
+  const sessionId = req.headers.authorization?.replace('Bearer ', '') || req.cookies?.sessionId;
   if (!sessionId || !sessions.has(sessionId)) {
-    return res.status(401).json({ message: 'Unauthorized' });
+    return res.status(401).json({ message: 'Authentication required' });
   }
   req.user = sessions.get(sessionId);
   next();
@@ -151,6 +138,122 @@ app.post('/api/invoices/:id/reminder', requireAuth, async (req: any, res) => {
   } catch (error) {
     console.error('Error sending reminder email:', error);
     res.status(500).json({ message: 'Chyba při odesílání připomínky' });
+  }
+});
+
+// Password reset request endpoint
+app.post('/api/auth/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: 'Email je povinný' });
+    }
+
+    const user = await storage.getUserByEmail(email);
+    if (!user) {
+      // Don't reveal if email exists for security
+      return res.json({ message: 'Pokud email existuje, byl odeslán odkaz pro obnovení hesla' });
+    }
+
+    // Generate password reset token (expires in 1 hour)
+    const { nanoid } = await import('nanoid');
+    const passwordResetToken = nanoid(32);
+    const passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await storage.updateUser(user.id, {
+      passwordResetToken,
+      passwordResetExpires
+    });
+
+    // Send password reset email
+    const success = await emailService.sendPasswordResetEmail(user, passwordResetToken);
+    
+    if (success) {
+      res.json({ message: 'Pokud email existuje, byl odeslán odkaz pro obnovení hesla' });
+    } else {
+      res.status(500).json({ message: 'Chyba při odesílání emailu' });
+    }
+
+  } catch (error) {
+    console.error('Password reset request error:', error);
+    res.status(500).json({ message: 'Chyba při žádosti o obnovení hesla' });
+  }
+});
+
+// Reset password endpoint
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      return res.status(400).json({ message: 'Token a nové heslo jsou povinné' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'Heslo musí mít alespoň 6 znaků' });
+    }
+
+    // Find user by reset token
+    const user = await storage.getUserByPasswordResetToken(token);
+    if (!user) {
+      return res.status(404).json({ message: 'Neplatný nebo expirovaný token' });
+    }
+
+    // Check if token expired
+    if (user.passwordResetExpires && new Date() > user.passwordResetExpires) {
+      return res.status(400).json({ message: 'Token vypršel, vyžádejte si nový' });
+    }
+
+    // Hash new password
+    const bcrypt = await import('bcryptjs');
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+
+    // Update password and clear reset token
+    await storage.updateUser(user.id, {
+      password: passwordHash,
+      passwordResetToken: null,
+      passwordResetExpires: null
+    });
+
+    res.json({ message: 'Heslo bylo úspěšně změněno' });
+
+  } catch (error) {
+    console.error('Password reset error:', error);
+    res.status(500).json({ message: 'Chyba při obnovování hesla' });
+  }
+});
+
+// Email confirmation endpoint
+app.post('/api/auth/confirm-email', async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ message: 'Token je povinný' });
+    }
+
+    // Find user by confirmation token
+    const user = await storage.getUserByEmailConfirmationToken(token);
+    if (!user) {
+      return res.status(404).json({ message: 'Neplatný nebo expirovaný token' });
+    }
+
+    if (user.emailConfirmed) {
+      return res.status(400).json({ message: 'Email už je potvrzený' });
+    }
+
+    // Confirm email and clear token
+    await storage.updateUser(user.id, {
+      emailConfirmed: true,
+      emailConfirmationToken: null
+    });
+
+    res.json({ message: 'Email byl úspěšně potvrzen! Můžete se přihlásit.' });
+
+  } catch (error) {
+    console.error('Email confirmation error:', error);
+    res.status(500).json({ message: 'Chyba při potvrzování emailu' });
   }
 });
 

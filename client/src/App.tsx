@@ -28,6 +28,8 @@ import { AuthProvider } from "@/contexts/auth-context";
 import { AuthGuard } from "@/components/auth/auth-guard";
 import { useAuth } from "@/hooks/useAuth";
 import PublicInvoicePage from "@/pages/public-invoice";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 
 function PublicRouter() {
   return (
@@ -36,6 +38,8 @@ function PublicRouter() {
         {(params: any) => <PublicInvoicePage token={params.token} />}
       </Route>
       <Route path="/register" component={Register} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route path="/" component={Landing} />
       <Route component={NotFound} />
     </Switch>

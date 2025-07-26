@@ -78,6 +78,82 @@ export class EmailService {
     }
   }
 
+  async sendPasswordResetEmail(user: any, resetToken: string): Promise<boolean> {
+    if (!this.isConfigured()) {
+      console.error('Email service not configured');
+      return false;
+    }
+
+    try {
+      const resetUrl = `${process.env.NODE_ENV === 'production' ? 'https://doklad.ai' : 'http://localhost:5000'}/reset-password?token=${resetToken}`;
+      
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Obnovení hesla - Doklad.ai</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;">Doklad.ai</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Obnovení hesla</p>
+          </div>
+          
+          <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+            <h2 style="color: #333; margin-top: 0;">Ahoj ${user.firstName || user.username}!</h2>
+            
+            <p style="color: #666; line-height: 1.6;">
+              Obdrželi jsme požadavek na obnovení hesla pro váš účet. Pokud jste tento požadavek nevytvořili, můžete tento email ignorovat.
+            </p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${resetUrl}" 
+                 style="background: #ff6b35; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+                Obnovit heslo
+              </a>
+            </div>
+            
+            <p style="color: #666; line-height: 1.6; font-size: 14px;">
+              Pokud tlačítko nefunguje, zkopírujte tento odkaz do prohlížeče:<br>
+              <a href="${resetUrl}" style="color: #ff6b35; word-break: break-all;">${resetUrl}</a>
+            </p>
+            
+            <p style="color: #666; line-height: 1.6; font-size: 14px;">
+              Tento odkaz vyprší za 1 hodinu z bezpečnostních důvodů.
+            </p>
+            
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+            
+            <p style="color: #999; font-size: 12px; text-align: center;">
+              Tento email byl odeslán systémem Doklad.ai<br>
+              Pokud máte problémy, kontaktujte podporu.
+            </p>
+          </div>
+        </body>
+        </html>
+      `;
+
+      await this.transporter!.sendMail({
+        from: `"${this.fromName}" <${this.fromEmail}>`,
+        to: user.email,
+        subject: 'Obnovení hesla - Doklad.ai',
+        html: htmlContent,
+        text: `Ahoj ${user.firstName || user.username}!\n\nObdrželi jsme požadavek na obnovení hesla. Klikněte na tento odkaz pro obnovení: ${resetUrl}\n\nOdkaz vyprší za 1 hodinu.\n\nPokud jste tento požadavek nevytvořili, ignorujte tento email.\n\nDoklad.ai tým`,
+        headers: {
+          'X-Mailer': 'Doklad.ai',
+          'X-Priority': '1',
+        }
+      });
+
+      console.log(`✅ Password reset email sent to ${user.email}`);
+      return true;
+    } catch (error) {
+      console.error('❌ Password reset email error:', error);
+      return false;
+    }
+  }
+
   async sendInvoiceEmail(
     invoice: Invoice & { customer: Customer; items: InvoiceItem[] },
     pdfBuffer: Buffer,

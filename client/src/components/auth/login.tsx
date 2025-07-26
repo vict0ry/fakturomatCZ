@@ -149,7 +149,16 @@ export function Login() {
             </form>
           </Form>
 
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center space-y-2">
+            <p className="text-sm text-gray-600">
+              <Button
+                variant="link"
+                className="p-0 h-auto font-normal text-blue-600 hover:underline"
+                onClick={() => navigate('/forgot-password')}
+              >
+                Zapomenuté heslo?
+              </Button>
+            </p>
             <p className="text-sm text-gray-600">
               Nemáte účet?{" "}
               <Button
