@@ -1,0 +1,104 @@
+X-Mailer: Doklad.ai
+X-Priority: 1
+From: "Doklad.ai" <noreply@doklad.ai>
+To: mail@victoreliot.com
+Subject: =?UTF-8?Q?Obnoven=C3=AD_hesla_-_Doklad=2Eai?=
+Message-ID: <82ef16ff-3508-f701-b7e4-896686e164e2@doklad.ai>
+Date: Sat, 26 Jul 2025 19:51:47 +0000
+MIME-Version: 1.0
+Content-Type: multipart/alternative;
+ boundary="--_NmP-0b2761f45a1f6b79-Part_1"
+
+----_NmP-0b2761f45a1f6b79-Part_1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+Ahoj victor!
+
+Obdr=C5=BEeli jsme po=C5=BEadavek na obnoven=C3=AD hesla. =
+Klikn=C4=9Bte na tento odkaz pro obnoven=C3=AD: http://localhost:5000/reset=
+-password?token=3DBZHNbaePYBNtIuvyC1ksSN6vVXi81FiH
+
+Odkaz vypr=C5=A1=C3=AD za 1 hodinu.
+
+Pokud jste tento po=C5=BEadavek =
+nevytvo=C5=99ili, ignorujte tento email.
+
+Doklad.ai t=C3=BDm
+----_NmP-0b2761f45a1f6b79-Part_1
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset=3D"utf-8">
+          <title>Obnoven=C3=AD hesla - =
+Doklad.ai</title>
+        </head>
+        <body style=3D"font-family: Arial=
+, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style=3D"background: linear-gradient(135deg, #667eea 0%, =
+#764ba2 100%); padding: 30px; text-align: center; color: white; =
+border-radius: 10px 10px 0 0;">
+            <h1 style=3D"margin: 0; =
+font-size: 28px;">Doklad.ai</h1>
+            <p style=3D"margin: 10px 0 0 =
+0; opacity: 0.9;">Obnoven=C3=AD hesla</p>
+          </div>
+         =20
+          <div style=3D"background: #f8f9fa; padding: 30px; border-radius: =
+0 0 10px 10px;">
+            <h2 style=3D"color: #333; margin-top: 0;">Ahoj=
+ victor!</h2>
+           =20
+            <p style=3D"color: #666; =
+line-height: 1.6;">
+              Obdr=C5=BEeli jsme po=C5=BEadavek na =
+obnoven=C3=AD hesla pro v=C3=A1=C5=A1 =C3=BA=C4=8Det. Pokud jste tento =
+po=C5=BEadavek nevytvo=C5=99ili, m=C5=AF=C5=BEete tento email ignorovat.
+            </p>
+           =20
+            <div style=3D"text-align: =
+center; margin: 30px 0;">
+              <a href=3D"http://localhost:5000/re=
+set-password?token=3DBZHNbaePYBNtIuvyC1ksSN6vVXi81FiH"=20
+                 style=3D"background: #ff6b35; color: white; padding: 15px =
+30px; text-decoration: none; border-radius: 5px; font-weight: bold; =
+display: inline-block;">
+                Obnovit heslo
+              </a>
+            </div>
+           =20
+            <p style=3D"color: #666; =
+line-height: 1.6; font-size: 14px;">
+              Pokud tla=C4=8D=C3=ADtko=
+ nefunguje, zkop=C3=ADrujte tento odkaz do prohl=C3=AD=C5=BEe=C4=8De:<br>
+              <a href=3D"http://localhost:5000/reset-password?=
+token=3DBZHNbaePYBNtIuvyC1ksSN6vVXi81FiH" style=3D"color: #ff6b35; =
+word-break: break-all;">http://localhost:5000/reset-password?=
+token=3DBZHNbaePYBNtIuvyC1ksSN6vVXi81FiH</a>
+            </p>
+           =20
+            <p style=3D"color: #666; line-height: 1.6; =
+font-size: 14px;">
+              Tento odkaz vypr=C5=A1=C3=AD za 1 hodinu z=
+ bezpe=C4=8Dnostn=C3=ADch d=C5=AFvod=C5=AF.
+            </p>
+           =20
+            <hr style=3D"border: none; border-top: 1px solid #ddd; margin: =
+30px 0;">
+           =20
+            <p style=3D"color: #999; font-size: =
+12px; text-align: center;">
+              Tento email byl odesl=C3=A1n =
+syst=C3=A9mem Doklad.ai<br>
+              Pokud m=C3=A1te probl=C3=A9my, =
+kontaktujte podporu.
+            </p>
+          </div>
+        </body>
+        </html>
+     =20
+----_NmP-0b2761f45a1f6b79-Part_1--
