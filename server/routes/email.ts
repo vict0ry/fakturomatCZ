@@ -79,7 +79,7 @@ app.post('/api/invoices/:id/email', requireAuth, async (req: any, res) => {
     const companyId = req.user.companyId;
     
     // Get invoice with customer and items
-    const invoice = await storage.getInvoiceById(invoiceId, companyId);
+    const invoice = await storage.getInvoice(invoiceId, companyId);
     if (!invoice) {
       return res.status(404).json({ message: 'Invoice not found' });
     }
@@ -113,7 +113,7 @@ app.post('/api/invoices/:id/reminder', requireAuth, async (req: any, res) => {
     const companyId = req.user.companyId;
     
     // Get invoice with customer
-    const invoice = await storage.getInvoiceById(invoiceId, companyId);
+    const invoice = await storage.getInvoice(invoiceId, companyId);
     if (!invoice) {
       return res.status(404).json({ message: 'Invoice not found' });
     }
@@ -126,7 +126,7 @@ app.post('/api/invoices/:id/reminder', requireAuth, async (req: any, res) => {
     const success = await emailService.sendReminderEmail(invoice, type);
     
     if (success) {
-      const reminderTypes = {
+      const reminderTypes: Record<string, string> = {
         first: 'první připomínka',
         second: 'druhá připomínka', 
         final: 'konečná výzva'
