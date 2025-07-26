@@ -41,7 +41,7 @@ export class EmailService {
       config.dkim = {
         domainName: process.env.DKIM_DOMAIN,
         keySelector: process.env.DKIM_SELECTOR,
-        privateKey: process.env.DKIM_PRIVATE_KEY,
+        privateKey: process.env.DKIM_PRIVATE_KEY.replace(/\\n/g, '\n'), // Handle escaped newlines
       };
     }
 
@@ -55,6 +55,23 @@ export class EmailService {
         rejectUnauthorized: false
       }
     });
+
+    // Log SMTP configuration status
+    this.logSMTPStatus();
+  }
+
+  private logSMTPStatus() {
+    const hasCredentials = !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+    const hasDKIM = !!(process.env.DKIM_DOMAIN && process.env.DKIM_SELECTOR && process.env.DKIM_PRIVATE_KEY);
+    
+    console.log('📧 Email Service Status:');
+    console.log(`   SMTP: ${hasCredentials ? '✅ Configured' : '❌ Missing credentials'}`);
+    console.log(`   DKIM: ${hasDKIM ? '✅ Enabled' : '⚠️  Disabled'}`);
+    console.log(`   From: ${this.fromEmail}`);
+    
+    if (!hasCredentials) {
+      console.log('   ℹ️  Run "node setup-smtp.js" for configuration instructions');
+    }
   }
 
   isConfigured(): boolean {
