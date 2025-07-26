@@ -11,6 +11,15 @@ Technical preference: Always use AI for intelligent text/product matching instea
 
 ## Recent Changes
 
+### MAILCOW INTEGRACE PRO SKUTEČNÉ EMAILY (2025-07-26)
+- ✅ **Mailcow podpora implementována** - PRODUCTION_SMTP_* variables mají prioritu
+- ✅ **Vlastní email server ready** - Kompletní setup guide pro mail.doklad.ai
+- ✅ **Environment variables hierarchie** - Mailcow → SMTP → localhost fallback
+- ✅ **Production email mode** - Skutečné posílání emailů místo lokálního ukládání
+- ✅ **Setup scripty vytvořeny** - configure-mailcow-smtp.sh pro testování
+- ✅ **DNS konfigurace připravena** - A, MX, TXT záznamy pro doklad.ai
+- ✅ **Professional email branding** - noreply@doklad.ai místo localhost
+
 ### EMAIL SYSTÉM DIAGNOSTIKA & ŘEŠENÍ (2025-07-26)
 - ✅ **Email systém kompletně funkční** - Password reset funguje správně
 - ✅ **Lokální SMTP server aktivní** - Všechny emaily se zpracovávají a ukládají

@@ -23,14 +23,23 @@ export class EmailService {
 
   constructor() {
     // Konfigurace pro doklad.ai doménu
-    this.fromEmail = process.env.SMTP_USER ? `${process.env.SMTP_USER}@doklad.ai` : 'noreply@doklad.ai';
+    const hasMailcow = !!(process.env.PRODUCTION_SMTP_HOST && process.env.PRODUCTION_SMTP_USER);
+    
+    if (hasMailcow) {
+      this.fromEmail = process.env.PRODUCTION_SMTP_USER || 'noreply@doklad.ai';
+    } else {
+      this.fromEmail = process.env.SMTP_USER ? `${process.env.SMTP_USER}@doklad.ai` : 'noreply@doklad.ai';
+    }
     this.fromName = process.env.SMTP_FROM_NAME || 'Doklad.ai';
 
     const config: EmailConfig = {
-      host: process.env.SMTP_HOST || 'localhost',
-      port: parseInt(process.env.SMTP_PORT || '2525'),
-      secure: false, // Local SMTP server doesn't use SSL
-      auth: (process.env.SMTP_HOST !== 'localhost' && process.env.SMTP_USER && process.env.SMTP_PASS) ? {
+      host: hasMailcow ? process.env.PRODUCTION_SMTP_HOST! : (process.env.SMTP_HOST || 'localhost'),
+      port: hasMailcow ? parseInt(process.env.PRODUCTION_SMTP_PORT || '587') : parseInt(process.env.SMTP_PORT || '2525'),
+      secure: hasMailcow ? (process.env.PRODUCTION_SMTP_PORT === '465') : false,
+      auth: hasMailcow ? {
+        user: process.env.PRODUCTION_SMTP_USER!,
+        pass: process.env.PRODUCTION_SMTP_PASS!,
+      } : (process.env.SMTP_HOST !== 'localhost' && process.env.SMTP_USER && process.env.SMTP_PASS) ? {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       } : undefined
@@ -61,26 +70,33 @@ export class EmailService {
   }
 
   private logSMTPStatus() {
-    const isLocalHost = process.env.SMTP_HOST === 'localhost';
-    const hasCredentials = !!(process.env.SMTP_HOST && (isLocalHost || (process.env.SMTP_USER && process.env.SMTP_PASS)));
+    const hasMailcow = !!(process.env.PRODUCTION_SMTP_HOST && process.env.PRODUCTION_SMTP_USER && process.env.PRODUCTION_SMTP_PASS);
+    const isLocalHost = !hasMailcow && process.env.SMTP_HOST === 'localhost';
+    const hasCredentials = hasMailcow || !!(process.env.SMTP_HOST && (isLocalHost || (process.env.SMTP_USER && process.env.SMTP_PASS)));
     const hasDKIM = !!(process.env.DKIM_DOMAIN && process.env.DKIM_SELECTOR && process.env.DKIM_PRIVATE_KEY);
     
     console.log('📧 Email Service Status:');
     console.log(`   SMTP: ${hasCredentials ? '✅ Configured' : '❌ Missing credentials'}`);
     console.log(`   DKIM: ${hasDKIM ? '✅ Enabled' : '⚠️  Disabled'}`);
     console.log(`   From: ${this.fromEmail}`);
-    console.log(`   Server: ${process.env.SMTP_HOST || 'localhost'}:${process.env.SMTP_PORT || '2525'}`);
     
-    if (isLocalHost) {
-      console.log('   Mode: Local SMTP server (no auth required)');
-    } else if (!hasCredentials) {
-      console.log('   ℹ️  Run "node setup-smtp.js" for configuration instructions');
+    if (hasMailcow) {
+      console.log(`   Server: ${process.env.PRODUCTION_SMTP_HOST}:${process.env.PRODUCTION_SMTP_PORT || '587'}`);
+      console.log('   Mode: 🐄 Mailcow Production Server');
+    } else {
+      console.log(`   Server: ${process.env.SMTP_HOST || 'localhost'}:${process.env.SMTP_PORT || '2525'}`);
+      if (isLocalHost) {
+        console.log('   Mode: Local SMTP server (no auth required)');
+      } else if (!hasCredentials) {
+        console.log('   ℹ️  Run "node setup-smtp.js" for configuration instructions');
+      }
     }
   }
 
   isConfigured(): boolean {
-    const isLocalHost = process.env.SMTP_HOST === 'localhost';
-    const hasCredentials = !!(process.env.SMTP_HOST && (isLocalHost || (process.env.SMTP_USER && process.env.SMTP_PASS)));
+    const hasMailcow = !!(process.env.PRODUCTION_SMTP_HOST && process.env.PRODUCTION_SMTP_USER && process.env.PRODUCTION_SMTP_PASS);
+    const isLocalHost = !hasMailcow && process.env.SMTP_HOST === 'localhost';
+    const hasCredentials = hasMailcow || !!(process.env.SMTP_HOST && (isLocalHost || (process.env.SMTP_USER && process.env.SMTP_PASS)));
     return !!this.transporter && hasCredentials;
   }
 
