@@ -1,0 +1,33 @@
+From: noreply@doklad.ai
+To: test@example.com
+Subject: SMTP Test - Doklad.ai
+Message-ID: <9f215a41-5170-7f37-529c-a7e98d40823e@doklad.ai>
+Content-Transfer-Encoding: quoted-printable
+Date: Sat, 26 Jul 2025 19:45:55 +0000
+MIME-Version: 1.0
+Content-Type: text/html; charset=utf-8
+
+
+        <div style=3D"font-family: Arial, sans-serif; max-width: 600px; =
+margin: 0 auto;">
+          <h2 style=3D"color: #ff6b35;">Doklad.ai - SMTP =
+Test</h2>
+          <p>Tento email byl =C3=BAsp=C4=9B=C5=A1n=C4=9B =
+odesl=C3=A1n p=C5=99es lok=C3=A1ln=C3=AD SMTP server!</p>
+          <p><strong>Datum:</strong> 26. 7. 2025 19:45:55</p>
+          <p><strong>Server:</strong> localhost:2525</p>
+          <div style=3D"background: #f0f8ff; padding: 15px; border-radius: =
+5px; margin: 20px 0;">
+            <h3>Test Details:</h3>
+            <ul>
+              <li>=E2=9C=85 Connection: Successful</li>
+              <li>=E2=9C=85 Authentication: Not required (local =
+server)</li>
+              <li>=E2=9C=85 Email delivery: Working</li>
+              <li>=E2=9C=85 HTML rendering: Supported</li>
+            </ul>
+          </div>
+          <p>=F0=9F=8E=89 SMTP =
+syst=C3=A9m je pln=C4=9B funk=C4=8Dn=C3=AD!</p>
+        </div>
+     =20

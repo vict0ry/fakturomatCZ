@@ -17,7 +17,7 @@ Technical preference: Always use AI for intelligent text/product matching instea
 - ✅ **DNS konfigurace připravena** - SPF, DKIM a DMARC záznamy v dns-records.md
 - ✅ **Kompletní email systém** - Password reset, konfirmace, faktury, připomínky
 - ✅ **Professional HTML templaty** - Doklad.ai branding ve všech emailech
-- ✅ **Production mód aktivní** - Lokální SMTP server na localhost:25 generovaný ze serveru
+- ✅ **Production mód aktivní** - Lokální SMTP server na localhost:2525 generovaný ze serveru
 - ✅ **SMTP status logging** - Transparentní reportování stavu email služby
 - ✅ **Konfigurační scripty** - setup-smtp.cjs a configure-production-smtp.sh
 - ✅ **Error handling** - Graceful fallback na development mód bez SMTP
