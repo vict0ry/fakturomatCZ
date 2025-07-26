@@ -11,6 +11,17 @@ Technical preference: Always use AI for intelligent text/product matching instea
 
 ## Recent Changes
 
+### EMAIL-BASED PASSWORD RESET IMPLEMENTATION (2025-07-26)
+- ✅ **Kompletní password reset system implementován** - Uživatelé mohou obnovit heslo přes email
+- ✅ **Bezpečnostní tokenizace** - Reset tokeny s 1-hodinovou expirací pro zabezpečení
+- ✅ **React komponenty vytvořeny** - ForgotPassword.tsx a ResetPassword.tsx s profesionálním designem
+- ✅ **Email služba rozšířena** - sendPasswordResetEmail() metoda s HTML templaty
+- ✅ **Databázové úložiště** - passwordResetToken a passwordResetExpires sloupce funkční
+- ✅ **API endpointy** - /api/auth/forgot-password a /api/auth/reset-password plně funkční
+- ✅ **Enhanced login UX** - Přidán "Zapomenuté heslo?" odkaz na přihlašovací stránku
+- ✅ **Public routing** - Password reset stránky dostupné bez autentifikace
+- ✅ **Nodemailer integrace** - Připraveno pro SMTP konfiguraci s DKIM podporou
+
 ### ARES TRANSPARENCY CRITICAL FIX (2025-07-25)
 - ✅ **AI nyní transparentně hlásí ARES ověření** - Uživatelé vidí kdy je firma nalezena v ARES registru
 - ✅ **Zobrazení oficiálních údajů** - AI ukazuje IČO, název a adresu z ARES databáze
