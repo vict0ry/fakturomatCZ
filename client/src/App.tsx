@@ -28,9 +28,8 @@ import Register from "@/pages/register";
 import { Login } from "@/components/auth/login";
 import AdminDashboard from "@/pages/admin/dashboard";
 
-import { AuthProvider } from "@/contexts/auth-context";
+import { AuthProvider, useAuth } from "@/contexts/auth-context";
 import { AuthGuard } from "@/components/auth/auth-guard";
-import { useAuth } from "@/hooks/useAuth";
 import PublicInvoicePage from "@/pages/public-invoice";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
@@ -58,7 +57,7 @@ function AuthenticatedRouter() {
   console.log('AuthenticatedRouter user:', user); // Debug log
   
   // Admin uživatelé mají pouze přístup k admin dashboardu
-  if (user?.user?.role === 'admin') {
+  if (user?.role === 'admin') {
     console.log('Rendering admin routes'); // Debug log
     return (
       <div className="min-h-screen">
@@ -121,9 +120,9 @@ function AppContent() {
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/login" component={Login} />
-      <Route path="/">
+      <Route path="/dashboard">
         {isAuthenticated ? (
-          user?.user?.role === 'admin' ? (
+          user?.role === 'admin' ? (
             <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
               <AdminDashboard />
             </div>
@@ -145,9 +144,9 @@ function AppContent() {
           <Landing />
         )}
       </Route>
-      {isAuthenticated && (
-        <Route path="/dashboard">
-          {user?.user?.role === 'admin' ? (
+      <Route path="/">
+        {isAuthenticated ? (
+          user?.role === 'admin' ? (
             <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
               <AdminDashboard />
             </div>
@@ -164,17 +163,19 @@ function AppContent() {
               </div>
               <BottomAIChat />
             </div>
-          )}
-        </Route>
-      )}
-      {isAuthenticated && user?.user?.role === 'admin' && (
+          )
+        ) : (
+          <Landing />
+        )}
+      </Route>
+      {isAuthenticated && user?.role === 'admin' && (
         <Route path="/admin">
           <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
             <AdminDashboard />
           </div>
         </Route>
       )}
-      {isAuthenticated && user?.user?.role !== 'admin' && (
+      {isAuthenticated && user?.role !== 'admin' && (
         <>
           <Route path="/invoices/:id/edit">
             <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
