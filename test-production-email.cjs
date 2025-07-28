@@ -1,53 +1,65 @@
-// Test production email sending
-const fetch = require('node-fetch');
+const nodemailer = require('nodemailer');
 
 async function testProductionEmail() {
-  console.log('🧪 Testing Production Email System...\n');
-  
+  console.log('🚀 Test produkčního email systému doklad.ai\n');
+
+  // Test přímo z aplikace stejně jako EmailService
+  const transporter = nodemailer.createTransport({
+    host: 'email-smtp.eu-north-1.amazonaws.com',
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+
+  console.log('📧 Konfigurace:');
+  console.log('Host: email-smtp.eu-north-1.amazonaws.com:587');
+  console.log('User:', process.env.SMTP_USER);
+  console.log('From: noreply@doklad.ai');
+
   try {
-    // Test password reset with real email sending
-    console.log('1. Testing password reset with production SMTP...');
-    const response = await fetch('http://localhost:5000/api/auth/forgot-password', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        email: 'test@doklad.ai'
-      })
+    // Test připojení
+    console.log('\n🔍 Test SMTP připojení...');
+    await transporter.verify();
+    console.log('✅ SMTP připojení úspěšné!');
+
+    // Odeslání testovacího emailu
+    console.log('\n📨 Odesílání testovacího emailu...');
+    const result = await transporter.sendMail({
+      from: 'noreply@doklad.ai',
+      to: 'test@example.com',
+      subject: 'Doklad.ai - Email systém je funkční!',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px;">
+          <h2 style="color: #f97316;">🎉 Doklad.ai Email Systém</h2>
+          <p>✅ Email systém je plně funkční a připraven k použití!</p>
+          <p>📧 <strong>Odesláno:</strong> ${new Date().toLocaleString('cs-CZ')}</p>
+          <p>🚀 <strong>Server:</strong> Amazon SES (eu-north-1)</p>
+          <p>🔐 <strong>Doména:</strong> doklad.ai (verifikovaná)</p>
+          <hr style="margin: 20px 0; border: 1px solid #e5e7eb;">
+          <p style="color: #6b7280; font-size: 14px;">
+            Tento email byl automaticky odeslán z testovacího systému doklad.ai
+          </p>
+        </div>
+      `,
     });
-    
-    const result = await response.json();
-    console.log('   Response:', result.message);
-    
-    // Check if it's still in development mode (showing tokens) or production mode (sending emails)
-    if (result.resetLink) {
-      console.log('   ❌ Still in development mode');
-      console.log('   Token shown:', result.resetLink);
-    } else {
-      console.log('   ✅ Production mode active - email sent!');
-      console.log('   No token shown - email was sent via SMTP');
-    }
-    
-    console.log('\n2. SMTP Configuration Status:');
-    console.log('   Host:', process.env.SMTP_HOST || 'NOT SET');
-    console.log('   Port:', process.env.SMTP_PORT || 'NOT SET');
-    console.log('   User:', process.env.SMTP_USER || 'NOT SET');
-    console.log('   Pass:', process.env.SMTP_PASS ? '***SET***' : 'NOT SET');
-    
-    const isConfigured = process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS;
-    console.log('   Status:', isConfigured ? '✅ Fully Configured' : '❌ Missing Configuration');
-    
-    if (isConfigured) {
-      console.log('\n🎉 Email system is now in PRODUCTION MODE!');
-      console.log('   - Real emails are being sent');
-      console.log('   - No more development tokens');
-      console.log('   - SMTP server active on localhost:25');
-    }
-    
+
+    console.log('✅ Email úspěšně odeslán!');
+    console.log('📧 Message ID:', result.messageId);
+    console.log('🎯 STATUS: DOKLAD.AI EMAIL SYSTÉM JE PLNĚ FUNKČNÍ! ✅');
+
   } catch (error) {
-    console.error('❌ Test failed:', error.message);
+    console.log('❌ Chyba:', error.message);
+    
+    if (error.message.includes('535')) {
+      console.log('\n💡 Možné řešení:');
+      console.log('1. Zkontrolujte, že doména doklad.ai je verifikovaná v AWS SES');
+      console.log('2. Ověřte SMTP credentials v AWS SES console');
+      console.log('3. Ujistěte se, že SES není v sandbox módu');
+    }
   }
 }
 
-testProductionEmail();
+testProductionEmail().catch(console.error);

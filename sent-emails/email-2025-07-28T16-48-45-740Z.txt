@@ -1,0 +1,17 @@
+From: noreply@doklad.ai
+To: test@example.com
+Subject: =?UTF-8?Q?Test_z_lok=C3=A1ln=C3=ADho_SMTP_serveru?=
+Message-ID: <786c1a28-f534-bce9-813b-597e86a7c6fe@doklad.ai>
+Content-Transfer-Encoding: quoted-printable
+Date: Mon, 28 Jul 2025 16:48:45 +0000
+MIME-Version: 1.0
+Content-Type: text/html; charset=utf-8
+
+
+        <h2>=F0=9F=8F=A0 Doklad.ai Development Email</h2>
+        <p>=E2=9C=85 Lok=C3=A1ln=C3=AD SMTP server funguje!</p>
+        <p>=F0=9F=93=A7 Odesl=C3=A1no: 28. 7. 2025 16:48:45</p>
+        <p>=F0=9F=94=A7 Mode: Development (localhost:2525)</p>
+        <p>=F0=9F=92=BE Email se ukl=C3=A1d=C3=A1 do sent-emails/ =
+slo=C5=BEky</p>
+     =20

@@ -46,8 +46,8 @@ export class EmailService {
               hasMailcow ? (process.env.PRODUCTION_SMTP_PORT === '465') : 
               false,
       auth: hasAmazonSES ? {
-        user: process.env.AWS_ACCESS_KEY_ID!,
-        pass: process.env.AWS_SECRET_ACCESS_KEY!,
+        user: process.env.SMTP_USER!,
+        pass: process.env.SMTP_PASS!,
       } : hasMailcow ? {
         user: process.env.PRODUCTION_SMTP_USER!,
         pass: process.env.PRODUCTION_SMTP_PASS!,
@@ -95,7 +95,7 @@ export class EmailService {
     
     if (hasAmazonSES) {
       console.log(`   Server: email-smtp.${process.env.AWS_SES_REGION}.amazonaws.com:587`);
-      console.log('   Mode: 📧 Amazon SES Production');
+      console.log('   Mode: 🧪 Amazon SES Development');
     } else if (hasMailcow) {
       console.log(`   Server: ${process.env.PRODUCTION_SMTP_HOST}:${process.env.PRODUCTION_SMTP_PORT || '587'}`);
       console.log('   Mode: 🐄 Mailcow Production Server');

@@ -1,59 +1,44 @@
-import nodemailer from 'nodemailer';
+#!/usr/bin/env node
 
-console.log('🔧 OPRAVA AMAZON SES CREDENTIALS');
-console.log('===============================');
-console.log('');
+import { SESClient, GetIdentityVerificationAttributesCommand } from '@aws-sdk/client-ses';
 
-// Kontrola credentials
-console.log('📋 Aktuální konfigurace:');
-console.log(`   Region: ${process.env.AWS_SES_REGION}`);
-console.log(`   Access Key: ${process.env.AWS_ACCESS_KEY_ID?.substring(0,10)}...`);
-console.log(`   From Email: ${process.env.SES_FROM_EMAIL}`);
-console.log('');
+async function checkSESStatus() {
+  console.log('🔍 Kontrola Amazon SES stavu...\n');
 
-console.log('⚠️  PROBLÉM IDENTIFIKOVÁN:');
-console.log('   535 Authentication Credentials Invalid');
-console.log('');
-console.log('🔍 MOŽNÉ PŘÍČINY:');
-console.log('   1. AWS credentials nejsou pro SMTP (jsou pro API)');
-console.log('   2. Region eu-north-1 nemá SES SMTP podporu');
-console.log('   3. Doména doklad.ai není verified v SES');
-console.log('   4. Account je v sandbox módu');
-console.log('');
+  const sesClient = new SESClient({
+    region: process.env.AWS_SES_REGION || 'eu-north-1',
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    },
+  });
 
-console.log('💡 ŘEŠENÍ:');
-console.log('   1. V AWS Console → SES → Account Dashboard');
-console.log('   2. SMTP Settings → Create SMTP credentials');
-console.log('   3. Použijte SMTP credentials (ne API keys)');
-console.log('   4. Zkuste region eu-west-1 místo eu-north-1');
-console.log('');
+  try {
+    // Zkontrolovat stav verifikace domény
+    const command = new GetIdentityVerificationAttributesCommand({
+      Identities: ['doklad.ai'],
+    });
 
-// Test s eu-west-1
-console.log('🧪 ZKOUŠÍM REGION EU-WEST-1...');
+    const response = await sesClient.send(command);
+    const verificationStatus = response.VerificationAttributes['doklad.ai'];
 
-const transporter = nodemailer.createTransport({
-  host: `email-smtp.eu-west-1.amazonaws.com`,
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.AWS_ACCESS_KEY_ID,
-    pass: process.env.AWS_SECRET_ACCESS_KEY,
-  },
-});
+    console.log('📧 Stav domény doklad.ai:');
+    console.log('Status:', verificationStatus?.VerificationStatus || 'Not Found');
+    console.log('Token:', verificationStatus?.VerificationToken || 'N/A');
 
-transporter.verify((error, success) => {
-  if (error) {
-    console.log('❌ EU-WEST-1 také nefunguje:', error.message);
-    console.log('');
-    console.log('🎯 DOPORUČENÍ:');
-    console.log('   1. Přejděte do AWS Console → Simple Email Service');
-    console.log('   2. Vyberte region EU-WEST-1 (Dublin)');
-    console.log('   3. Verify domain: doklad.ai');
-    console.log('   4. SMTP Settings → Create SMTP credentials');
-    console.log('   5. Nahraďte AWS_ACCESS_KEY_ID a AWS_SECRET_ACCESS_KEY');
-    console.log('   6. Nastavte AWS_SES_REGION=eu-west-1');
-  } else {
-    console.log('✅ EU-WEST-1 region funguje!');
-    console.log('   Změňte AWS_SES_REGION na eu-west-1');
+    if (verificationStatus?.VerificationStatus === 'Success') {
+      console.log('✅ Doména je úspěšně verifikovaná!');
+      console.log('💡 Problem může být v SMTP credentials - možná potřebujete nové vygenerovat.');
+    } else {
+      console.log('❌ Doména ještě není verifikovaná');
+    }
+
+  } catch (error) {
+    console.log('❌ SES API chyba:', error.message);
+    if (error.message.includes('credentials')) {
+      console.log('💡 Zkontrolujte AWS credentials v environment variables');
+    }
   }
-});
+}
+
+checkSESStatus().catch(console.error);
