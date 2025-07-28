@@ -61,7 +61,7 @@ export default function setupEnhancedAuthRoutes(app: Express, sessions: Map<stri
         companyId: company.id,
         username,
         email,
-        passwordHash,
+        password: passwordHash,
         role: 'admin',
         emailConfirmed: false,
         emailConfirmationToken,
@@ -220,7 +220,7 @@ export default function setupEnhancedAuthRoutes(app: Express, sessions: Map<stri
 
       // Update password and clear reset token
       await storage.updateUser(user.id, {
-        passwordHash,
+        password: passwordHash,
         passwordResetToken: null,
         passwordResetExpires: null
       });
@@ -247,7 +247,7 @@ export default function setupEnhancedAuthRoutes(app: Express, sessions: Map<stri
         return res.status(401).json({ message: 'Neplatné přihlašovací údaje' });
       }
 
-      const isValid = await bcrypt.compare(password, user.passwordHash);
+      const isValid = await bcrypt.compare(password, user.password);
       if (!isValid) {
         return res.status(401).json({ message: 'Neplatné přihlašovací údaje' });
       }

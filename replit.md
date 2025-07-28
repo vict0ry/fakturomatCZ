@@ -26,11 +26,13 @@ Technical preference: Always use AI for intelligent text/product matching instea
 ### PASSWORD RESET EMAIL SYSTEM FIXED (2025-07-28)
 - ✅ **SMTP credentials updated** - Correct Amazon SES credentials applied
 - ✅ **Environment variables fixed** - SMTP_USER and SMTP_PASS properly configured
+- ✅ **Database schema updated** - passwordResetToken and passwordResetExpires columns added
 - ✅ **Password reset functional** - Email delivery working without 535 authentication error
-- ✅ **Complete flow tested** - Request password reset → receive email → reset password
+- ✅ **Complete flow tested** - Request password reset → receive email → reset password → login works
+- ✅ **Auth-enhanced.ts fixed** - Corrected passwordHash vs password column references
 - ✅ **Error handling improved** - Proper fallback messaging and token generation
 - ✅ **Anti-spam protection active** - Professional headers prevent spam flagging
-- 🚀 **Status**: Password reset system fully operational
+- 🚀 **Status**: Password reset system fully operational and tested
 
 ### AMAZON SES INTEGRACE AKTIVNÍ (2025-07-28)
 - ✅ **Amazon SES plně funkční** - email-smtp.eu-north-1.amazonaws.com:587 aktivní  
