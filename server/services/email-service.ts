@@ -203,8 +203,11 @@ export class EmailService {
         html: htmlContent,
         text: `Ahoj ${user.firstName || user.username}!\n\nObdrželi jsme požadavek na obnovení hesla. Klikněte na tento odkaz pro obnovení: ${resetUrl}\n\nOdkaz vyprší za 1 hodinu.\n\nPokud jste tento požadavek nevytvořili, ignorujte tento email.\n\nDoklad.ai tým`,
         headers: {
-          'X-Mailer': 'Doklad.ai',
-          'X-Priority': '1',
+          'X-Mailer': 'Doklad.ai Professional v1.0',
+          'X-Priority': '3',
+          'List-Unsubscribe': '<mailto:unsubscribe@doklad.ai>',
+          'X-Entity-Ref-ID': 'password-reset-system',
+          'Message-ID': `<${Date.now()}-${Math.random().toString(36).substr(2, 9)}@doklad.ai>`
         }
       });
 
@@ -272,8 +275,11 @@ export class EmailService {
         subject: 'Potvrzení emailové adresy - Doklad.ai',
         html: htmlContent,
         headers: {
-          'X-Mailer': 'Doklad.ai',
-          'X-Priority': '1',
+          'X-Mailer': 'Doklad.ai Professional v1.0',
+          'X-Priority': '3',
+          'List-Unsubscribe': '<mailto:unsubscribe@doklad.ai>',
+          'X-Entity-Ref-ID': 'email-confirmation-system',
+          'Message-ID': `<${Date.now()}-${Math.random().toString(36).substr(2, 9)}@doklad.ai>`
         }
       });
 
@@ -310,8 +316,12 @@ export class EmailService {
           }
         ],
         headers: {
-          'X-Mailer': 'Doklad.ai',
+          'X-Mailer': 'Doklad.ai Professional v1.0',
+          'X-Priority': '3',
           'X-Invoice-Number': invoice.invoiceNumber,
+          'List-Unsubscribe': '<mailto:unsubscribe@doklad.ai>',
+          'X-Entity-Ref-ID': `invoice-${invoice.invoiceNumber}`,
+          'Message-ID': `<${Date.now()}-${Math.random().toString(36).substr(2, 9)}@doklad.ai>`
         }
       });
 
@@ -444,8 +454,12 @@ export class EmailService {
         subject: reminder.subject,
         html: htmlContent,
         headers: {
-          'X-Mailer': 'Doklad.ai',
+          'X-Mailer': 'Doklad.ai Professional v1.0',
+          'X-Priority': '3',
           'X-Invoice-Number': invoice.invoiceNumber,
+          'List-Unsubscribe': '<mailto:unsubscribe@doklad.ai>',
+          'X-Entity-Ref-ID': `reminder-${invoice.invoiceNumber}`,
+          'Message-ID': `<${Date.now()}-${Math.random().toString(36).substr(2, 9)}@doklad.ai>`
         }
       });
 
