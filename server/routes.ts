@@ -209,27 +209,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/auth/login", async (req, res) => {
-    try {
-      const { username, password } = req.body;
-      
-      const user = await storage.getUserByUsername(username);
-      if (!user || !await bcrypt.compare(password, user.password)) {
-        return res.status(401).json({ message: "Invalid credentials" });
-      }
-      
-      const sessionId = randomUUID();
-      sessions.set(sessionId, { userId: user.id, companyId: user.companyId!, role: user.role });
-      
-      res.json({ 
-        user: { ...user, password: undefined }, 
-        sessionId 
-      });
-    } catch (error) {
-      console.error("Login error:", error);
-      res.status(500).json({ message: "Login failed" });
-    }
-  });
+  // Login route moved to auth-enhanced.ts for password reset functionality
+  // app.post("/api/auth/login", async (req, res) => {
+  //   try {
+  //     const { username, password } = req.body;
+  //     
+  //     const user = await storage.getUserByUsername(username);
+  //     if (!user || !await bcrypt.compare(password, user.password)) {
+  //       return res.status(401).json({ message: "Invalid credentials" });
+  //     }
+  //     
+  //     const sessionId = randomUUID();
+  //     sessions.set(sessionId, { userId: user.id, companyId: user.companyId!, role: user.role });
+  //     
+  //     res.json({ 
+  //       user: { ...user, password: undefined }, 
+  //       sessionId 
+  //     });
+  //   } catch (error) {
+  //     console.error("Login error:", error);
+  //     res.status(500).json({ message: "Login failed" });
+  //   }
+  // });
 
   app.get("/api/auth/validate", requireAuth, async (req: any, res) => {
     try {

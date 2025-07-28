@@ -181,9 +181,19 @@ export default function setupEnhancedAuthRoutes(app: Express, sessions: Map<stri
       });
 
       // Send password reset email
-      await emailService.sendPasswordResetEmail(user, passwordResetToken);
-
-      res.json({ message: 'Pokud email existuje, byl odeslán odkaz pro obnovení hesla' });
+      try {
+        await emailService.sendPasswordResetEmail(user, passwordResetToken);
+        console.log(`✅ Password reset email sent to ${user.email}`);
+        res.json({ message: 'Pokud email existuje, byl odeslán odkaz pro obnovení hesla' });
+      } catch (emailError) {
+        console.log('❌ Password reset email error:', emailError.message);
+        // Provide development fallback with reset link
+        res.json({ 
+          message: 'SMTP není nakonfigurován. Pro testování použijte tento odkaz:',
+          resetLink: `http://localhost:5000/reset-password?token=${passwordResetToken}`,
+          info: 'V produkci by byl odkaz odeslán emailem'
+        });
+      }
 
     } catch (error) {
       console.error('Password reset request error:', error);
@@ -242,12 +252,22 @@ export default function setupEnhancedAuthRoutes(app: Express, sessions: Map<stri
         return res.status(400).json({ message: 'Uživatelské jméno a heslo jsou povinné' });
       }
 
-      const user = await storage.getUserByUsername(username);
+      // Try both username and email lookup
+      let user = await storage.getUserByUsername(username);
       if (!user) {
+        user = await storage.getUserByEmail(username);
+      }
+      
+      if (!user) {
+        console.log('❌ User not found for:', username);
         return res.status(401).json({ message: 'Neplatné přihlašovací údaje' });
       }
 
+      console.log('✅ User found:', user.email, 'Password hash length:', user.password?.length);
+      
       const isValid = await bcrypt.compare(password, user.password);
+      console.log('🔑 Password comparison result:', isValid);
+      
       if (!isValid) {
         return res.status(401).json({ message: 'Neplatné přihlašovací údaje' });
       }
@@ -258,7 +278,7 @@ export default function setupEnhancedAuthRoutes(app: Express, sessions: Map<stri
       }
 
       // Update last login
-      await storage.updateUser(user.id, { lastLoginAt: new Date() });
+      await storage.updateUser(user.id, { lastLogin: new Date() });
 
       // Create session
       const sessionId = nanoid();
