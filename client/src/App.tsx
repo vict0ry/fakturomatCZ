@@ -29,7 +29,6 @@ import { Login } from "@/components/auth/login";
 import AdminDashboard from "@/pages/admin/dashboard";
 
 import { AuthProvider, useAuth } from "@/contexts/auth-context";
-import { AuthGuard } from "@/components/auth/auth-guard";
 import PublicInvoicePage from "@/pages/public-invoice";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
@@ -43,6 +42,7 @@ function PublicRouter() {
       <Route path="/blog/:id" component={BlogPostPage} />
       <Route path="/blog" component={BlogPage} />
       <Route path="/register" component={Register} />
+      <Route path="/login" component={Login} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/" component={Landing} />
@@ -54,11 +54,8 @@ function PublicRouter() {
 function AuthenticatedRouter() {
   const { user } = useAuth();
   
-  console.log('AuthenticatedRouter user:', user); // Debug log
-  
   // Admin uživatelé mají pouze přístup k admin dashboardu
   if (user?.role === 'admin') {
-    console.log('Rendering admin routes'); // Debug log
     return (
       <div className="min-h-screen">
         <Switch>
@@ -92,14 +89,14 @@ function AuthenticatedRouter() {
       <Route path="/settings" component={SettingsPage} />
       <Route path="/email-settings" component={EmailSettings} />
       <Route path="/profile" component={ProfilePage} />
-      <Route path="/dashboard" component={Dashboard} />
+      <Route path="/bank-accounts" component={BankAccountsPage} />
       <Route component={NotFound} />
     </Switch>
   );
 }
 
 function AppContent() {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   
   if (isLoading) {
     return (
@@ -109,251 +106,24 @@ function AppContent() {
     );
   }
 
-  return (
-    <Switch>
-      <Route path="/public/invoice/:token">
-        {(params: any) => <PublicInvoicePage token={params.token} />}
-      </Route>
-      <Route path="/blog/:id" component={BlogPostPage} />
-      <Route path="/blog" component={BlogPage} />
-      <Route path="/register" component={Register} />
-      <Route path="/forgot-password" component={ForgotPassword} />
-      <Route path="/reset-password" component={ResetPassword} />
-      <Route path="/login" component={Login} />
-      <Route path="/dashboard">
-        {isAuthenticated ? (
-          user?.role === 'admin' ? (
-            <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
-              <AdminDashboard />
-            </div>
-          ) : (
-            <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
-              <Header />
-              <div className="flex">
-                <Sidebar />
-                <main className="flex-1 overflow-hidden">
-                  <div className="h-screen overflow-y-auto pb-20">
-                    <Dashboard />
-                  </div>
-                </main>
-              </div>
-              <BottomAIChat />
-            </div>
-          )
-        ) : (
-          <Landing />
-        )}
-      </Route>
-      <Route path="/">
-        {isAuthenticated ? (
-          user?.role === 'admin' ? (
-            <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
-              <AdminDashboard />
-            </div>
-          ) : (
-            <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
-              <Header />
-              <div className="flex">
-                <Sidebar />
-                <main className="flex-1 overflow-hidden">
-                  <div className="h-screen overflow-y-auto pb-20">
-                    <Dashboard />
-                  </div>
-                </main>
-              </div>
-              <BottomAIChat />
-            </div>
-          )
-        ) : (
-          <Landing />
-        )}
-      </Route>
-      {isAuthenticated && user?.role === 'admin' && (
-        <Route path="/admin">
-          <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
-            <AdminDashboard />
+  // Pokud je uživatel přihlášený, zobrazí autentifikované routes
+  if (isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <Header />
+        <Sidebar />
+        <main className="lg:ml-72 min-h-screen">
+          <div className="px-4 py-8 lg:px-8">
+            <AuthenticatedRouter />
           </div>
-        </Route>
-      )}
-      {isAuthenticated && user?.role !== 'admin' && (
-        <>
-          <Route path="/invoices/:id/edit">
-            <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
-              <Header />
-              <div className="flex">
-                <Sidebar />
-                <main className="flex-1 overflow-hidden">
-                  <div className="h-screen overflow-y-auto pb-20">
-                    <InvoiceEdit />
-                  </div>
-                </main>
-              </div>
-              <BottomAIChat />
-            </div>
-          </Route>
-          <Route path="/invoices/:id">
-            <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
-              <Header />
-              <div className="flex">
-                <Sidebar />
-                <main className="flex-1 overflow-hidden">
-                  <div className="h-screen overflow-y-auto pb-20">
-                    <InvoiceDetail />
-                  </div>
-                </main>
-              </div>
-              <BottomAIChat />
-            </div>
-          </Route>
-          <Route path="/invoices">
-            <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
-              <Header />
-              <div className="flex">
-                <Sidebar />
-                <main className="flex-1 overflow-hidden">
-                  <div className="h-screen overflow-y-auto pb-20">
-                    <Invoices />
-                  </div>
-                </main>
-              </div>
-              <BottomAIChat />
-            </div>
-          </Route>
-          <Route path="/customers">
-            <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
-              <Header />
-              <div className="flex">
-                <Sidebar />
-                <main className="flex-1 overflow-hidden">
-                  <div className="h-screen overflow-y-auto pb-20">
-                    <Customers />
-                  </div>
-                </main>
-              </div>
-              <BottomAIChat />
-            </div>
-          </Route>
-          <Route path="/expenses/new">
-            <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
-              <Header />
-              <div className="flex">
-                <Sidebar />
-                <main className="flex-1 overflow-hidden">
-                  <div className="h-screen overflow-y-auto pb-20">
-                    <ExpenseCreatePage />
-                  </div>
-                </main>
-              </div>
-              <BottomAIChat />
-            </div>
-          </Route>
-          <Route path="/expenses/:id/edit">
-            {(params: any) => (
-              <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
-                <Header />
-                <div className="flex">
-                  <Sidebar />
-                  <main className="flex-1 overflow-hidden">
-                    <div className="h-screen overflow-y-auto pb-20">
-                      <ExpenseCreatePage key={`edit-${params.id}`} id={params.id} />
-                    </div>
-                  </main>
-                </div>
-                <BottomAIChat />
-              </div>
-            )}
-          </Route>
-          <Route path="/expenses/:id">
-            {(params: any) => (
-              <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
-                <Header />
-                <div className="flex">
-                  <Sidebar />
-                  <main className="flex-1 overflow-hidden">
-                    <div className="h-screen overflow-y-auto pb-20">
-                      <ExpenseDetail key={`detail-${params.id}`} expenseId={parseInt(params.id)} />
-                    </div>
-                  </main>
-                </div>
-                <BottomAIChat />
-              </div>
-            )}
-          </Route>
-          <Route path="/expenses">
-            <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
-              <Header />
-              <div className="flex">
-                <Sidebar />
-                <main className="flex-1 overflow-hidden">
-                  <div className="h-screen overflow-y-auto pb-20">
-                    <ExpensesPage />
-                  </div>
-                </main>
-              </div>
-              <BottomAIChat />
-            </div>
-          </Route>
-          <Route path="/analytics">
-            <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
-              <Header />
-              <div className="flex">
-                <Sidebar />
-                <main className="flex-1 overflow-hidden">
-                  <div className="h-screen overflow-y-auto pb-20">
-                    <Analytics />
-                  </div>
-                </main>
-              </div>
-              <BottomAIChat />
-            </div>
-          </Route>
-          <Route path="/settings">
-            <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
-              <Header />
-              <div className="flex">
-                <Sidebar />
-                <main className="flex-1 overflow-hidden">
-                  <div className="h-screen overflow-y-auto pb-20">
-                    <SettingsPage />
-                  </div>
-                </main>
-              </div>
-              <BottomAIChat />
-            </div>
-          </Route>
-          <Route path="/profile">
-            <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
-              <Header />
-              <div className="flex">
-                <Sidebar />
-                <main className="flex-1 overflow-hidden">
-                  <div className="h-screen overflow-y-auto pb-20">
-                    <ProfilePage />
-                  </div>
-                </main>
-              </div>
-              <BottomAIChat />
-            </div>
-          </Route>
-          <Route path="/bank-accounts">
-            <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
-              <Header />
-              <div className="flex">
-                <Sidebar />
-                <main className="flex-1 overflow-hidden">
-                  <div className="h-screen overflow-y-auto pb-20">
-                    <BankAccountsPage />
-                  </div>
-                </main>
-              </div>
-              <BottomAIChat />
-            </div>
-          </Route>
-        </>
-      )}
-      <Route component={NotFound} />
-    </Switch>
-  );
+        </main>
+        <BottomAIChat />
+      </div>
+    );
+  }
+
+  // Pokud není přihlášený, zobrazí veřejné routes
+  return <PublicRouter />;
 }
 
 function App() {
