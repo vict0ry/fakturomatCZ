@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/auth-context";
 
 import { Receipt, Eye, EyeOff } from "lucide-react";
 import { useLocation } from "wouter";
@@ -33,6 +33,8 @@ export function Login() {
     },
   });
 
+  const { login } = useAuth();
+
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
@@ -51,17 +53,16 @@ export function Login() {
 
       const result = await response.json();
       
-      // Uložení session do localStorage
-      localStorage.setItem('sessionId', result.sessionId);
-      localStorage.setItem('user', JSON.stringify(result.user));
+      // Použití auth context pro login
+      login(result.user, result.sessionId);
       
       toast({
         title: "Úspěšně přihlášen",
         description: `Vítejte zpět, ${result.user.firstName}!`,
       });
       
-      // Přesměrování na dashboard s force refresh pro správné načtení
-      window.location.href = '/dashboard';
+      // Přesměrování na dashboard
+      navigate('/dashboard');
     } catch (error: any) {
       toast({
         title: "Chyba při přihlášení",
