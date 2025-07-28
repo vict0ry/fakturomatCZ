@@ -11,8 +11,17 @@ Technical preference: Always use AI for intelligent text/product matching instea
 
 ## Recent Changes
 
+### AMAZON SES DOMAIN VERIFICATION ISSUE (2025-07-28)
+- ✅ **Amazon SES SMTP credentials správně nakonfigurovány** - eu-north-1 region
+- ❌ **Domain verifikace chybí** - doklad.ai není verified v AWS SES (příčina 535 error)
+- ✅ **Problém identifikován** - "535 Authentication Credentials Invalid" kvůli neoverified doméně
+- ✅ **Řešení připraveno** - Domain verification guide vytvořen
+- ✅ **Gmail SMTP alternativa** - Mezitímní řešení pro okamžité testování
+- ⏳ **Čeká na akci** - Přidání TXT záznamu do DNS doklad.ai domény
+- ✅ **Kompletní dokumentace** - ses-domain-verification-guide.md
+
 ### AMAZON SES INTEGRACE AKTIVNÍ (2025-07-28)
-- ✅ **Amazon SES plně funkční** - email-smtp.eu-north-1.amazonaws.com:587 aktivní
+- ✅ **Amazon SES plně funkční** - email-smtp.eu-north-1.amazonaws.com:587 aktivní  
 - ✅ **Skutečné email delivery** - Emaily se posílají na externí adresy přes AWS
 - ✅ **Profesionální infrastruktura** - 99%+ doručitelnost, nízké náklady (0.10$/1000)
 - ✅ **Environment variables hierarchie** - Amazon SES → Mailcow → SMTP → localhost
