@@ -64,7 +64,7 @@ export function Header() {
                   <User className="h-4 w-4 text-neutral-600" />
                 </div>
                 <span className="hidden sm:block text-sm font-medium text-neutral-700">
-                  {user ? `${user.firstName} ${user.lastName}` : 'Uživatel'}
+                  {user ? (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.username || user.email) : 'Uživatel'}
                 </span>
                 <ChevronDown className="h-4 w-4 text-neutral-400" />
               </Button>
