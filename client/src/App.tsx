@@ -16,6 +16,7 @@ import SettingsPage from "@/pages/settings";
 import ExpensesPage from "@/pages/expenses";
 import ExpenseCreatePage from "@/pages/expense-create";
 import ExpenseDetail from "./pages/expense-detail";
+import BankAccountsPage from "@/pages/bank-accounts";
 import ProfilePage from "@/pages/ProfilePage";
 import EmailSettings from "@/pages/EmailSettings";
 import { Sidebar } from "@/components/layout/sidebar";
@@ -321,6 +322,20 @@ function AppContent() {
                 <main className="flex-1 overflow-hidden">
                   <div className="h-screen overflow-y-auto pb-20">
                     <ProfilePage />
+                  </div>
+                </main>
+              </div>
+              <BottomAIChat />
+            </div>
+          </Route>
+          <Route path="/bank-accounts">
+            <div className="min-h-screen bg-neutral-50 dark:bg-gray-900">
+              <Header />
+              <div className="flex">
+                <Sidebar />
+                <main className="flex-1 overflow-hidden">
+                  <div className="h-screen overflow-y-auto pb-20">
+                    <BankAccountsPage />
                   </div>
                 </main>
               </div>

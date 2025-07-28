@@ -1,0 +1,2 @@
+  // Bank accounts routes
+  app.use('/api/bank-accounts', (await import('./routes/bank-accounts.js')).default);

@@ -14,7 +14,8 @@ import {
   TrendingUp,
   ChevronRight,
   Menu,
-  User
+  User,
+  Building2
 } from "lucide-react";
 
 interface SidebarProps {
@@ -56,6 +57,12 @@ export function Sidebar({ className }: SidebarProps) {
       href: "/analytics",
       icon: PieChart,
       current: location === "/analytics",
+    },
+    {
+      name: "Bankovní účty",
+      href: "/bank-accounts",
+      icon: Building2,
+      current: location === "/bank-accounts",
     },
     {
       name: "Profil",

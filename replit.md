@@ -11,6 +11,18 @@ Technical preference: Always use AI for intelligent text/product matching instea
 
 ## Recent Changes
 
+### COMPREHENSIVE PAYMENT MATCHING SYSTEM IMPLEMENTED (2025-07-28)
+- ✅ **Kompletní databázové schéma** - bank_accounts a payment_matches tabulky vytvořeny
+- ✅ **Backend API služby** - BankAccountService s CRUD operacemi a Mailcow integrací
+- ✅ **RESTful API endpointy** - /api/bank-accounts s autentifikací a validací
+- ✅ **React UI komponenta** - Kompletní stránka pro správu bankovních účtů
+- ✅ **Mailcow integrace** - Automatické vytváření dedikovaných emailů pro párování
+- ✅ **Frontend routing** - Integrace do App.tsx a Sidebar navigace
+- ✅ **Bezpečnostní funkce** - Generování bezpečných hesel a unikátních tokenů
+- ✅ **Professional UX** - Password visibility toggle, copy-to-clipboard, status indikátory
+- ⚠️ **API routing issue** - Endpointy vracejí HTML místo JSON (vyžaduje debugging)
+- 📋 **Připraveno pro další vývoj** - Email parsing a automatické párování algoritmus
+
 ### AMAZON SES DOMAIN VERIFICATION ISSUE (2025-07-28)
 - ✅ **Amazon SES SMTP credentials správně nakonfigurovány** - eu-north-1 region
 - ❌ **Domain verifikace chybí** - doklad.ai není verified v AWS SES (příčina 535 error)

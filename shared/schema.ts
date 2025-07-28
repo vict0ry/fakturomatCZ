@@ -17,6 +17,9 @@ export const companies = pgTable("companies", {
   website: text("website"),
   bankAccount: text("bank_account"),
   iban: text("iban"),
+  // Payment matching settings
+  enablePaymentMatching: boolean("enable_payment_matching").default(false),
+  paymentMatchingProvider: text("payment_matching_provider").default("mailcow"), // mailcow, amazon_ses, gmail
   // Reminder settings
   reminderIntervals: json("reminder_intervals").default([7, 14, 30]), // Days after due date
   enableReminders: boolean("enable_reminders").default(true),
@@ -473,3 +476,91 @@ export type AdminSettings = typeof adminSettings.$inferSelect;
 export type InsertAdminSettings = z.infer<typeof insertAdminSettingsSchema>;
 export type SystemStats = typeof systemStats.$inferSelect;
 export type InsertSystemStats = z.infer<typeof insertSystemStatsSchema>;
+
+// Bank accounts for payment matching
+export const bankAccounts = pgTable("bank_accounts", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").references(() => companies.id),
+  name: text("name").notNull(), // e.g., "Hlavní účet CZK", "EUR účet"
+  accountNumber: text("account_number").notNull(), // e.g., "219819-2602094613/2010"
+  iban: text("iban"), // CZ9320100000002602094613
+  swift: text("swift"), // FIOBCZPPXXX
+  currency: text("currency").notNull().default("CZK"),
+  bankName: text("bank_name").notNull(), // "Fio banka", "Česká spořitelna"
+  bankCode: text("bank_code"), // 2010, 0800
+  
+  // Payment matching configuration
+  enablePaymentMatching: boolean("enable_payment_matching").default(false),
+  enableOutgoingPaymentMatching: boolean("enable_outgoing_payment_matching").default(false),
+  enableBulkMatching: boolean("enable_bulk_matching").default(false),
+  
+  // Email settings for payment data
+  paymentEmail: text("payment_email"), // bank.219819.b7a9415jfb@doklad.ai
+  paymentEmailPassword: text("payment_email_password"), // Generated password
+  emailToken: text("email_token"), // Unique token for email generation
+  
+  // Last processed payment date
+  lastProcessedPayment: timestamp("last_processed_payment"),
+  
+  // Display in overview
+  displayInOverview: boolean("display_in_overview").default(true),
+  
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Payment matching records
+export const paymentMatches = pgTable("payment_matches", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").references(() => companies.id),
+  bankAccountId: integer("bank_account_id").references(() => bankAccounts.id),
+  invoiceId: integer("invoice_id").references(() => invoices.id),
+  
+  // Payment details from bank
+  paymentAmount: decimal("payment_amount", { precision: 10, scale: 2 }).notNull(),
+  paymentDate: timestamp("payment_date").notNull(),
+  variableSymbol: text("variable_symbol"),
+  constantSymbol: text("constant_symbol"),
+  specificSymbol: text("specific_symbol"),
+  counterpartyAccount: text("counterparty_account"),
+  counterpartyName: text("counterparty_name"),
+  paymentReference: text("payment_reference"),
+  bankReference: text("bank_reference"),
+  
+  // Matching details
+  matchType: text("match_type").notNull(), // automatic, manual, partial
+  matchConfidence: decimal("match_confidence", { precision: 5, scale: 2 }), // 0.00 - 100.00
+  matchedBy: integer("matched_by").references(() => users.id),
+  matchedAt: timestamp("matched_at").notNull().defaultNow(),
+  
+  // Status
+  status: text("status").notNull().default("matched"), // matched, disputed, cancelled
+  notes: text("notes"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Bank accounts relations
+export const bankAccountsRelations = relations(bankAccounts, ({ one, many }) => ({
+  company: one(companies, { fields: [bankAccounts.companyId], references: [companies.id] }),
+  paymentMatches: many(paymentMatches),
+}));
+
+// Payment matches relations
+export const paymentMatchesRelations = relations(paymentMatches, ({ one }) => ({
+  company: one(companies, { fields: [paymentMatches.companyId], references: [companies.id] }),
+  bankAccount: one(bankAccounts, { fields: [paymentMatches.bankAccountId], references: [bankAccounts.id] }),
+  invoice: one(invoices, { fields: [paymentMatches.invoiceId], references: [invoices.id] }),
+  matchedByUser: one(users, { fields: [paymentMatches.matchedBy], references: [users.id] }),
+}));
+
+// Bank account schemas and types
+export const insertBankAccountSchema = createInsertSchema(bankAccounts);
+export const insertPaymentMatchSchema = createInsertSchema(paymentMatches);
+
+export type BankAccount = typeof bankAccounts.$inferSelect;
+export type PaymentMatch = typeof paymentMatches.$inferSelect;
+export type InsertBankAccount = z.infer<typeof insertBankAccountSchema>;
+export type InsertPaymentMatch = z.infer<typeof insertPaymentMatchSchema>;

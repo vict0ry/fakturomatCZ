@@ -1436,6 +1436,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupCompanyRoutes(app, sessions);
   setupEnhancedAuthRoutes(app, sessions);
   
+  // Bank accounts routes
+  const bankAccountRoutes = (await import('./routes/bank-accounts.js')).default;
+  app.use('/api/bank-accounts', bankAccountRoutes);
+  
   // Import and mount new route modules
   try {
     const chatRoutes = (await import("./routes/chat")).default;
