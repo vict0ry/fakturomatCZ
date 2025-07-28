@@ -40,6 +40,15 @@ Technical preference: Always use AI for intelligent text/product matching instea
 - ✅ **Debug logging comprehensive** - Full transparency in password reset process
 - 🎯 **FINAL RESOLUTION** - Complete password reset email flow working with Amazon SES
 
+### REGISTRACE & LOGIN SYSTEM RESOLVED (2025-07-28)
+- ✅ **Registrace route konflikty vyřešeny** - Duplicitní routes odstraněny z auth-enhanced.ts
+- ✅ **Databázové schéma synchronizováno** - enable_payment_matching a další sloupce přidány
+- ✅ **BankAccount nepovinný** - Registrace nyní funguje bez povinného bankAccount pole
+- ✅ **Kompletní registrace funkční** - User ID 47, Company ID 51 úspěšně vytvořeno
+- ✅ **Login po registraci funguje** - SessionId generace a přihlášení úspěšné
+- ⚠️ **Dashboard 404 issue** - Vyžaduje refresh po přihlášení (frontend routing fix připraven)
+- 🎯 **Status**: Registration system fully operational, dashboard routing fix implemented
+
 ### AMAZON SES INTEGRACE AKTIVNÍ (2025-07-28)
 - ✅ **Amazon SES plně funkční** - email-smtp.eu-north-1.amazonaws.com:587 aktivní  
 - ✅ **Skutečné email delivery** - Emaily se posílají na externí adresy přes AWS

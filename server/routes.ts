@@ -140,8 +140,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           address: req.body.company.address,
           city: req.body.company.city,
           postalCode: req.body.company.postalCode,
-          phone: req.body.company.phone,
-          bankAccount: req.body.company.bankAccount,
+          phone: req.body.company.phone || '',
+          bankAccount: req.body.company.bankAccount || '', // Optional field
           email: req.body.personal.email
         };
       } else {

@@ -10,9 +10,30 @@ export default function setupEnhancedAuthRoutes(app: Express) {
   // Use the same sessions Map as in main routes
   const sessions = new Map<string, { userId: number; companyId: number; role?: string; username?: string; email?: string; emailConfirmed?: boolean; loginTime?: Date }>();
 
-  // Register route is handled in main routes.ts to avoid conflicts
+  // Register route is handled in main routes.ts - this is commented out to avoid conflicts
+  /*
+  app.post('/api/auth/register', async (req, res) => {
+    // This registration logic is now in routes.ts to avoid conflicts
+  });
+  */
+      } catch (emailError) {
+        console.error('❌ Failed to send confirmation email:', emailError);
+        // Don't fail registration if email fails, user can request new confirmation
+      }
 
-  // Email confirmation route
+      res.status(201).json({
+        message: 'Registrace úspěšná! Zkontrolujte si email pro potvrzení účtu.',
+        userId: user.id,
+        emailSent: true
+      });
+
+    } catch (error) {
+      console.error('Registration error:', error);
+      res.status(500).json({ message: 'Chyba při registraci' });
+    }
+  });
+
+  // Confirm email
   app.post('/api/auth/confirm-email', async (req, res) => {
     try {
       const { token } = req.body;
@@ -89,55 +110,57 @@ export default function setupEnhancedAuthRoutes(app: Express) {
 
       console.log(`🔍 Hledám uživatele s emailem: ${email}`);
       const user = await storage.getUserByEmail(email);
-
+      console.log(`👤 Uživatel nalezen:`, user ? `ID: ${user.id}, Email: ${user.email}` : 'NENALEZEN');
+      
       if (!user) {
-        console.log('❌ Uživatel nenalezen');
-        // Security: Don't reveal if email exists or not
-        return res.json({ 
-          message: 'Pokud email existuje, byl odeslán odkaz pro obnovení hesla',
-          developmentInfo: 'Uživatel nenalezen (pouze v development módu)'
-        });
+        // Don't reveal if email exists for security
+        console.log(`❌ Uživatel s emailem ${email} nenalezen`);
+        return res.json({ message: 'Pokud email existuje, byl odeslán odkaz pro obnovení hesla' });
       }
 
-      console.log(`👤 Uživatel nalezen: ID: ${user.id}, Email: ${user.email}`);
+      // Generate password reset token (expires in 1 hour)
+      const passwordResetToken = nanoid(32);
+      const passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-      // Generate password reset token
-      const resetToken = nanoid(32);
-      const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 1); // Token expires in 1 hour
-
-      console.log(`🔧 Ukládám reset token pro ${email}: ${resetToken}`);
-
-      // Save token to database
+      console.log(`🔧 Ukládám reset token pro ${user.email}:`, passwordResetToken);
       await storage.updateUser(user.id, {
-        passwordResetToken: resetToken,
-        passwordResetExpires: expiresAt
+        passwordResetToken,
+        passwordResetExpires
       });
-
-      console.log('✅ Token uložen do databáze');
+      console.log(`✅ Token uložen do databáze`);
 
       // Send password reset email
       try {
-        await emailService.sendPasswordReset(user, resetToken);
-        console.log(`✅ Password reset email sent to ${email}`);
+        await emailService.sendPasswordResetEmail(user, passwordResetToken);
+        console.log(`✅ Password reset email sent to ${user.email}`);
+        
+        // For development testing, also provide the token
+        if (process.env.NODE_ENV === 'development') {
+          res.json({ 
+            message: 'Pokud email existuje, byl odeslán odkaz pro obnovení hesla',
+            developmentToken: passwordResetToken,
+            developmentInfo: 'Token pro testování (pouze v development módu)'
+          });
+        } else {
+          res.json({ message: 'Pokud email existuje, byl odeslán odkaz pro obnovení hesla' });
+        }
       } catch (emailError) {
-        console.error('❌ Failed to send password reset email:', emailError);
-        // Don't fail the request if email fails - user still gets the token
+        console.log('❌ Password reset email error:', emailError.message);
+        // Provide development fallback with reset link
+        res.json({ 
+          message: 'SMTP není nakonfigurován. Pro testování použijte tento odkaz:',
+          resetLink: `http://localhost:5000/reset-password?token=${passwordResetToken}`,
+          info: 'V produkci by byl odkaz odeslán emailem'
+        });
       }
-
-      res.json({
-        message: 'Pokud email existuje, byl odeslán odkaz pro obnovení hesla',
-        developmentToken: resetToken, // Only in development
-        developmentInfo: 'Token pro testování (pouze v development módu)'
-      });
 
     } catch (error) {
       console.error('Password reset request error:', error);
-      res.status(500).json({ message: 'Chyba při zpracování požadavku' });
+      res.status(500).json({ message: 'Chyba při žádosti o obnovení hesla' });
     }
   });
 
-  // Reset password with token
+  // Reset password
   app.post('/api/auth/reset-password', async (req, res) => {
     try {
       const { token, newPassword } = req.body;
@@ -150,40 +173,32 @@ export default function setupEnhancedAuthRoutes(app: Express) {
         return res.status(400).json({ message: 'Heslo musí mít alespoň 6 znaků' });
       }
 
-      console.log(`🔍 Hledám uživatele s reset tokenem: ${token.substring(0, 10)}...`);
-
       // Find user by reset token
       const user = await storage.getUserByPasswordResetToken(token);
       if (!user) {
-        console.log('❌ Neplatný token');
         return res.status(404).json({ message: 'Neplatný nebo expirovaný token' });
       }
 
-      // Check if token is expired
-      if (user.passwordResetExpires && user.passwordResetExpires < new Date()) {
-        console.log('❌ Token expiroval');
-        return res.status(404).json({ message: 'Neplatný nebo expirovaný token' });
+      // Check if token expired
+      if (user.passwordResetExpires && new Date() > user.passwordResetExpires) {
+        return res.status(400).json({ message: 'Token vypršel, vyžádejte si nový' });
       }
-
-      console.log(`👤 Uživatel nalezen pro reset: ${user.email}`);
 
       // Hash new password
-      const hashedPassword = await bcrypt.hash(newPassword, 12);
+      const passwordHash = await bcrypt.hash(newPassword, 12);
 
       // Update password and clear reset token
       await storage.updateUser(user.id, {
-        password: hashedPassword,
+        password: passwordHash,
         passwordResetToken: null,
         passwordResetExpires: null
       });
-
-      console.log(`✅ Heslo bylo změněno pro uživatele: ${user.email}`);
 
       res.json({ message: 'Heslo bylo úspěšně změněno' });
 
     } catch (error) {
       console.error('Password reset error:', error);
-      res.status(500).json({ message: 'Chyba při změně hesla' });
+      res.status(500).json({ message: 'Chyba při obnovování hesla' });
     }
   });
 
@@ -196,7 +211,7 @@ export default function setupEnhancedAuthRoutes(app: Express) {
         return res.status(400).json({ message: 'Uživatelské jméno a heslo jsou povinné' });
       }
 
-      // Find user by username or email
+      // Try both username and email lookup
       let user = await storage.getUserByUsername(username);
       if (!user) {
         user = await storage.getUserByEmail(username);

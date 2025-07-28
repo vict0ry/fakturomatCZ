@@ -60,8 +60,8 @@ export function Login() {
         description: `Vítejte zpět, ${result.user.firstName}!`,
       });
       
-      // Přesměrování na dashboard
-      navigate('/dashboard');
+      // Přesměrování na dashboard s force refresh pro správné načtení
+      window.location.href = '/dashboard';
     } catch (error: any) {
       toast({
         title: "Chyba při přihlášení",
