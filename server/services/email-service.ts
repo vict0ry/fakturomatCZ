@@ -23,9 +23,12 @@ export class EmailService {
 
   constructor() {
     // Konfigurace pro doklad.ai doménu
+    const hasAmazonSES = !!(process.env.AWS_SES_REGION && process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY);
     const hasMailcow = !!(process.env.PRODUCTION_SMTP_HOST && process.env.PRODUCTION_SMTP_USER);
     
-    if (hasMailcow) {
+    if (hasAmazonSES) {
+      this.fromEmail = process.env.SES_FROM_EMAIL || 'noreply@doklad.ai';
+    } else if (hasMailcow) {
       this.fromEmail = process.env.PRODUCTION_SMTP_USER || 'noreply@doklad.ai';
     } else {
       this.fromEmail = process.env.SMTP_USER ? `${process.env.SMTP_USER}@doklad.ai` : 'noreply@doklad.ai';
@@ -33,10 +36,19 @@ export class EmailService {
     this.fromName = process.env.SMTP_FROM_NAME || 'Doklad.ai';
 
     const config: EmailConfig = {
-      host: hasMailcow ? process.env.PRODUCTION_SMTP_HOST! : (process.env.SMTP_HOST || 'localhost'),
-      port: hasMailcow ? parseInt(process.env.PRODUCTION_SMTP_PORT || '587') : parseInt(process.env.SMTP_PORT || '2525'),
-      secure: hasMailcow ? (process.env.PRODUCTION_SMTP_PORT === '465') : false,
-      auth: hasMailcow ? {
+      host: hasAmazonSES ? `email-smtp.${process.env.AWS_SES_REGION}.amazonaws.com` : 
+            hasMailcow ? process.env.PRODUCTION_SMTP_HOST! : 
+            (process.env.SMTP_HOST || 'localhost'),
+      port: hasAmazonSES ? 587 : 
+            hasMailcow ? parseInt(process.env.PRODUCTION_SMTP_PORT || '587') : 
+            parseInt(process.env.SMTP_PORT || '2525'),
+      secure: hasAmazonSES ? false : 
+              hasMailcow ? (process.env.PRODUCTION_SMTP_PORT === '465') : 
+              false,
+      auth: hasAmazonSES ? {
+        user: process.env.AWS_ACCESS_KEY_ID!,
+        pass: process.env.AWS_SECRET_ACCESS_KEY!,
+      } : hasMailcow ? {
         user: process.env.PRODUCTION_SMTP_USER!,
         pass: process.env.PRODUCTION_SMTP_PASS!,
       } : (process.env.SMTP_HOST !== 'localhost' && process.env.SMTP_USER && process.env.SMTP_PASS) ? {
@@ -70,9 +82,10 @@ export class EmailService {
   }
 
   private logSMTPStatus() {
+    const hasAmazonSES = !!(process.env.AWS_SES_REGION && process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY);
     const hasMailcow = !!(process.env.PRODUCTION_SMTP_HOST && process.env.PRODUCTION_SMTP_USER && process.env.PRODUCTION_SMTP_PASS);
-    const isLocalHost = !hasMailcow && process.env.SMTP_HOST === 'localhost';
-    const hasCredentials = hasMailcow || !!(process.env.SMTP_HOST && (isLocalHost || (process.env.SMTP_USER && process.env.SMTP_PASS)));
+    const isLocalHost = !hasAmazonSES && !hasMailcow && process.env.SMTP_HOST === 'localhost';
+    const hasCredentials = hasAmazonSES || hasMailcow || !!(process.env.SMTP_HOST && (isLocalHost || (process.env.SMTP_USER && process.env.SMTP_PASS)));
     const hasDKIM = !!(process.env.DKIM_DOMAIN && process.env.DKIM_SELECTOR && process.env.DKIM_PRIVATE_KEY);
     
     console.log('📧 Email Service Status:');
@@ -80,7 +93,10 @@ export class EmailService {
     console.log(`   DKIM: ${hasDKIM ? '✅ Enabled' : '⚠️  Disabled'}`);
     console.log(`   From: ${this.fromEmail}`);
     
-    if (hasMailcow) {
+    if (hasAmazonSES) {
+      console.log(`   Server: email-smtp.${process.env.AWS_SES_REGION}.amazonaws.com:587`);
+      console.log('   Mode: 📧 Amazon SES Production');
+    } else if (hasMailcow) {
       console.log(`   Server: ${process.env.PRODUCTION_SMTP_HOST}:${process.env.PRODUCTION_SMTP_PORT || '587'}`);
       console.log('   Mode: 🐄 Mailcow Production Server');
     } else {
@@ -94,9 +110,10 @@ export class EmailService {
   }
 
   isConfigured(): boolean {
+    const hasAmazonSES = !!(process.env.AWS_SES_REGION && process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY);
     const hasMailcow = !!(process.env.PRODUCTION_SMTP_HOST && process.env.PRODUCTION_SMTP_USER && process.env.PRODUCTION_SMTP_PASS);
-    const isLocalHost = !hasMailcow && process.env.SMTP_HOST === 'localhost';
-    const hasCredentials = hasMailcow || !!(process.env.SMTP_HOST && (isLocalHost || (process.env.SMTP_USER && process.env.SMTP_PASS)));
+    const isLocalHost = !hasAmazonSES && !hasMailcow && process.env.SMTP_HOST === 'localhost';
+    const hasCredentials = hasAmazonSES || hasMailcow || !!(process.env.SMTP_HOST && (isLocalHost || (process.env.SMTP_USER && process.env.SMTP_PASS)));
     return !!this.transporter && hasCredentials;
   }
 
