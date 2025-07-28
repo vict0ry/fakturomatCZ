@@ -19,6 +19,8 @@ import ExpenseDetail from "./pages/expense-detail";
 import BankAccountsPage from "@/pages/bank-accounts";
 import ProfilePage from "@/pages/ProfilePage";
 import EmailSettings from "@/pages/EmailSettings";
+import BlogPage from "@/pages/blog";
+import BlogPostPage from "@/pages/blog-post";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import Landing from "@/pages/landing";
@@ -39,6 +41,8 @@ function PublicRouter() {
       <Route path="/public/invoice/:token">
         {(params: any) => <PublicInvoicePage token={params.token} />}
       </Route>
+      <Route path="/blog/:id" component={BlogPostPage} />
+      <Route path="/blog" component={BlogPage} />
       <Route path="/register" component={Register} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
@@ -111,6 +115,8 @@ function AppContent() {
       <Route path="/public/invoice/:token">
         {(params: any) => <PublicInvoicePage token={params.token} />}
       </Route>
+      <Route path="/blog/:id" component={BlogPostPage} />
+      <Route path="/blog" component={BlogPage} />
       <Route path="/register" component={Register} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />

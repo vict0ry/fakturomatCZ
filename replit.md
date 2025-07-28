@@ -49,6 +49,15 @@ Technical preference: Always use AI for intelligent text/product matching instea
 - ⚠️ **Dashboard 404 issue** - Vyžaduje refresh po přihlášení (frontend routing fix připraven)
 - 🎯 **Status**: Registration system fully operational, dashboard routing fix implemented
 
+### BLOG SECTION ADDED (2025-07-28)
+- ✅ **Blog stránka vytvořena** - Profesionální layout s článkem o email systému
+- ✅ **Detailní článek** - "Jak jsme vyřešili automatické párování plateb pomocí AI"  
+- ✅ **Technická dokumentace** - Popis architektury, bezpečnosti a AI algoritmů
+- ✅ **Routing implementován** - /blog a /blog/:id routes funkční
+- ✅ **Sidebar navigace přidána** - Blog link s BookOpen ikonou
+- ✅ **Engaging content** - Poutavý obsah o revoluci v českém finteku
+- 🎯 **Status**: Blog ready to attract customers with technical insights
+
 ### AMAZON SES INTEGRACE AKTIVNÍ (2025-07-28)
 - ✅ **Amazon SES plně funkční** - email-smtp.eu-north-1.amazonaws.com:587 aktivní  
 - ✅ **Skutečné email delivery** - Emaily se posílají na externí adresy přes AWS

@@ -15,7 +15,8 @@ import {
   ChevronRight,
   Menu,
   User,
-  Building2
+  Building2,
+  BookOpen
 } from "lucide-react";
 
 interface SidebarProps {
@@ -63,6 +64,12 @@ export function Sidebar({ className }: SidebarProps) {
       href: "/bank-accounts",
       icon: Building2,
       current: location === "/bank-accounts",
+    },
+    {
+      name: "Blog",
+      href: "/blog",
+      icon: BookOpen,
+      current: location === "/blog" || location.startsWith("/blog/"),
     },
     {
       name: "Profil",
