@@ -1,63 +1,65 @@
-# 🚀 SMTP Server Ready for doklad.ai
+# 🔧 AMAZON SES SMTP CREDENTIALS - PŘIPRAVENO K OPRAVĚ
 
-## ✅ Co je připraveno
+## Současný stav credentials
 
-### 📧 Kompletní Email Systém
-- **Password reset** - bezpečné tokeny s expirací
-- **Email konfirmace** - potvrzení registrace
-- **Fakturní emaily** - s PDF přílohami
-- **Platební připomínky** - 3 typy (první, druhá, konečná)
+**SMTP_USER**: `noreply` ❌ (nesprávné)  
+**SMTP_PASS**: `dokla...` ❌ (možná nekompatibilní)  
+**AWS_SES_REGION**: `eu-north-1` ✅ (správné)
 
-### 🔐 DKIM Bezpečnost
-- **2048-bit RSA klíč** vygenerován pro doklad.ai
-- **DNS konfigurace** připravena v `dns-records.md`
-- **Anti-spam ochrana** s SPF a DMARC záznamy
+## Problém
 
-### ⚙️ Produkční Konfigurace
-```bash
-# Spusťte pro konfigurační instrukce
-./configure-production-smtp.sh
+SMTP_USER má hodnotu "noreply", ale Amazon SES vyžaduje specifický SMTP username vygenerovaný v AWS Console.
 
-# Nebo nastavte environment proměnné:
-export SMTP_HOST=smtp.gmail.com
-export SMTP_PORT=587
-export SMTP_USER=noreply@doklad.ai
-export SMTP_PASS=your_gmail_app_password
-export DKIM_DOMAIN=doklad.ai
-export DKIM_SELECTOR=default
-export DKIM_PRIVATE_KEY="[generated_key]"
+## Jak opravit
+
+### 1. AWS Console → SES
+```
+1. Otevřít AWS Console
+2. Simple Email Service
+3. Region: eu-north-1 (Stockholm)
+4. Kliknout "SMTP Settings" v levém menu
 ```
 
-## 🧪 Aktuální Stav
-
-**Development mód aktivní:**
-- Password reset funguje (zobrazuje tokeny v konzoli)
-- Všechny email funkce připraveny
-- Automatický přepnutí na SMTP při konfiguraci
-
-**Test produkčního módu:**
-```bash
-# Po nastavení SMTP údajů
-curl -X POST "http://localhost:5000/api/auth/forgot-password" \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@doklad.ai"}'
+### 2. Vytvořit SMTP Credentials
+```
+5. Kliknout "Create SMTP Credentials"  
+6. Zadat IAM User Name (např. "doklad-ai-smtp")
+7. Kliknout "Create"
+8. STÁHNOUT credentials soubor!
 ```
 
-## 📋 Kroky pro aktivaci
+### 3. Nové credentials budou vypadat:
+```
+SMTP Username: AKIA3AIIBQEXAMPLE  (začíná AKIA...)
+SMTP Password: BFhK8gF5Y2V3ExAmPlE... (dlouhý string)
+```
 
-1. **Vytvořte Gmail účet:** noreply@doklad.ai
-2. **Zapněte 2FA** v Gmail nastavení
-3. **Vygenerujte app-specific heslo**
-4. **Nastavte environment proměnné** (viz výše)
-5. **Přidejte DNS TXT záznamy** (viz `dns-records.md`)
-6. **Restartujte server**
+### 4. Aktualizovat environment variables
+Nahradit současné hodnoty:
+```bash
+SMTP_USER=AKIA3AIIBQEXAMPLE
+SMTP_PASS=BFhK8gF5Y2V3ExAmPlE...
+```
 
-## 🎯 Po aktivaci
+## Po opravě
 
-✅ Skutečné emaily budou odcházet automaticky
-✅ DKIM podpis pro lepší doručitelnost  
-✅ Professional HTML design všech emailů
-✅ Bezpečné token handling s expirací
-✅ Error handling a logging
+Email systém začne fungovat okamžitě pro:
+- ✅ Verified email adresy (v sandbox módu)
+- ✅ Všechny adresy (po opuštění sandbox módu)
 
-**Systém je plně připraven na produkční email komunikaci!**
+## Test po opravě
+
+```bash
+node send-test-email.js
+```
+
+Měl by vrátit:
+```
+✅ Email úspěšně odeslán!
+📧 Message ID: 010001...
+🎯 Amazon SES email systém JE FUNKČNÍ!
+```
+
+---
+
+**Status**: Připraveno k opravě - potřeba pouze aktualizovat SMTP credentials z AWS Console.
