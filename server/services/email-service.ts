@@ -132,11 +132,17 @@ export class EmailService {
   }
 
   async sendPasswordResetEmail(user: any, resetToken: string): Promise<boolean> {
+    const hasAmazonSES = !!(process.env.AWS_SES_REGION && process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY);
+    
     if (!this.isConfigured()) {
       console.log('🔧 Email service not configured - SMTP credentials needed');
       console.log('📧 Password reset token generated but email cannot be sent');
       console.log(`Token for ${user.email}: ${resetToken}`);
-      console.log('ℹ️  Run "./configure-production-smtp.sh" to set up real email sending');
+      if (hasAmazonSES) {
+        console.log('⚠️  Amazon SES credentials found but transporter failed to initialize');
+      } else {
+        console.log('ℹ️  Run "./configure-production-smtp.sh" to set up real email sending');
+      }
       return false;
     }
 
