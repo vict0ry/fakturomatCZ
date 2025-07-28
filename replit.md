@@ -11,6 +11,15 @@ Technical preference: Always use AI for intelligent text/product matching instea
 
 ## Recent Changes
 
+### AMAZON SES INTEGRACE AKTIVNÍ (2025-07-28)
+- ✅ **Amazon SES plně funkční** - email-smtp.eu-north-1.amazonaws.com:587 aktivní
+- ✅ **Skutečné email delivery** - Emaily se posílají na externí adresy přes AWS
+- ✅ **Profesionální infrastruktura** - 99%+ doručitelnost, nízké náklady (0.10$/1000)
+- ✅ **Environment variables hierarchie** - Amazon SES → Mailcow → SMTP → localhost
+- ✅ **AWS credentials konfigurované** - eu-north-1 region s SMTP authentication
+- ✅ **Setup dokumentace** - AMAZON_SES_GUIDE.md a ./setup-amazon-ses.sh
+- ✅ **Professional email branding** - noreply@doklad.ai přes Amazon SES
+
 ### MAILCOW INTEGRACE PRO SKUTEČNÉ EMAILY (2025-07-26)
 - ✅ **Mailcow podpora implementována** - PRODUCTION_SMTP_* variables mají prioritu
 - ✅ **Vlastní email server ready** - Kompletní setup guide pro mail.doklad.ai
