@@ -1,0 +1,25 @@
+From: noreply@doklad.ai
+To: mail@victoreliot.com
+Subject: =?UTF-8?Q?Test_z_doklad=2Eai_=28lok=C3=A1ln=C3=AD_?=
+ =?UTF-8?Q?SMTP=29?=
+Message-ID: <c35a76d6-0c71-3e30-ee99-1bac1da32ef9@doklad.ai>
+Content-Transfer-Encoding: quoted-printable
+Date: Mon, 28 Jul 2025 16:52:45 +0000
+MIME-Version: 1.0
+Content-Type: text/html; charset=utf-8
+
+
+        <div style=3D"font-family: Arial, sans-serif; max-width: 600px;">
+          <h2 style=3D"color: #f97316;">=F0=9F=93=A7 Doklad.ai Local SMTP =
+Test</h2>
+          <p>Email pro mail@victoreliot.com byl =
+=C3=BAsp=C4=9B=C5=A1n=C4=9B zpracov=C3=A1n!</p>
+          =
+<p><strong>Server:</strong> localhost:2525</p>
+          =
+<p><strong>=C4=8Cas:</strong> 28. 7. 2025 16:52:45</p>
+          <p><strong>Ulo=C5=BEeno do:</strong> sent-emails/ slo=C5=BEky</p>
+          <p>Toto je d=C5=AFkaz, =C5=BEe email syst=C3=A9m doklad.ai =
+funguje spr=C3=A1vn=C4=9B.</p>
+        </div>
+     =20
