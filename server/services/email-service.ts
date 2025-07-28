@@ -470,6 +470,140 @@ export class EmailService {
       return false;
     }
   }
+
+  async sendWelcomeEmail(user: User, company: any): Promise<boolean> {
+    if (!this.isConfigured()) {
+      console.log('📧 Email service not configured - skipping welcome email');
+      return false;
+    }
+
+    try {
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Vítejte v Doklad.ai - Revoluce ve fakturaci!</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
+          <div style="background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); padding: 40px 30px; text-align: center; color: white; border-radius: 15px 15px 0 0;">
+            <h1 style="margin: 0; font-size: 32px; font-weight: 700;">🎉 Vítejte v Doklad.ai!</h1>
+            <p style="margin: 15px 0 0 0; font-size: 18px; opacity: 0.95;">Jste připraveni na revoluci ve fakturaci?</p>
+          </div>
+          
+          <div style="background: white; padding: 40px 30px; border-radius: 0 0 15px 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <h2 style="color: #2d3748; margin-top: 0; font-size: 24px;">Ahoj ${user.firstName}! 👋</h2>
+            
+            <p style="color: #4a5568; line-height: 1.7; font-size: 16px; margin-bottom: 25px;">
+              <strong>Gratuluji k skvělému rozhodnutí!</strong> Právě jste se připojili k revoluci v českém finteku. 
+              Připravte se ušetřit <strong>desítky hodin měsíčně</strong> a zvýšit efektivitu o <strong>300%</strong>!
+            </p>
+
+            <div style="background: #f7fafc; padding: 25px; border-radius: 10px; margin: 25px 0; border-left: 4px solid #ff6b35;">
+              <h3 style="color: #2d3748; margin-top: 0; font-size: 18px;">🚀 Co vás čeká v následujících dnech:</h3>
+              <ul style="color: #4a5568; line-height: 1.6; padding-left: 20px;">
+                <li><strong>AI Asistent</strong> - Vytvořte faktury pouhým poklenutím s dokumenty</li>
+                <li><strong>ARES Integrace</strong> - Automatické doplnění firemních údajů</li>
+                <li><strong>Smart Email Matching</strong> - Párování plateb přímo z banky</li>
+                <li><strong>PDF Export</strong> - Profesionální faktury jedním klikem</li>
+                <li><strong>Dashboard Analytics</strong> - Přehled cash flow v real-time</li>
+              </ul>
+            </div>
+
+            <div style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); padding: 20px; border-radius: 10px; color: white; text-align: center; margin: 30px 0;">
+              <h3 style="margin: 0 0 10px 0; font-size: 20px;">💰 Vaše úspory s Doklad.ai</h3>
+              <div style="display: flex; justify-content: space-around; flex-wrap: wrap; margin-top: 15px;">
+                <div style="text-align: center; margin: 10px;">
+                  <div style="font-size: 24px; font-weight: bold;">40+ hodin</div>
+                  <div style="font-size: 14px; opacity: 0.9;">ušetřených měsíčně</div>
+                </div>
+                <div style="text-align: center; margin: 10px;">
+                  <div style="font-size: 24px; font-weight: bold;">15 000 Kč</div>
+                  <div style="font-size: 14px; opacity: 0.9;">hodnota ušetřeného času</div>
+                </div>
+                <div style="text-align: center; margin: 10px;">
+                  <div style="font-size: 24px; font-weight: bold;">99%</div>
+                  <div style="font-size: 14px; opacity: 0.9;">snížení chybovosti</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="text-align: center; margin: 35px 0;">
+              <a href="${process.env.NODE_ENV === 'production' ? 'https://doklad.ai' : 'http://localhost:5000'}/dashboard" 
+                 style="background: #ff6b35; color: white; padding: 18px 35px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);">
+                🚀 Začít hned teď
+              </a>
+            </div>
+
+            <div style="background: #edf2f7; padding: 20px; border-radius: 8px; margin: 25px 0;">
+              <h4 style="color: #2d3748; margin-top: 0; font-size: 16px;">📞 Potřebujete pomoc?</h4>
+              <p style="color: #4a5568; line-height: 1.6; margin: 10px 0 0 0; font-size: 14px;">
+                Náš tým je tu pro vás! Kontaktujte nás kdykoliv na <a href="mailto:podpora@doklad.ai" style="color: #ff6b35;">podpora@doklad.ai</a>
+                nebo prostřednictvím AI chatu přímo v aplikaci.
+              </p>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+            
+            <p style="color: #718096; font-size: 12px; text-align: center; line-height: 1.5;">
+              Tento email byl odeslán systémem <strong>Doklad.ai</strong><br>
+              Děkujeme, že jste si vybrali budoucnost fakturace! 🎯<br>
+              <a href="mailto:unsubscribe@doklad.ai" style="color: #a0aec0;">Odhlásit odběr</a>
+            </p>
+          </div>
+        </body>
+        </html>
+      `;
+
+      const textContent = `
+Vítejte v Doklad.ai! 🎉
+
+Ahoj ${user.firstName}!
+
+Gratuluji k skvělému rozhodnutí! Právě jste se připojili k revoluci v českém finteku.
+
+Co vás čeká:
+• AI Asistent pro vytváření faktur
+• ARES Integrace pro firemní údaje
+• Smart Email Matching pro párování plateb
+• PDF Export profesionálních faktur
+• Dashboard Analytics s real-time přehledem
+
+Vaše úspory s Doklad.ai:
+• 40+ hodin ušetřených měsíčně
+• 15 000 Kč hodnota ušetřeného času
+• 99% snížení chybovosti
+
+Začněte hned teď: ${process.env.NODE_ENV === 'production' ? 'https://doklad.ai' : 'http://localhost:5000'}/dashboard
+
+Potřebujete pomoc? Kontaktujte nás na podpora@doklad.ai
+
+Děkujeme, že jste si vybrali budoucnost fakturace!
+Doklad.ai tým
+      `;
+
+      await this.transporter.sendMail({
+        from: `"${this.fromName}" <${this.fromEmail}>`,
+        to: user.email!,
+        subject: '🎉 Vítejte v Doklad.ai - Ušetříte desítky hodin měsíčně!',
+        html: htmlContent,
+        text: textContent,
+        headers: {
+          'X-Mailer': 'Doklad.ai Professional v1.0',
+          'X-Priority': '3',
+          'List-Unsubscribe': '<mailto:unsubscribe@doklad.ai>',
+          'X-Entity-Ref-ID': 'welcome-email-system',
+          'Message-ID': `<${Date.now()}-${Math.random().toString(36).substr(2, 9)}@doklad.ai>`
+        }
+      });
+
+      console.log(`✅ Welcome email sent to ${user.email}`);
+      return true;
+    } catch (error) {
+      console.error('❌ Welcome email error:', error);
+      return false;
+    }
+  }
 }
 
 export const emailService = new EmailService();

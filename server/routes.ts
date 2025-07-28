@@ -11,6 +11,7 @@ import { db } from "./db";
 import { eq } from "drizzle-orm";
 import { fetchCompanyFromAres, searchCompaniesByName } from "./services/ares";
 import { processAICommand, generateInvoiceDescription, processUniversalAICommand, processPublicAICommand } from "./services/openai";
+import { emailService } from "./services/email-service";
 import { generateInvoicePDF } from "./services/pdf";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
@@ -176,6 +177,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create session
       const sessionId = randomUUID();
       sessions.set(sessionId, { userId: newUser.id, companyId: newCompany.id, role: newUser.role });
+      
+      // Send welcome email
+      try {
+        await emailService.sendWelcomeEmail(newUser, newCompany);
+        console.log(`✅ Welcome email sent to ${newUser.email}`);
+      } catch (emailError) {
+        console.error('⚠️ Welcome email failed to send:', emailError);
+        // Continue with registration success even if email fails
+      }
       
       res.json({ 
         user: { ...newUser, password: undefined }, 
