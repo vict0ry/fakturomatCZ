@@ -45,12 +45,12 @@ export class EmailService {
       secure: hasAmazonSES ? false : 
               hasMailcow ? (process.env.PRODUCTION_SMTP_PORT === '465') : 
               false,
-      auth: hasAmazonSES ? {
-        user: process.env.SMTP_USER!,
-        pass: process.env.SMTP_PASS!,
-      } : hasMailcow ? {
-        user: process.env.PRODUCTION_SMTP_USER!,
-        pass: process.env.PRODUCTION_SMTP_PASS!,
+      auth: hasAmazonSES && process.env.SMTP_USER && process.env.SMTP_PASS ? {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      } : hasMailcow && process.env.PRODUCTION_SMTP_USER && process.env.PRODUCTION_SMTP_PASS ? {
+        user: process.env.PRODUCTION_SMTP_USER,
+        pass: process.env.PRODUCTION_SMTP_PASS,
       } : (process.env.SMTP_HOST !== 'localhost' && process.env.SMTP_USER && process.env.SMTP_PASS) ? {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
@@ -305,7 +305,7 @@ export class EmailService {
       
       await this.transporter.sendMail({
         from: `"${this.fromName}" <${this.fromEmail}>`,
-        to: invoice.customer.email,
+        to: invoice.customer.email || '',
         subject: `Faktura ${invoice.invoiceNumber} - ${this.fromName}`,
         html: htmlContent,
         attachments: [
@@ -361,7 +361,7 @@ export class EmailService {
             <h3 style="margin-top: 0; color: #333;">Faktura ${invoice.invoiceNumber}</h3>
             <p><strong>Datum vystavení:</strong> ${new Date(invoice.issueDate).toLocaleDateString('cs-CZ')}</p>
             <p><strong>Datum splatnosti:</strong> ${new Date(invoice.dueDate).toLocaleDateString('cs-CZ')}</p>
-            <p><strong>Celková částka:</strong> ${(invoice.totalAmountWithTax || invoice.totalAmount || 0).toLocaleString('cs-CZ')} Kč</p>
+            <p><strong>Celková částka:</strong> ${((invoice as any).totalAmountWithTax || (invoice as any).totalAmount || 0).toLocaleString('cs-CZ')} Kč</p>
           </div>
           
           <p style="color: #666; line-height: 1.6;">
@@ -430,7 +430,7 @@ export class EmailService {
               <h3 style="margin-top: 0; color: #333;">Faktura ${invoice.invoiceNumber}</h3>
               <p><strong>Datum vystavení:</strong> ${new Date(invoice.issueDate).toLocaleDateString('cs-CZ')}</p>
               <p><strong>Datum splatnosti:</strong> ${new Date(invoice.dueDate).toLocaleDateString('cs-CZ')}</p>
-              <p><strong>Částka k úhradě:</strong> ${(invoice.totalAmountWithTax || invoice.totalAmount || 0).toLocaleString('cs-CZ')} Kč</p>
+              <p><strong>Částka k úhradě:</strong> ${((invoice as any).totalAmountWithTax || (invoice as any).totalAmount || 0).toLocaleString('cs-CZ')} Kč</p>
               <p><strong>Dní po splatnosti:</strong> ${Math.ceil((Date.now() - new Date(invoice.dueDate).getTime()) / (1000 * 60 * 60 * 24))}</p>
             </div>
             
@@ -450,7 +450,7 @@ export class EmailService {
 
       await this.transporter.sendMail({
         from: `"${this.fromName}" <${this.fromEmail}>`,
-        to: invoice.customer.email,
+        to: invoice.customer.email || '',
         subject: reminder.subject,
         html: htmlContent,
         headers: {
