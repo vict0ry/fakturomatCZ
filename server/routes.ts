@@ -42,6 +42,9 @@ const requireAuth = (req: any, res: any, next: any) => {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
+  // Register enhanced auth routes (includes password reset)
+  setupEnhancedAuthRoutes(app);
+  
   /**
    * @openapi
    * /api/docs:
