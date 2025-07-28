@@ -1,14 +1,12 @@
 import { Express } from 'express';
 import bcrypt from 'bcryptjs';
 import { nanoid } from 'nanoid';
+import { randomUUID } from 'crypto';
 import { storage } from '../storage';
 import { emailService } from '../services/email-service';
 
 // Enhanced auth routes with email confirmation and password reset
-export default function setupEnhancedAuthRoutes(app: Express) {
-  
-  // Use the same sessions Map as in main routes
-  const sessions = new Map<string, { userId: number; companyId: number; role?: string; username?: string; email?: string; emailConfirmed?: boolean; loginTime?: Date }>();
+export default function setupEnhancedAuthRoutes(app: Express, sessions: Map<string, any>) {
 
   // Register route is handled in main routes.ts to avoid conflicts
 

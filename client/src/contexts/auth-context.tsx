@@ -40,32 +40,45 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     const validateSession = async () => {
-      // Check for existing session in localStorage
-      const savedUser = localStorage.getItem('user');
-      const savedSessionId = localStorage.getItem('sessionId');
-      
-      if (savedUser && savedSessionId) {
-        try {
-          // Validate session with server
-          const response = await fetch('/api/auth/validate', {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${savedSessionId}`,
-            },
-          });
+      try {
+        // First try to get saved session from localStorage
+        const savedSessionId = localStorage.getItem('sessionId');
+        
+        let sessionToTry = savedSessionId;
+        
+        // If no saved session or localStorage doesn't work (incognito), use dev session
+        if (!sessionToTry) {
+          sessionToTry = 'test-session-dev';
+        }
+        
+        // Validate session with server
+        const response = await fetch('/api/auth/validate', {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Authorization': `Bearer ${sessionToTry}`,
+          },
+        });
 
-          if (response.ok) {
-            const data = await response.json();
-            setUser(data.user);
-            setSessionId(savedSessionId);
-          } else {
-            // Invalid session, clear storage and try development session
-            localStorage.removeItem('user');
-            localStorage.removeItem('sessionId');
-            
-            // Try development session
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data.user);
+          setSessionId(sessionToTry);
+          
+          // Save to localStorage if possible (not in incognito mode)
+          try {
+            localStorage.setItem('user', JSON.stringify(data.user));
+            localStorage.setItem('sessionId', sessionToTry);
+          } catch (e) {
+            // localStorage not available (incognito mode) - that's fine
+            console.log('localStorage not available, using session cookies');
+          }
+        } else {
+          // If saved session failed and we haven't tried dev session yet, try it
+          if (savedSessionId && savedSessionId !== 'test-session-dev') {
             const devResponse = await fetch('/api/auth/validate', {
               method: 'GET',
+              credentials: 'include',
               headers: {
                 'Authorization': `Bearer test-session-dev`,
               },
@@ -75,34 +88,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
               const devData = await devResponse.json();
               setUser(devData.user);
               setSessionId('test-session-dev');
-              localStorage.setItem('user', JSON.stringify(devData.user));
-              localStorage.setItem('sessionId', 'test-session-dev');
+              
+              try {
+                localStorage.setItem('user', JSON.stringify(devData.user));
+                localStorage.setItem('sessionId', 'test-session-dev');
+              } catch (e) {
+                // localStorage not available - that's fine
+              }
             }
           }
-        } catch (error) {
-          console.error('Error validating session:', error);
+        }
+      } catch (error) {
+        console.error('Error validating session:', error);
+        
+        // Clear localStorage if possible
+        try {
           localStorage.removeItem('user');
           localStorage.removeItem('sessionId');
-        }
-      } else {
-        // No saved session, try development session
-        try {
-          const devResponse = await fetch('/api/auth/validate', {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer test-session-dev`,
-            },
-          });
-          
-          if (devResponse.ok) {
-            const devData = await devResponse.json();
-            setUser(devData.user);
-            setSessionId('test-session-dev');
-            localStorage.setItem('user', JSON.stringify(devData.user));
-            localStorage.setItem('sessionId', 'test-session-dev');
-          }
-        } catch (error) {
-          console.error('Error with development session:', error);
+        } catch (e) {
+          // localStorage not available - that's fine
         }
       }
       
@@ -115,8 +119,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const login = (user: User, sessionId: string) => {
     setUser(user);
     setSessionId(sessionId);
-    localStorage.setItem('user', JSON.stringify(user));
-    localStorage.setItem('sessionId', sessionId);
+    
+    // Save to localStorage if possible
+    try {
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('sessionId', sessionId);
+    } catch (e) {
+      // localStorage not available (incognito mode) - that's fine
+      console.log('localStorage not available during login');
+    }
   };
 
   const logout = async () => {
@@ -124,6 +135,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (sessionId) {
         await fetch('/api/auth/logout', {
           method: 'POST',
+          credentials: 'include',
           headers: {
             'Authorization': `Bearer ${sessionId}`,
           },
@@ -134,8 +146,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } finally {
       setUser(null);
       setSessionId(null);
-      localStorage.removeItem('user');
-      localStorage.removeItem('sessionId');
+      
+      // Clear localStorage if possible
+      try {
+        localStorage.removeItem('user');
+        localStorage.removeItem('sessionId');
+      } catch (e) {
+        // localStorage not available - that's fine
+      }
     }
   };
 

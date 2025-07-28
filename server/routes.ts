@@ -22,11 +22,18 @@ import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
 
 // Simple session middleware (in production, use proper session management)
-const sessions = new Map<string, { userId: number; companyId: number; role?: string }>();
+export const sessions = new Map<string, { userId: number; companyId: number; role?: string }>();
 
-// Initialize with a test session for development
-sessions.set('test-session-dev', { userId: 1, companyId: 1 });
-sessions.set('f4997d57-a07b-4211-ab8c-4c6c3be71740', { userId: 1, companyId: 1, role: 'admin' });
+// Development fallback - always reinitialize sessions on server restart
+const initializeSessions = () => {
+  sessions.clear(); // Clear existing sessions first
+  sessions.set('test-session-dev', { userId: 1, companyId: 1 });
+  sessions.set('f4997d57-a07b-4211-ab8c-4c6c3be71740', { userId: 1, companyId: 1, role: 'admin' });
+  console.log('🔑 Development sessions initialized');
+};
+
+// Initialize sessions on module load
+initializeSessions();
 
 // Authentication middleware
 const requireAuth = (req: any, res: any, next: any) => {
@@ -44,7 +51,7 @@ const requireAuth = (req: any, res: any, next: any) => {
 export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register enhanced auth routes (includes password reset)
-  setupEnhancedAuthRoutes(app);
+  setupEnhancedAuthRoutes(app, sessions);
   
   /**
    * @openapi
