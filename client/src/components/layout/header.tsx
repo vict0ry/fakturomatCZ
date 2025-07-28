@@ -63,8 +63,8 @@ export function Header() {
                 <div className="w-8 h-8 bg-neutral-300 rounded-full flex items-center justify-center">
                   <User className="h-4 w-4 text-neutral-600" />
                 </div>
-                <span className="hidden sm:block text-sm font-medium text-neutral-700">
-                  {user ? (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.username || user.email) : 'Uživatel'}
+                <span className="hidden sm:block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  {user ? (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : (user.username !== user.email ? user.username : user.email.split('@')[0])) : 'Uživatel'}
                 </span>
                 <ChevronDown className="h-4 w-4 text-neutral-400" />
               </Button>

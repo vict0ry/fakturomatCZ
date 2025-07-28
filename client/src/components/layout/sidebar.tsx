@@ -66,12 +66,6 @@ export function Sidebar({ className }: SidebarProps) {
       current: location === "/bank-accounts",
     },
     {
-      name: "Blog",
-      href: "/blog",
-      icon: BookOpen,
-      current: location === "/blog" || location.startsWith("/blog/"),
-    },
-    {
       name: "Profil",
       href: "/profile",
       icon: User,
