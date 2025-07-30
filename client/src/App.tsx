@@ -27,6 +27,7 @@ import Landing from "@/pages/landing";
 import Register from "@/pages/register";
 import { Login } from "@/components/auth/login";
 import AdminDashboard from "@/pages/admin/dashboard";
+import { AdminRouteGuard } from "@/components/admin-route-guard";
 
 import { AuthProvider, useAuth } from "@/contexts/auth-context";
 import PublicInvoicePage from "@/pages/public-invoice";
@@ -45,6 +46,18 @@ function PublicRouter() {
       <Route path="/login" component={Login} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
+      {/* BEZPEČNOSTNÍ BLOKACE - Admin panel vyžaduje přihlášení */}
+      <Route path="/admin">
+        {() => (
+          <div className="min-h-screen flex items-center justify-center">
+            <div className="p-8 text-center">
+              <h1 className="text-2xl font-bold mb-4 text-red-600">🚫 Přístup odepřen</h1>
+              <p className="text-gray-600 mb-4">Pro přístup do admin panelu se musíte nejprve přihlásit.</p>
+              <a href="/login" className="text-blue-600 hover:underline">Přihlásit se</a>
+            </div>
+          </div>
+        )}
+      </Route>
       <Route path="/" component={Landing} />
       <Route component={NotFound} />
     </Switch>
@@ -54,12 +67,18 @@ function PublicRouter() {
 function AuthenticatedRouter() {
   const { user } = useAuth();
   
-  // Admin dashboard má svoji vlastní route
+  // Admin dashboard má svoji vlastní route - POUZE pro ověřené admin uživatele
   if (user?.role === 'admin') {
     return (
       <div className="min-h-screen">
         <Switch>
-          <Route path="/admin" component={AdminDashboard} />
+          <Route path="/admin">
+            {() => (
+              <AdminRouteGuard>
+                <AdminDashboard />
+              </AdminRouteGuard>
+            )}
+          </Route>
           <Route path="/">
             <div className="p-8 text-center">
               <h1 className="text-2xl font-bold mb-4">Admin přístup</h1>
@@ -96,6 +115,16 @@ function AuthenticatedRouter() {
       <Route path="/email-settings" component={EmailSettings} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/bank-accounts" component={BankAccountsPage} />
+      {/* BEZPEČNOSTNÍ BLOKACE - Admin panel je zakázán pro běžné uživatele */}
+      <Route path="/admin">
+        {() => (
+          <div className="p-8 text-center">
+            <h1 className="text-2xl font-bold mb-4 text-red-600">🚫 Přístup odepřen</h1>
+            <p className="text-gray-600 mb-4">Nemáte oprávnění k přístupu do admin panelu.</p>
+            <a href="/dashboard" className="text-blue-600 hover:underline">Zpět na dashboard</a>
+          </div>
+        )}
+      </Route>
       <Route path="/" component={Dashboard} />
       <Route component={NotFound} />
     </Switch>
