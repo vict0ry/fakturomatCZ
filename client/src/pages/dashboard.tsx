@@ -27,10 +27,10 @@ export default function Dashboard() {
   const overdueAmount = overdueInvoices?.reduce((sum, invoice) => sum + Number(invoice.total), 0) || 0;
 
   return (
-    <div className="py-6">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+    <div className="p-4">
+      <div className="max-w-7xl mx-auto">
         {/* Page Header */}
-        <div className="md:flex md:items-center md:justify-between mb-8">
+        <div className="md:flex md:items-center md:justify-between mb-6">
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-bold leading-7 text-neutral-900 sm:text-3xl sm:truncate">
               Dashboard
@@ -76,7 +76,7 @@ export default function Dashboard() {
 
         {/* Unpaid Invoices Alert */}
         {overdueInvoices && overdueInvoices.length > 0 && (
-          <div className="mt-8">
+          <div className="mt-6">
             <Alert className="border-red-200 bg-red-50">
               <AlertTriangle className="h-4 w-4 text-red-400" />
               <AlertDescription className="text-red-800">

@@ -54,16 +54,20 @@ function PublicRouter() {
 function AuthenticatedRouter() {
   const { user } = useAuth();
   
-  // Admin uživatelé mají pouze přístup k admin dashboardu
+  // Admin dashboard má svoji vlastní route
   if (user?.role === 'admin') {
     return (
       <div className="min-h-screen">
         <Switch>
           <Route path="/admin" component={AdminDashboard} />
-          <Route path="/dashboard" component={AdminDashboard} />
-          <Route>
-            <AdminDashboard />
+          <Route path="/">
+            <div className="p-8 text-center">
+              <h1 className="text-2xl font-bold mb-4">Admin přístup</h1>
+              <p className="text-gray-600 mb-4">Pro administraci systému přejděte na:</p>
+              <a href="/admin" className="text-blue-600 hover:underline">/admin</a>
+            </div>
           </Route>
+          <Route component={NotFound} />
         </Switch>
       </div>
     );
@@ -77,7 +81,9 @@ function AuthenticatedRouter() {
       <Route path="/invoices/:id/edit" component={InvoiceEdit} />
       <Route path="/invoices/:id" component={InvoiceDetail} />
       <Route path="/customers" component={Customers} />
-      <Route path="/expenses/new" component={ExpenseCreatePage} />
+      <Route path="/expenses/new">
+        {() => <ExpenseCreatePage />}
+      </Route>
       <Route path="/expenses/:id/edit">
         {(params: any) => <ExpenseCreatePage key={`edit-${params.id}`} {...params} />}
       </Route>
@@ -90,6 +96,7 @@ function AuthenticatedRouter() {
       <Route path="/email-settings" component={EmailSettings} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/bank-accounts" component={BankAccountsPage} />
+      <Route path="/" component={Dashboard} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -108,6 +115,18 @@ function AppContent() {
 
   // Pokud je uživatel přihlášený, zobrazí autentifikované routes
   if (isAuthenticated) {
+    const { user } = useAuth();
+    
+    // Admin má vlastní layout bez sidebar a header
+    if (user?.role === 'admin') {
+      return (
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+          <AuthenticatedRouter />
+        </div>
+      );
+    }
+    
+    // Běžní uživatelé mají standardní layout
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Header />
