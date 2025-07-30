@@ -18,6 +18,7 @@ import bcrypt from "bcryptjs";
 import setupEmailRoutes from "./routes/email";
 import setupCompanyRoutes from "./routes/company";
 import setupEnhancedAuthRoutes from "./routes/auth-enhanced";
+import bankAccountsRouter from "./routes/bank-accounts";
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
 

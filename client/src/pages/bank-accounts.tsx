@@ -67,12 +67,23 @@ export default function BankAccountsPage() {
 
   // Create bank account mutation
   const createMutation = useMutation({
-    mutationFn: (data: BankAccountForm) =>
-      fetch("/api/bank-accounts", {
+    mutationFn: async (data: BankAccountForm) => {
+      const sessionId = localStorage.getItem('sessionId');
+      const response = await fetch("/api/bank-accounts", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${sessionId}`
+        },
         body: JSON.stringify(data),
-      }).then(res => res.json()),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/bank-accounts"] });
       setIsDialogOpen(false);
@@ -93,10 +104,21 @@ export default function BankAccountsPage() {
 
   // Generate payment email mutation
   const generateEmailMutation = useMutation({
-    mutationFn: (accountId: number) =>
-      fetch(`/api/bank-accounts/${accountId}/generate-email`, {
+    mutationFn: async (accountId: number) => {
+      const sessionId = localStorage.getItem('sessionId');
+      const response = await fetch(`/api/bank-accounts/${accountId}/generate-email`, {
         method: "POST",
-      }).then(res => res.json()),
+        headers: {
+          "Authorization": `Bearer ${sessionId}`
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/bank-accounts"] });
       toast({
@@ -115,12 +137,23 @@ export default function BankAccountsPage() {
 
   // Update bank account mutation
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<BankAccount> }) =>
-      fetch(`/api/bank-accounts/${id}`, {
+    mutationFn: async ({ id, data }: { id: number; data: Partial<BankAccount> }) => {
+      const sessionId = localStorage.getItem('sessionId');
+      const response = await fetch(`/api/bank-accounts/${id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${sessionId}`
+        },
         body: JSON.stringify(data),
-      }).then(res => res.json()),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/bank-accounts"] });
       toast({
@@ -140,7 +173,13 @@ export default function BankAccountsPage() {
   const form = useForm<BankAccountForm>({
     resolver: zodResolver(bankAccountSchema),
     defaultValues: {
+      name: "",
+      accountNumber: "",
+      iban: "",
+      swift: "",
       currency: "CZK",
+      bankName: "",
+      bankCode: "",
       enablePaymentMatching: false,
       enableOutgoingPaymentMatching: false,
       enableBulkMatching: false,

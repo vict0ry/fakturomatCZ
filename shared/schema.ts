@@ -303,6 +303,8 @@ export const paymentMatchingRules = pgTable("payment_matching_rules", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+
+
 // Relations
 export const companiesRelations = relations(companies, ({ many }) => ({
   users: many(users),
@@ -310,6 +312,9 @@ export const companiesRelations = relations(companies, ({ many }) => ({
   invoices: many(invoices),
   chatMessages: many(chatMessages),
   reminders: many(reminders),
+  bankAccounts: many(bankAccounts),
+  bankTransactions: many(bankTransactions),
+  paymentMatches: many(paymentMatches),
 }));
 
 export const usersRelations = relations(users, ({ one, many }) => ({
@@ -352,6 +357,8 @@ export const invoiceHistoryRelations = relations(invoiceHistory, ({ one }) => ({
   company: one(companies, { fields: [invoiceHistory.companyId], references: [companies.id] }),
   user: one(users, { fields: [invoiceHistory.userId], references: [users.id] }),
 }));
+
+
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
   user: one(users, { fields: [sessions.userId], references: [users.id] }),
