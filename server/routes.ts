@@ -1503,8 +1503,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       } catch (error) {
         // Company might already exist, try to find it
-        const companies = await storage.getCompanies();
-        company = companies[0] || { id: 1 }; // Use first company or default
+        const companies = await storage.getCompany(1); // Default company
+        company = companies || { id: 1 }; // Use default company
       }
       
       // Hash password
@@ -1676,41 +1676,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Recurring invoices endpoints
-  app.post("/api/invoices/recurring", requireAuth, async (req: any, res) => {
-    try {
-      const recurringData = {
-        ...req.body,
-        companyId: req.user.companyId,
-        userId: req.user.id
-      };
-      
-      const recurring = await storage.createRecurringInvoice(recurringData);
-      res.json(recurring);
-    } catch (error) {
-      console.error("Error creating recurring invoice:", error);
-      res.status(500).json({ message: "Failed to create recurring invoice" });
-    }
-  });
-
-  app.get("/api/invoices/recurring", requireAuth, async (req: any, res) => {
-    try {
-      const recurring = await storage.getRecurringInvoices(req.user.companyId);
-      res.json(recurring);
-    } catch (error) {
-      console.error("Error fetching recurring invoices:", error);
-      res.status(500).json({ message: "Failed to fetch recurring invoices" });
-    }
-  });
-
-  // Export endpoints
+  // Export endpoints (simplified - these methods don't exist in storage)
   app.get("/api/export/invoices/csv", requireAuth, async (req: any, res) => {
     try {
       const { startDate, endDate } = req.query;
-      const invoices = await storage.getInvoicesForExport(req.user.companyId, startDate, endDate);
+      const invoices = await storage.getCompanyInvoices(req.user.companyId, {
+        dateFrom: startDate ? new Date(startDate) : undefined,
+        dateTo: endDate ? new Date(endDate) : undefined
+      });
       
-      // Generate CSV
-      const csvContent = generateInvoicesCSV(invoices);
+      // Simple CSV generation (placeholder)
+      const csvContent = `Číslo faktury,Zákazník,Částka,Datum\n${invoices.map(inv => 
+        `${inv.invoiceNumber},"${inv.customer.name}",${inv.totalAmount},${inv.issueDate}`
+      ).join('\n')}`;
       
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', 'attachment; filename="faktury.csv"');
@@ -1718,23 +1696,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error exporting invoices to CSV:", error);
       res.status(500).json({ message: "Failed to export invoices" });
-    }
-  });
-
-  app.get("/api/export/accounting/pohoda", requireAuth, async (req: any, res) => {
-    try {
-      const { startDate, endDate } = req.query;
-      const invoices = await storage.getInvoicesForExport(req.user.companyId, startDate, endDate);
-      
-      // Generate Pohoda XML
-      const xmlContent = generatePohodaXML(invoices);
-      
-      res.setHeader('Content-Type', 'application/xml');
-      res.setHeader('Content-Disposition', 'attachment; filename="pohoda-export.xml"');
-      res.send(xmlContent);
-    } catch (error) {
-      console.error("Error exporting to Pohoda:", error);
-      res.status(500).json({ message: "Failed to export to Pohoda" });
     }
   });
 

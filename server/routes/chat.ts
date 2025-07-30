@@ -12,10 +12,11 @@ const openai = process.env.OPENAI_API_KEY ? new OpenAI({
 }) : null;
 
 // Universal AI Chat endpoint
-router.post("/universal", authenticateUser, async (req, res) => {
+router.post("/universal", requireAuth, async (req: any, res) => {
   try {
-    const user = req.user!;
-    const companyId = user.companyId!;
+    const user = await storage.getUser(req.session.userId);
+    if (!user) return res.status(401).json({ error: 'Uživatel nenalezen' });
+    const companyId = user.companyId;
     const { message } = req.body;
 
     if (!message || typeof message !== 'string') {
@@ -28,7 +29,7 @@ router.post("/universal", authenticateUser, async (req, res) => {
       userId: user.id,
       message,
       role: 'user',
-      sessionId: req.sessionID,
+      sessionId: 'chat-session',
     };
     
     await storage.createChatMessage(userMessage);
@@ -42,7 +43,7 @@ router.post("/universal", authenticateUser, async (req, res) => {
         userId: user.id,
         message: fallbackResponse.response,
         role: 'assistant',
-        sessionId: req.sessionID,
+        sessionId: 'chat-session',
         metadata: fallbackResponse.command ? { command: fallbackResponse.command } : undefined,
       };
       
@@ -132,7 +133,7 @@ PŘÍKLADY:
       userId: user.id,
       message: aiResponse.response,
       role: 'assistant',
-      sessionId: req.sessionID,
+      sessionId: 'chat-session',
       metadata: aiResponse.command ? { command: aiResponse.command } : undefined,
     };
     
@@ -153,10 +154,11 @@ PŘÍKLADY:
 });
 
 // Get chat history
-router.get("/history", authenticateUser, async (req, res) => {
+router.get("/history", requireAuth, async (req: any, res) => {
   try {
-    const user = req.user!;
-    const companyId = user.companyId!;
+    const user = await storage.getUser(req.session.userId);
+    if (!user) return res.status(401).json({ error: 'Uživatel nenalezen' });
+    const companyId = user.companyId;
     const limit = parseInt(req.query.limit as string) || 50;
 
     const messages = await storage.getChatMessages(companyId, user.id, limit);

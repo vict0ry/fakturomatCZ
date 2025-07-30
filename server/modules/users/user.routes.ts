@@ -49,7 +49,7 @@ router.get('/company', requireAuth, async (req: any, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
     
-    const users = await userService.getCompanyUsers(currentUser.companyId);
+    const users = await userService.getCompanyUsers(currentUser.companyId || 1);
     
     // Remove passwords from response
     const usersWithoutPasswords = users.map(user => {

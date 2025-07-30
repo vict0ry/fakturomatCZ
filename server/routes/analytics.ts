@@ -1,10 +1,10 @@
 import { Router } from "express";
 import { storage } from "../storage";
-import { authenticateUser } from "../middleware/auth";
+import { requireAuth } from "../middleware/auth";
 
 const router = Router();
 
-router.get("/", authenticateUser, async (req, res) => {
+router.get("/", requireAuth, async (req: any, res) => {
   try {
     const user = req.user!;
     const companyId = user.companyId!;
