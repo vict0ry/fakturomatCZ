@@ -40,6 +40,14 @@ Technical preference: Always use AI for intelligent text/product matching instea
 - ✅ **Debug logging comprehensive** - Full transparency in password reset process
 - 🎯 **FINAL RESOLUTION** - Complete password reset email flow working with Amazon SES
 
+### ADMIN PANEL ROUTING & LAYOUT FIXED (2025-07-30)
+- ✅ **Admin panel přesunut na vlastní route** - /admin místo zobrazování na hlavní stránce
+- ✅ **Separátní layout pro admin** - bez sidebar a header, čistý admin interface  
+- ✅ **Dashboard mezery opraveny** - padding zmenšen z py-6 na p-4
+- ✅ **Admin přihlášení** - admin@doklad.ai / admin123 automaticky směřuje na /admin
+- ✅ **Běžní uživatelé zachováni** - standardní layout se sidebar a header
+- 🎯 **Status**: Admin panel má vlastní route a funguje samostatně
+
 ### REGISTRACE & LOGIN SYSTEM RESOLVED (2025-07-28)
 - ✅ **Registrace route konflikty vyřešeny** - Duplicitní routes odstraněny z auth-enhanced.ts
 - ✅ **Databázové schéma synchronizováno** - enable_payment_matching a další sloupce přidány
