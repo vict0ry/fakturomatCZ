@@ -46,9 +46,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         
         let sessionToTry = savedSessionId;
         
-        // If no saved session or localStorage doesn't work (incognito), use dev session
+        // Only use dev session if we have a saved session, not automatically
         if (!sessionToTry) {
-          sessionToTry = 'test-session-dev';
+          // No session found, user is not logged in
+          setIsLoading(false);
+          return;
         }
         
         // Validate session with server
@@ -74,28 +76,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
             console.log('localStorage not available, using session cookies');
           }
         } else {
-          // If saved session failed and we haven't tried dev session yet, try it
-          if (savedSessionId && savedSessionId !== 'test-session-dev') {
-            const devResponse = await fetch('/api/auth/validate', {
-              method: 'GET',
-              credentials: 'include',
-              headers: {
-                'Authorization': `Bearer test-session-dev`,
-              },
-            });
-            
-            if (devResponse.ok) {
-              const devData = await devResponse.json();
-              setUser(devData.user);
-              setSessionId('test-session-dev');
-              
-              try {
-                localStorage.setItem('user', JSON.stringify(devData.user));
-                localStorage.setItem('sessionId', 'test-session-dev');
-              } catch (e) {
-                // localStorage not available - that's fine
-              }
-            }
+          // Session invalid, clear any stored data
+          setUser(null);
+          setSessionId(null);
+          try {
+            localStorage.removeItem('user');
+            localStorage.removeItem('sessionId');
+          } catch (e) {
+            // localStorage not available - that's fine
           }
         }
       } catch (error) {

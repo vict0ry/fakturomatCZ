@@ -79,13 +79,7 @@ function AuthenticatedRouter() {
               </AdminRouteGuard>
             )}
           </Route>
-          <Route path="/">
-            <div className="p-8 text-center">
-              <h1 className="text-2xl font-bold mb-4">Admin přístup</h1>
-              <p className="text-gray-600 mb-4">Pro administraci systému přejděte na:</p>
-              <a href="/admin" className="text-blue-600 hover:underline">/admin</a>
-            </div>
-          </Route>
+          <Route path="/" component={AdminDashboard} />
           <Route component={NotFound} />
         </Switch>
       </div>
