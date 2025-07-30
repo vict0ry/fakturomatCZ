@@ -103,7 +103,7 @@ function AuthenticatedRouter() {
 }
 
 function AppContent() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   
   if (isLoading) {
     return (
@@ -115,7 +115,6 @@ function AppContent() {
 
   // Pokud je uživatel přihlášený, zobrazí autentifikované routes
   if (isAuthenticated) {
-    const { user } = useAuth();
     
     // Admin má vlastní layout bez sidebar a header
     if (user?.role === 'admin') {

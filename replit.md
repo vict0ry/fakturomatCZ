@@ -40,6 +40,16 @@ Technical preference: Always use AI for intelligent text/product matching instea
 - ✅ **Debug logging comprehensive** - Full transparency in password reset process
 - 🎯 **FINAL RESOLUTION** - Complete password reset email flow working with Amazon SES
 
+### ADMIN LOGIN KOMPLETNĚ DEBUGOVÁN (2025-07-30)
+- ✅ **React Hooks chyba opravena** - Duplicitní useAuth() volání v App.tsx odstraněno
+- ✅ **Admin účet aktualizován** - Přidána jména (Admin Doklad.ai) pro správný toast
+- ✅ **API plně funkční** - Všechny testy (curl, node script) prochází úspěšně  
+- ✅ **Automatický redirect** - Admin se po přihlášení směřuje na /admin
+- ✅ **UI test vytvořen** - /test-ui-login pro kompletní debugging
+- ✅ **Session handling opraven** - Čištění localStorage před novým přihlášením
+- 🎯 **Credentials**: admin@doklad.ai / admin123
+- 🛠️ **Debug URL**: http://localhost:5000/test-ui-login
+
 ### ADMIN PANEL ROUTING & LAYOUT FIXED (2025-07-30)
 - ✅ **Admin panel přesunut na vlastní route** - /admin místo zobrazování na hlavní stránce
 - ✅ **Separátní layout pro admin** - bez sidebar a header, čistý admin interface  

@@ -317,6 +317,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Serve UI test page
+  app.get("/test-ui-login", (req, res) => {
+    res.sendFile(__dirname + "/../test-ui-login.html");
+  });
+
   // Company routes
   app.get("/api/company", requireAuth, async (req: any, res) => {
     try {
