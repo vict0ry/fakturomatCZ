@@ -12,10 +12,17 @@ const openai = process.env.OPENAI_API_KEY ? new OpenAI({
 }) : null;
 
 // Universal AI Chat endpoint
-router.post("/universal", requireAuth, async (req: any, res) => {
+router.post("/universal", async (req: any, res) => {
   try {
+    // Check session authentication
+    if (!req.session || !req.session.userId) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
     const user = await storage.getUser(req.session.userId);
-    if (!user) return res.status(401).json({ error: 'Uživatel nenalezen' });
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
     const companyId = user.companyId;
     const { message } = req.body;
 
@@ -154,10 +161,17 @@ PŘÍKLADY:
 });
 
 // Get chat history
-router.get("/history", requireAuth, async (req: any, res) => {
+router.get("/history", async (req: any, res) => {
   try {
+    // Check session authentication
+    if (!req.session || !req.session.userId) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
     const user = await storage.getUser(req.session.userId);
-    if (!user) return res.status(401).json({ error: 'Uživatel nenalezen' });
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
     const companyId = user.companyId;
     const limit = parseInt(req.query.limit as string) || 50;
 
