@@ -1457,6 +1457,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Database debug endpoint (temporary)
+  app.get("/api/debug/database", async (req, res) => {
+    try {
+      const dbUrl = process.env.DATABASE_URL;
+      const adminUser = await storage.getUserByEmail('admin@doklad.ai');
+      
+      res.json({
+        database_host: dbUrl?.split('@')[1]?.split('/')[0] || 'unknown',
+        admin_exists: !!adminUser,
+        admin_id: adminUser?.id || null,
+        password_length: adminUser?.password?.length || 0,
+        password_type: adminUser?.password?.startsWith('$2') ? 'bcrypt' : 'plain',
+        environment: process.env.NODE_ENV || 'unknown'
+      });
+    } catch (error) {
+      res.json({ error: error.message });
+    }
+  });
+
   // Mount additional routes
   setupEmailRoutes(app, sessions);
   setupCompanyRoutes(app, sessions);
