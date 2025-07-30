@@ -1476,6 +1476,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create admin user in production (temporary endpoint)
+  app.post("/api/debug/create-admin", async (req, res) => {
+    try {
+      // Only allow in production environment
+      if (process.env.NODE_ENV !== 'production') {
+        return res.status(403).json({ error: 'Only available in production' });
+      }
+      
+      // Check if admin already exists
+      const existingAdmin = await storage.getUserByEmail('admin@doklad.ai');
+      if (existingAdmin) {
+        return res.json({ message: 'Admin user already exists', admin_id: existingAdmin.id });
+      }
+      
+      // Create company first
+      let company;
+      try {
+        company = await storage.createCompany({
+          name: 'Doklad.ai Admin',
+          address: 'Praha, Czech Republic',
+          ico: '00000000',
+          dic: 'CZ00000000',
+          email: 'admin@doklad.ai',
+          phone: '+420123456789'
+        });
+      } catch (error) {
+        // Company might already exist, try to find it
+        const companies = await storage.getCompanies();
+        company = companies[0] || { id: 1 }; // Use first company or default
+      }
+      
+      // Hash password
+      const hashedPassword = bcrypt.hashSync('admin123', 12);
+      
+      // Create admin user
+      const adminUser = await storage.createUser({
+        username: 'admin',
+        email: 'admin@doklad.ai',
+        password: hashedPassword,
+        role: 'admin',
+        companyId: company.id,
+        isActive: true,
+        emailConfirmed: true
+      });
+      
+      res.json({ 
+        message: 'Admin user created successfully',
+        admin_id: adminUser.id,
+        company_id: company.id,
+        credentials: 'admin@doklad.ai / admin123'
+      });
+    } catch (error) {
+      console.error('Create admin error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Mount additional routes
   setupEmailRoutes(app, sessions);
   setupCompanyRoutes(app, sessions);
