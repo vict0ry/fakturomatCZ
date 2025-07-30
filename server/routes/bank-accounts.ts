@@ -1,86 +1,76 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { BankAccountService } from '../services/bank-account-service.js';
-import { insertBankAccountSchema } from '../../shared/schema.js';
+import { storage } from '../storage';
+import { requireAuth } from '../middleware/auth';
+import { insertBankAccountSchema } from '@shared/schema';
 
 const router = Router();
-const bankAccountService = new BankAccountService();
 
-// Validation schemas
-const createBankAccountSchema = insertBankAccountSchema.omit({ 
-  id: true, 
-  companyId: true, 
-  createdAt: true, 
+// All bank account routes require authentication
+router.use(requireAuth);
+
+// Bank account form validation schema
+const bankAccountFormSchema = insertBankAccountSchema.omit({
+  id: true,
+  companyId: true,
+  createdAt: true,
   updatedAt: true,
   paymentEmail: true,
   paymentEmailPassword: true,
   emailToken: true,
-  lastProcessedPayment: true,
+  lastProcessedPayment: true
 });
 
-const updateBankAccountSchema = createBankAccountSchema.partial();
-
-// Simple auth middleware
-const requireAuth = (req: any, res: any, next: any) => {
-  const sessionId = req.headers.authorization?.replace('Bearer ', '');
-  // Simple session check - in production use proper authentication
-  if (!sessionId) {
-    return res.status(401).json({ message: 'Authentication required' });
-  }
-  req.user = { companyId: 1, id: 1 }; // Mock user for now
-  next();
-};
-
 // GET /api/bank-accounts - Get all bank accounts for company
-router.get('/', requireAuth, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const accounts = await bankAccountService.getBankAccountsByCompany(req.user.companyId);
-    res.json(accounts);
+    const user = (req as any).user;
+    const bankAccounts = await storage.getBankAccountsByCompany(user.companyId);
+    
+    res.json(bankAccounts);
   } catch (error) {
     console.error('Error fetching bank accounts:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
 
-// GET /api/bank-accounts/:id - Get specific bank account
-router.get('/:id', requireAuth, async (req, res) => {
-  try {
-    const id = parseInt(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ message: 'Invalid account ID' });
-    }
-
-    const account = await bankAccountService.getBankAccountById(id, req.user.companyId);
-    if (!account) {
-      return res.status(404).json({ message: 'Bank account not found' });
-    }
-
-    res.json(account);
-  } catch (error) {
-    console.error('Error fetching bank account:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
 // POST /api/bank-accounts - Create new bank account
-router.post('/', requireAuth, async (req, res) => {
+router.post('/', async (req, res) => {
   try {
-    const validatedData = createBankAccountSchema.parse(req.body);
-
-    // Check if account number already exists
-    const exists = await bankAccountService.isAccountNumberExists(
-      validatedData.accountNumber, 
-      req.user.companyId
-    );
+    const user = (req as any).user;
     
-    if (exists) {
-      return res.status(400).json({ 
-        message: 'Bank account with this number already exists' 
-      });
+    // Validate request body
+    const validatedData = bankAccountFormSchema.parse(req.body);
+    
+    // Generate unique payment email and credentials if payment matching is enabled
+    let paymentEmail = null;
+    let paymentEmailPassword = null;
+    let emailToken = null;
+    
+    if (validatedData.enablePaymentMatching) {
+      // Generate unique token for email
+      emailToken = Math.random().toString(36).substring(2, 15) + 
+                   Math.random().toString(36).substring(2, 15);
+      
+      // Create payment email like: bank.{accountNumber}.{token}@doklad.ai
+      const cleanAccountNumber = validatedData.accountNumber.replace(/[^0-9]/g, '');
+      paymentEmail = `bank.${cleanAccountNumber}.${emailToken}@doklad.ai`;
+      
+      // Generate secure password
+      paymentEmailPassword = Math.random().toString(36).substring(2, 15) + 
+                            Math.random().toString(36).substring(2, 15);
     }
-
-    const account = await bankAccountService.createBankAccount(req.user.companyId, validatedData);
-    res.status(201).json(account);
+    
+    // Create bank account
+    const bankAccount = await storage.createBankAccount({
+      ...validatedData,
+      companyId: user.companyId,
+      paymentEmail,
+      paymentEmailPassword,
+      emailToken
+    });
+    
+    res.status(201).json(bankAccount);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ 
@@ -94,37 +84,69 @@ router.post('/', requireAuth, async (req, res) => {
   }
 });
 
-// PATCH /api/bank-accounts/:id - Update bank account
-router.patch('/:id', requireAuth, async (req, res) => {
+// GET /api/bank-accounts/:id - Get specific bank account
+router.get('/:id', async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ message: 'Invalid account ID' });
-    }
-
-    const validatedData = updateBankAccountSchema.parse(req.body);
-
-    // If updating account number, check if it already exists
-    if (validatedData.accountNumber) {
-      const exists = await bankAccountService.isAccountNumberExists(
-        validatedData.accountNumber, 
-        req.user.companyId,
-        id
-      );
-      
-      if (exists) {
-        return res.status(400).json({ 
-          message: 'Bank account with this number already exists' 
-        });
-      }
-    }
-
-    const account = await bankAccountService.updateBankAccount(id, req.user.companyId, validatedData);
-    if (!account) {
+    const user = (req as any).user;
+    const bankAccountId = parseInt(req.params.id);
+    
+    const bankAccount = await storage.getBankAccount(bankAccountId);
+    
+    if (!bankAccount) {
       return res.status(404).json({ message: 'Bank account not found' });
     }
+    
+    // Check if bank account belongs to user's company
+    if (bankAccount.companyId !== user.companyId) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+    
+    res.json(bankAccount);
+  } catch (error) {
+    console.error('Error fetching bank account:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
-    res.json(account);
+// PATCH /api/bank-accounts/:id - Update bank account
+router.patch('/:id', async (req, res) => {
+  try {
+    const user = (req as any).user;
+    const bankAccountId = parseInt(req.params.id);
+    
+    // Check if bank account exists and belongs to user's company
+    const existingAccount = await storage.getBankAccount(bankAccountId);
+    if (!existingAccount) {
+      return res.status(404).json({ message: 'Bank account not found' });
+    }
+    
+    if (existingAccount.companyId !== user.companyId) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+    
+    // Validate partial update data
+    const updateSchema = bankAccountFormSchema.partial();
+    const validatedData = updateSchema.parse(req.body);
+    
+    // Handle payment email generation if payment matching was enabled
+    let updateData = { ...validatedData };
+    
+    if (validatedData.enablePaymentMatching && !existingAccount.paymentEmail) {
+      // Generate payment email credentials for the first time
+      const emailToken = Math.random().toString(36).substring(2, 15) + 
+                        Math.random().toString(36).substring(2, 15);
+      
+      const cleanAccountNumber = existingAccount.accountNumber.replace(/[^0-9]/g, '');
+      updateData.paymentEmail = `bank.${cleanAccountNumber}.${emailToken}@doklad.ai`;
+      updateData.paymentEmailPassword = Math.random().toString(36).substring(2, 15) + 
+                                       Math.random().toString(36).substring(2, 15);
+      updateData.emailToken = emailToken;
+    }
+    
+    // Update bank account
+    const updatedAccount = await storage.updateBankAccount(bankAccountId, updateData);
+    
+    res.json(updatedAccount);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ 
@@ -138,49 +160,25 @@ router.patch('/:id', requireAuth, async (req, res) => {
   }
 });
 
-// POST /api/bank-accounts/:id/generate-email - Generate payment email
-router.post('/:id/generate-email', requireAuth, async (req, res) => {
-  try {
-    const id = parseInt(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ message: 'Invalid account ID' });
-    }
-
-    const result = await bankAccountService.generatePaymentEmail(id, req.user.companyId);
-    res.json({
-      message: 'Payment email generated successfully',
-      email: result.email,
-      // Don't return password in response for security
-    });
-  } catch (error) {
-    console.error('Error generating payment email:', error);
-    
-    if (error instanceof Error) {
-      if (error.message.includes('not found')) {
-        return res.status(404).json({ message: error.message });
-      }
-      if (error.message.includes('Mailcow')) {
-        return res.status(502).json({ message: 'Email service temporarily unavailable' });
-      }
-    }
-    
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
 // DELETE /api/bank-accounts/:id - Delete bank account
-router.delete('/:id', requireAuth, async (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ message: 'Invalid account ID' });
-    }
-
-    const success = await bankAccountService.deleteBankAccount(id, req.user.companyId);
-    if (!success) {
+    const user = (req as any).user;
+    const bankAccountId = parseInt(req.params.id);
+    
+    // Check if bank account exists and belongs to user's company
+    const existingAccount = await storage.getBankAccount(bankAccountId);
+    if (!existingAccount) {
       return res.status(404).json({ message: 'Bank account not found' });
     }
-
+    
+    if (existingAccount.companyId !== user.companyId) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+    
+    // Soft delete - set isActive to false
+    await storage.updateBankAccount(bankAccountId, { isActive: false });
+    
     res.json({ message: 'Bank account deleted successfully' });
   } catch (error) {
     console.error('Error deleting bank account:', error);

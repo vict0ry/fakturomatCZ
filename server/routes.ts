@@ -18,41 +18,20 @@ import bcrypt from "bcryptjs";
 import setupEmailRoutes from "./routes/email";
 import setupCompanyRoutes from "./routes/company";
 import setupEnhancedAuthRoutes from "./routes/auth-enhanced";
-import bankAccountsRouter from "./routes/bank-accounts";
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
 
-// Simple session middleware (in production, use proper session management)
-export const sessions = new Map<string, { userId: number; companyId: number; role?: string }>();
-
-// Development fallback - always reinitialize sessions on server restart
-const initializeSessions = () => {
-  sessions.clear(); // Clear existing sessions first
-  sessions.set('test-session-dev', { userId: 1, companyId: 1 });
-  sessions.set('f4997d57-a07b-4211-ab8c-4c6c3be71740', { userId: 1, companyId: 1, role: 'admin' });
-  console.log('🔑 Development sessions initialized');
-};
-
-// Initialize sessions on module load
-initializeSessions();
-
-// Authentication middleware
-const requireAuth = (req: any, res: any, next: any) => {
-  const sessionId = req.headers.authorization?.replace('Bearer ', '');
-  const session = sessions.get(sessionId || '');
-  
-  if (!session) {
-    return res.status(401).json({ message: 'Authentication required' });
-  }
-  
-  req.user = session;
-  next();
-};
+// Import modular routes
+import modularRoutes from './routes/index';
+import { sessions, requireAuth } from './middleware/auth';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register enhanced auth routes (includes password reset)
   setupEnhancedAuthRoutes(app, sessions);
+  
+  // Register modular routes
+  app.use('/api', modularRoutes);
   
   /**
    * @openapi
@@ -79,42 +58,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.send(swaggerSpec);
   });
 
-  /**
-   * @openapi
-   * /api/auth/register:
-   *   post:
-   *     summary: Registrace nové společnosti a administrátora
-   *     tags: [Authentication]
-   *     requestBody:
-   *       required: true
-   *       content:
-   *         application/json:
-   *           schema:
-   *             type: object
-   *             required: [company, user]
-   *             properties:
-   *               company:
-   *                 $ref: '#/components/schemas/Company'
-   *               user:
-   *                 type: object
-   *                 required: [username, password, email]
-   *                 properties:
-   *                   username:
-   *                     type: string
-   *                   password:
-   *                     type: string
-   *                     minLength: 6
-   *                   email:
-   *                     type: string
-   *                     format: email
-   *     responses:
-   *       201:
-   *         description: Úspěšná registrace
-   *       400:
-   *         description: Neplatná data
-   */
-  // Authentication routes
-  app.post("/api/auth/register", async (req, res) => {
+  // Legacy registration route (to be removed after full modular migration)
+  app.post("/api/auth/register-legacy", async (req, res) => {
     try {
       console.log("Registration request body:", JSON.stringify(req.body, null, 2));
       console.log("Keys in req.body:", Object.keys(req.body));
@@ -253,30 +198,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   //   }
   // });
 
-  app.get("/api/auth/validate", requireAuth, async (req: any, res) => {
-    try {
-      const user = await storage.getUser(req.user.userId);
-      if (user) {
-        res.json({ 
-          user: { ...user, password: undefined },
-          valid: true
-        });
-      } else {
-        res.status(401).json({ message: "Invalid session" });
-      }
-    } catch (error) {
-      console.error("Session validation error:", error);
-      res.status(401).json({ message: "Invalid session" });
-    }
-  });
-
-  app.post("/api/auth/logout", (req, res) => {
-    const sessionId = req.headers.authorization?.replace('Bearer ', '');
-    if (sessionId) {
-      sessions.delete(sessionId);
-    }
-    res.json({ message: "Logged out successfully" });
-  });
+  // Auth routes are now handled by modular routes
 
   // Public ARES search for registration
   app.get("/api/public/ares/search", async (req, res) => {
@@ -323,250 +245,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendFile(__dirname + "/../test-ui-login.html");
   });
 
-  // Company routes
-  app.get("/api/company", requireAuth, async (req: any, res) => {
-    try {
-      const company = await storage.getCompany(req.user.companyId);
-      res.json(company);
-    } catch (error) {
-      console.error("Error fetching company:", error);
-      res.status(500).json({ message: "Failed to fetch company" });
-    }
-  });
+  // Company routes are now handled by modular routes
 
-  app.patch("/api/company", requireAuth, async (req: any, res) => {
-    try {
-      const companyData = insertCompanySchema.partial().parse(req.body);
-      const updatedCompany = await storage.updateCompany(req.user.companyId, companyData);
-      res.json(updatedCompany);
-    } catch (error) {
-      console.error("Error updating company:", error);
-      res.status(500).json({ message: "Failed to update company" });
-    }
-  });
+  // User invitation will be moved to company module later
 
-  // Company settings endpoint (alias for frontend compatibility)
-  app.get("/api/company/settings", requireAuth, async (req: any, res) => {
-    try {
-      const company = await storage.getCompany(req.user.companyId);
-      res.json(company);
-    } catch (error) {
-      console.error("Error fetching company settings:", error);
-      res.status(500).json({ message: "Failed to fetch company settings" });
-    }
-  });
+  // Customer routes are now handled by modular routes
 
-  app.post("/api/company/settings", requireAuth, async (req: any, res) => {
-    try {
-      const companyData = insertCompanySchema.partial().parse(req.body);
-      const updatedCompany = await storage.updateCompany(req.user.companyId, companyData);
-      res.json(updatedCompany);
-    } catch (error) {
-      console.error("Error updating company settings:", error);
-      res.status(500).json({ message: "Failed to update company settings" });
-    }
-  });
-
-  // Company users management
-  app.get("/api/company/users", requireAuth, async (req: any, res) => {
-    try {
-      const users = await storage.getCompanyUsers(req.user.companyId);
-      res.json(users);
-    } catch (error) {
-      console.error("Error fetching company users:", error);
-      res.status(500).json({ message: "Failed to fetch company users" });
-    }
-  });
-
-  app.post("/api/company/users/invite", requireAuth, async (req: any, res) => {
-    try {
-      const { email, role, firstName, lastName } = req.body;
-      
-      // Check if user already exists
-      const existingUser = await storage.getUserByUsername(email);
-      if (existingUser) {
-        return res.status(400).json({ message: "User with this email already exists" });
-      }
-      
-      // For now, create the user directly (in production, this would send an email invitation)
-      const hashedPassword = await bcrypt.hash('temppassword123', 10); // Temporary password
-      
-      const userData = {
-        username: email,
-        email,
-        firstName,
-        lastName,
-        password: hashedPassword,
-        role,
-        companyId: req.user.companyId,
-        isActive: true
-      };
-      
-      const newUser = await storage.createUser(userData);
-      
-      res.json({ 
-        message: "User created successfully", 
-        user: { ...newUser, password: undefined },
-        tempPassword: 'temppassword123' // In production, this would be sent via email
-      });
-    } catch (error) {
-      console.error("Error inviting user:", error);
-      res.status(500).json({ message: "Failed to invite user" });
-    }
-  });
-
-  /**
-   * @openapi
-   * /api/customers:
-   *   get:
-   *     summary: Seznam všech zákazníků
-   *     tags: [Customers]
-   *     security:
-   *       - bearerAuth: []
-   *     parameters:
-   *       - in: query
-   *         name: search
-   *         schema:
-   *           type: string
-   *         description: Hledaný text
-   *     responses:
-   *       200:
-   *         description: Seznam zákazníků
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: array
-   *               items:
-   *                 $ref: '#/components/schemas/Customer'
-   *   post:
-   *     summary: Vytvoření nového zákazníka
-   *     tags: [Customers]
-   *     security:
-   *       - bearerAuth: []
-   *     requestBody:
-   *       required: true
-   *       content:
-   *         application/json:
-   *           schema:
-   *             $ref: '#/components/schemas/Customer'
-   *     responses:
-   *       201:
-   *         description: Zákazník vytvořen
-   *       400:
-   *         description: Neplatná data
-   */
-  // Customer routes
-  app.get("/api/customers", requireAuth, async (req: any, res) => {
-    try {
-      const customers = await storage.getCompanyCustomers(req.user.companyId);
-      res.json(customers);
-    } catch (error) {
-      console.error("Error fetching customers:", error);
-      res.status(500).json({ message: "Failed to fetch customers" });
-    }
-  });
-
-  app.get("/api/customers/search", requireAuth, async (req: any, res) => {
-    try {
-      const query = req.query.q as string;
-      if (!query) {
-        return res.json([]);
-      }
-
-      // Search local customers first
-      const localCustomers = await storage.searchCustomers(query, req.user.companyId);
-      
-      // If no local customers found and query looks like ICO or company name, search ARES
-      let aresResults: any[] = [];
-      if (localCustomers.length === 0) {
-        if (/^\d{8}$/.test(query)) {
-          // Query is ICO
-          const aresCompany = await fetchCompanyFromAres(query);
-          if (aresCompany) {
-            aresResults = [{ ...aresCompany, source: 'ares' }];
-          }
-        } else if (query.length > 2) {
-          // Query is company name
-          const aresCompanies = await searchCompaniesByName(query);
-          aresResults = aresCompanies.map(company => ({ ...company, source: 'ares' }));
-        }
-      }
-
-      res.json([
-        ...localCustomers.map(customer => ({ ...customer, source: 'local' })),
-        ...aresResults
-      ]);
-    } catch (error) {
-      console.error("Error searching customers:", error);
-      res.status(500).json({ message: "Failed to search customers" });
-    }
-  });
-
-  app.get("/api/customers/inactive", requireAuth, async (req: any, res) => {
-    try {
-      const days = parseInt(req.query.days as string) || 90;
-      const customers = await storage.getInactiveCustomers(req.user.companyId, days);
-      res.json(customers);
-    } catch (error) {
-      console.error("Error fetching inactive customers:", error);
-      res.status(500).json({ message: "Failed to fetch inactive customers" });
-    }
-  });
-
-  app.post("/api/customers", requireAuth, async (req: any, res) => {
-    try {
-      const customerData = insertCustomerSchema.parse({
-        ...req.body,
-        companyId: req.user.companyId
-      });
-      
-      // If ICO is provided, try to fetch additional data from ARES
-      if (customerData.ico) {
-        const aresData = await fetchCompanyFromAres(customerData.ico);
-        if (aresData) {
-          Object.assign(customerData, {
-            name: customerData.name || aresData.name,
-            dic: customerData.dic || aresData.dic,
-            address: customerData.address || aresData.address,
-            city: customerData.city || aresData.city,
-            postalCode: customerData.postalCode || aresData.postalCode,
-          });
-        }
-      }
-
-      const customer = await storage.createCustomer(customerData);
-      res.json(customer);
-    } catch (error) {
-      console.error("Error creating customer:", error);
-      res.status(500).json({ message: "Failed to create customer" });
-    }
-  });
-
-  app.get("/api/customers/:id", requireAuth, async (req: any, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const customer = await storage.getCustomer(id, req.user.companyId);
-      if (!customer) {
-        return res.status(404).json({ message: "Customer not found" });
-      }
-      res.json(customer);
-    } catch (error) {
-      console.error("Error fetching customer:", error);
-      res.status(500).json({ message: "Failed to fetch customer" });
-    }
-  });
-
-  app.patch("/api/customers/:id", requireAuth, async (req: any, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const customerData = insertCustomerSchema.partial().parse(req.body);
-      const customer = await storage.updateCustomer(id, customerData, req.user.companyId);
-      res.json(customer);
-    } catch (error) {
-      console.error("Error updating customer:", error);
-      res.status(500).json({ message: "Failed to update customer" });
-    }
-  });
+  // Customer PATCH route also handled by modular routes
 
   /**
    * @openapi
@@ -1583,10 +1268,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Mount additional routes
+  // Mount additional routes (most routes are now in modular modules)
   setupEmailRoutes(app, sessions);
-  setupCompanyRoutes(app, sessions);
-  setupEnhancedAuthRoutes(app, sessions);
+  // setupCompanyRoutes already handled by modular routes
+  // setupEnhancedAuthRoutes already called above
   
   // Bank accounts routes
   const bankAccountRoutes = (await import('./routes/bank-accounts.js')).default;

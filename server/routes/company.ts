@@ -1,130 +1,104 @@
-import { Express } from 'express';
+import { Router } from 'express';
+import { z } from 'zod';
+import { storage } from '../storage';
+import { requireAuth } from '../middleware/auth';
+import { insertCompanySchema } from '@shared/schema';
 
-// Import sessions from main routes file
-let sessions: Map<string, any>;
+const router = Router();
 
-function requireAuth(req: any, res: any, next: any) {
-  const sessionId = req.headers.authorization?.replace('Bearer ', '');
-  if (!sessionId || !sessions.has(sessionId)) {
-    return res.status(401).json({ message: 'Unauthorized' });
-  }
-  req.user = sessions.get(sessionId);
-  next();
-}
+// All company routes require authentication
+router.use(requireAuth);
 
-export default function setupCompanyRoutes(app: Express, sessionStore: Map<string, any>) {
-  sessions = sessionStore;
-
-// Company settings endpoints
-app.get('/api/company/settings', requireAuth, async (req: any, res) => {
+// GET /api/companies - Get company info
+router.get('/', async (req, res) => {
   try {
-    // In real app, fetch from database using req.user.companyId
-    // For demo, return default company data
-    res.json({
-      name: 'Test s.r.o.',
-      ico: '12345678',
-      dic: 'CZ12345678',
-      address: 'Testovací 123',
-      city: 'Praha',
-      postalCode: '110 00',
-      phone: '+420 123 456 789',
-      email: 'info@test.cz',
-      website: 'https://www.test.cz',
-      bankAccount: '123456789/0100',
-      iban: 'CZ65 0100 0000 0123 4567 89'
-    });
+    const user = (req as any).user;
+    const company = await storage.getCompany(user.companyId);
+    res.json(company);
+  } catch (error) {
+    console.error('Error fetching company:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// PATCH /api/companies - Update company
+router.patch('/', async (req, res) => {
+  try {
+    const user = (req as any).user;
+    
+    // Validate partial update data
+    const updateSchema = insertCompanySchema.partial();
+    const validatedData = updateSchema.parse(req.body);
+    
+    // Update company
+    const updatedCompany = await storage.updateCompany(user.companyId, validatedData);
+    
+    res.json(updatedCompany);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ 
+        message: 'Validation error', 
+        errors: error.errors 
+      });
+    }
+    
+    console.error('Error updating company:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// GET /api/companies/settings - Get company settings (alias for compatibility)
+router.get('/settings', async (req, res) => {
+  try {
+    const user = (req as any).user;
+    const company = await storage.getCompany(user.companyId);
+    res.json(company);
   } catch (error) {
     console.error('Error fetching company settings:', error);
-    res.status(500).json({ message: 'Failed to fetch company settings' });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
-app.post('/api/company/settings', requireAuth, async (req: any, res) => {
+// POST /api/companies/settings - Update company settings (alias for compatibility)
+router.post('/settings', async (req, res) => {
   try {
-    const companyData = req.body;
+    const user = (req as any).user;
     
-    // In real app, update company in database
-    // For demo, just validate and return success
-    if (!companyData.name || !companyData.ico || !companyData.email) {
-      return res.status(400).json({ message: 'Name, ICO and email are required' });
-    }
-
-    res.json({ message: 'Company settings updated successfully' });
+    // Validate partial update data
+    const updateSchema = insertCompanySchema.partial();
+    const validatedData = updateSchema.parse(req.body);
+    
+    // Update company
+    const updatedCompany = await storage.updateCompany(user.companyId, validatedData);
+    
+    res.json(updatedCompany);
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ 
+        message: 'Validation error', 
+        errors: error.errors 
+      });
+    }
+    
     console.error('Error updating company settings:', error);
-    res.status(500).json({ message: 'Failed to update company settings' });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
-// Company users endpoints
-app.get('/api/company/users', requireAuth, async (req: any, res) => {
+// GET /api/companies/users - Get company users
+router.get('/users', async (req, res) => {
   try {
-    // In real app, fetch users for company from database
-    // For demo, return test users
-    res.json([
-      {
-        id: 1,
-        firstName: 'Admin',
-        lastName: 'User',
-        email: 'admin@test.cz',
-        role: 'admin',
-        isActive: true
-      },
-      {
-        id: 2,
-        firstName: 'Test',
-        lastName: 'User',
-        email: 'user@test.cz',
-        role: 'user',
-        isActive: true
-      }
-    ]);
+    const user = (req as any).user;
+    const users = await storage.getCompanyUsers(user.companyId);
+    
+    // Remove password fields from response
+    const safeUsers = users.map(u => ({ ...u, password: undefined }));
+    
+    res.json(safeUsers);
   } catch (error) {
     console.error('Error fetching company users:', error);
-    res.status(500).json({ message: 'Failed to fetch company users' });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
-app.post('/api/company/users/invite', requireAuth, async (req: any, res) => {
-  try {
-    const { email, role, firstName, lastName } = req.body;
-    
-    if (!email || !role || !firstName || !lastName) {
-      return res.status(400).json({ message: 'All fields are required' });
-    }
-
-    // In real app, would:
-    // 1. Create user invitation in database
-    // 2. Send invitation email
-    // 3. Return invitation details
-    
-    res.json({ 
-      message: 'User invitation sent successfully',
-      invitation: {
-        email,
-        role,
-        firstName,
-        lastName,
-        status: 'pending'
-      }
-    });
-  } catch (error) {
-    console.error('Error inviting user:', error);
-    res.status(500).json({ message: 'Failed to invite user' });
-  }
-});
-
-app.delete('/api/company/users/:id', requireAuth, async (req: any, res) => {
-  try {
-    const userId = parseInt(req.params.id);
-    
-    // In real app, remove user from company
-    // For demo, just return success
-    res.json({ message: 'User removed successfully' });
-  } catch (error) {
-    console.error('Error removing user:', error);
-    res.status(500).json({ message: 'Failed to remove user' });
-  }
-});
-
-}
+export default router;

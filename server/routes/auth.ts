@@ -1,201 +1,170 @@
-import express from 'express';
+import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { storage } from '../storage';
-import { z } from 'zod';
+import { sessions } from '../middleware/auth';
 
-const router = express.Router();
+const router = Router();
 
-// Registration with trial setup
-const registerSchema = z.object({
-  personal: z.object({
-    firstName: z.string().min(1),
-    lastName: z.string().min(1),
-    email: z.string().email(),
-    password: z.string().min(6),
-  }),
-  company: z.object({
-    companyName: z.string().min(1),
-    ico: z.string().optional(),
-    dic: z.string().optional(),
-    address: z.string().optional(),
-    city: z.string().optional(),
-    postalCode: z.string().optional(),
-    phone: z.string().optional(),
-    bankAccount: z.string().optional(),
-  }),
-  payment: z.object({
-    cardNumber: z.string(),
-    expiryDate: z.string(),
-    cvv: z.string(),
-    cardName: z.string(),
-  }),
-  trialDays: z.number().default(7),
-});
-
-router.post('/register', async (req, res) => {
-  try {
-    const validatedData = registerSchema.parse(req.body);
-    const { personal, company, payment, trialDays } = validatedData;
-
-    // Check if user already exists
-    const existingUser = await storage.getUserByEmail(personal.email);
-    if (existingUser) {
-      return res.status(400).json({ error: 'User already exists with this email' });
-    }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(personal.password, 10);
-
-    // Calculate trial end date
-    const trialEndsAt = new Date();
-    trialEndsAt.setDate(trialEndsAt.getDate() + trialDays);
-
-    // Create company first
-    const newCompany = await storage.createCompany({
-      name: company.companyName,
-      ico: company.ico,
-      dic: company.dic,
-      address: company.address,
-      city: company.city,
-      postalCode: company.postalCode,
-      phone: company.phone,
-      bankAccount: company.bankAccount,
-      email: personal.email,
-      country: 'CZ',
-    });
-
-    // For demo purposes, we'll store payment info as placeholder
-    // In production, you'd integrate with Stripe here
-    const stripeCustomerId = `cus_demo_${Date.now()}`;
-    
-    // Create user with trial
-    const newUser = await storage.createUser({
-      companyId: newCompany.id,
-      username: personal.email,
-      email: personal.email,
-      password: hashedPassword,
-      firstName: personal.firstName,
-      lastName: personal.lastName,
-      role: 'admin', // First user in company is admin
-      subscriptionStatus: 'trial',
-      trialEndsAt,
-      stripeCustomerId,
-      planType: 'basic',
-      monthlyPrice: '199.00',
-    });
-
-    // Set session
-    req.session.userId = newUser.id;
-
-    res.status(201).json({
-      success: true,
-      user: {
-        id: newUser.id,
-        email: newUser.email,
-        firstName: newUser.firstName,
-        lastName: newUser.lastName,
-        subscriptionStatus: newUser.subscriptionStatus,
-        trialEndsAt: newUser.trialEndsAt,
-      },
-    });
-  } catch (error) {
-    console.error('Registration error:', error);
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: 'Invalid registration data', details: error.errors });
-    }
-    res.status(500).json({ error: 'Registration failed' });
-  }
-});
-
-// Login endpoint
+// Authentication routes
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { username, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+    if (!username || !password) {
+      return res.status(400).json({ message: 'Username and password are required' });
     }
 
-    const user = await storage.getUserByEmail(email);
+    // Find user by username or email
+    const user = await storage.getUserByUsername(username) || 
+                 await storage.getUserByEmail(username);
     if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Update last login
-    await storage.updateUserLastLogin(user.id);
-
-    // Set session
-    req.session.userId = user.id;
+    // Create session
+    const sessionId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    sessions.set(sessionId, { userId: user.id, companyId: user.companyId, role: user.role });
 
     res.json({
-      success: true,
       user: {
         id: user.id,
+        username: user.username,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
-        companyId: user.companyId,
-        subscriptionStatus: user.subscriptionStatus,
-        trialEndsAt: user.trialEndsAt,
+        companyId: user.companyId
       },
+      sessionId
     });
+
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Login failed' });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
-// Logout endpoint
-router.post('/logout', (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      return res.status(500).json({ error: 'Logout failed' });
+router.post('/register', async (req, res) => {
+  try {
+    const {
+      username, email, password, firstName, lastName,
+      companyName, ico, dic, address, city, postalCode, phone, website
+    } = req.body;
+
+    // Check if user already exists
+    const existingUser = await storage.getUserByUsername(username) || 
+                         await storage.getUserByEmail(email);
+    
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists' });
     }
-    res.json({ success: true });
-  });
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create company first
+    const company = await storage.createCompany({
+      name: companyName,
+      ico,
+      dic,
+      address,
+      city,
+      postalCode,
+      country: 'CZ',
+      phone,
+      website
+    });
+
+    // Create user
+    const user = await storage.createUser({
+      username,
+      email,
+      password: hashedPassword,
+      firstName,
+      lastName,
+      companyId: company.id,
+      role: 'user'
+    });
+
+    // Create session
+    const sessionId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    sessions.set(sessionId, { userId: user.id, companyId: user.companyId, role: user.role });
+
+    res.status(201).json({
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        companyId: user.companyId
+      },
+      sessionId
+    });
+
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 });
 
-// Get current user
-router.get('/me', async (req, res) => {
+router.get('/validate', async (req, res) => {
   try {
-    if (!req.session.userId) {
-      return res.status(401).json({ error: 'Not authenticated' });
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'No valid session' });
     }
 
-    const user = await storage.getUser(req.session.userId);
+    const sessionId = authHeader.substring(7);
+    const session = sessions.get(sessionId);
+    
+    if (!session) {
+      return res.status(401).json({ message: 'Invalid session' });
+    }
+
+    const user = await storage.getUser(session.userId);
     if (!user) {
-      return res.status(401).json({ error: 'User not found' });
-    }
-
-    // Check if trial has expired
-    if (user.subscriptionStatus === 'trial' && user.trialEndsAt && new Date() > user.trialEndsAt) {
-      // Trial expired, update status
-      await storage.updateUserSubscription(user.id, {
-        subscriptionStatus: 'expired'
-      });
-      user.subscriptionStatus = 'expired';
+      return res.status(401).json({ message: 'User not found' });
     }
 
     res.json({
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role: user.role,
-      companyId: user.companyId,
-      subscriptionStatus: user.subscriptionStatus,
-      trialEndsAt: user.trialEndsAt,
-      isAuthenticated: true,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        companyId: user.companyId
+      },
+      valid: true
     });
+
   } catch (error) {
-    console.error('Get user error:', error);
-    res.status(500).json({ error: 'Failed to get user' });
+    console.error('Session validation error:', error);
+    res.status(401).json({ message: 'Invalid session' });
+  }
+});
+
+router.post('/logout', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const sessionId = authHeader.substring(7);
+      sessions.delete(sessionId);
+    }
+    
+    res.json({ message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
