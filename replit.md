@@ -8,6 +8,7 @@ This is a modern, full-stack invoice management system built for Czech businesse
 
 Preferred communication style: Simple, everyday language.
 Technical preference: Always use AI for intelligent text/product matching instead of manual word searching or pattern matching.
+**KRITICKÁ BEZPEČNOSTNÍ PREFERENCE**: Před smazáním jakékoliv funkcionality (databázové sloupce, API endpointy, kód) VŽDY nejprve upozornit uživatele a počkat na jeho souhlas. Nikdy nemazat nic co by mohlo narušit funkcionalitet systému bez explicitního povolení.
 
 ## Recent Changes
 
