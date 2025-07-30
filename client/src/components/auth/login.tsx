@@ -58,11 +58,15 @@ export function Login() {
       
       toast({
         title: "Úspěšně přihlášen",
-        description: `Vítejte zpět, ${result.user.firstName}!`,
+        description: `Vítejte zpět, ${result.user.firstName || result.user.username}!`,
       });
       
-      // Přesměrování na dashboard
-      navigate('/dashboard');
+      // Přesměrování podle role
+      if (result.user.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (error: any) {
       toast({
         title: "Chyba při přihlášení",
