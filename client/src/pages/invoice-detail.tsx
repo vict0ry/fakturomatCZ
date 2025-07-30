@@ -76,6 +76,27 @@ export default function InvoiceDetail() {
     },
   });
 
+  const sendEmailMutation = useMutation({
+    mutationFn: () => fetch(`/api/invoices/${invoiceId}/send-email`, { 
+      method: 'POST',
+      credentials: 'include'
+    }).then(res => res.json()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices", invoiceId] });
+      toast({
+        title: "Email odeslán",
+        description: "Faktura byla úspěšně odeslána emailem.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Chyba",
+        description: "Nepodařilo se odeslat fakturu emailem.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const updateStatusMutation = useMutation({
     mutationFn: (status: string) => invoiceAPI.update(invoiceId!, { status }),
     onSuccess: () => {
@@ -306,10 +327,10 @@ export default function InvoiceDetail() {
   }
 
   return (
-    <div className="py-6">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+    <div className="p-4">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-4">
           <div className="flex items-center mb-4">
             <Button variant="ghost" asChild className="mr-4">
               <a href="/invoices">
@@ -342,6 +363,15 @@ export default function InvoiceDetail() {
                 {downloadPDFMutation.isPending ? 'Stahování...' : 'Stáhnout PDF'}
               </Button>
               
+              <Button
+                variant="outline"
+                onClick={() => sendEmailMutation.mutate()}
+                disabled={sendEmailMutation.isPending}
+              >
+                <Mail className="mr-2 h-4 w-4" />
+                {sendEmailMutation.isPending ? 'Odesílání...' : 'Poslat emailem'}
+              </Button>
+              
               <Button 
                 variant="outline" 
                 onClick={() => setShowHistory(!showHistory)}
@@ -369,9 +399,9 @@ export default function InvoiceDetail() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4">
             {/* Customer Info */}
             <Card>
               <CardHeader>

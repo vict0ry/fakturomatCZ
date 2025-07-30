@@ -857,6 +857,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Send invoice via email
+  app.post('/api/invoices/:id/send-email', requireAuth, async (req: any, res) => {
+    try {
+      const invoiceId = parseInt(req.params.id);
+      const invoice = await storage.getInvoiceWithDetails(invoiceId, req.user.companyId);
+      
+      if (!invoice) {
+        return res.status(404).json({ error: 'Faktura nenalezena' });
+      }
+
+      const customer = await storage.getCustomer(invoice.customerId);
+      if (!customer || !customer.email) {
+        return res.status(400).json({ error: 'Zákazník nemá email adresu' });
+      }
+
+      // Generate PDF
+      const pdfBuffer = await generateInvoicePDF(invoice, req.user.companyId);
+      
+      // Send email with PDF attachment
+      const emailSent = await emailService.sendInvoiceEmail(
+        invoice,
+        pdfBuffer
+      );
+
+      if (emailSent) {
+        // Record activity in invoice history
+        await storage.createInvoiceHistory({
+          invoiceId: invoiceId,
+          companyId: req.user.companyId,
+          userId: req.user.userId,
+          action: 'email_sent',
+          description: `Faktura odeslána emailem na ${customer.email}`,
+          oldValue: null,
+          newValue: { emailSentTo: customer.email, timestamp: new Date() }
+        });
+
+        res.json({ 
+          message: 'Faktura byla úspěšně odeslána emailem',
+          sentTo: customer.email
+        });
+      } else {
+        res.status(500).json({ error: 'Nepodařilo se odeslat email' });
+      }
+    } catch (error) {
+      console.error('Email sending error:', error);
+      res.status(500).json({ error: 'Chyba při odesílání emailu' });
+    }
+  });
+
   app.get("/api/invoices/:id/pdf", requireAuth, async (req: any, res) => {
     try {
       const idParam = req.params.id;

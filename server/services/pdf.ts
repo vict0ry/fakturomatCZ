@@ -3,7 +3,8 @@ import type { Invoice, Customer, InvoiceItem } from "@shared/schema";
 import { QRGenerator } from "./qr-generator";
 
 export async function generateInvoicePDF(
-  invoice: Invoice & { customer: Customer; items: InvoiceItem[] }
+  invoice: Invoice & { customer: Customer; items: InvoiceItem[] },
+  companyId?: number
 ): Promise<Buffer> {
   // Generate QR code for payment
   let qrCodeDataURL = '';
