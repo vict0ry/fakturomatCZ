@@ -196,86 +196,43 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllUsersWithStats(): Promise<any[]> {
-    // Get all users with their company information and stats
-    const usersWithCompanies = await db.select({
-      id: users.id,
-      username: users.username,
-      email: users.email,
-      firstName: users.firstName,
-      lastName: users.lastName,
-      role: users.role,
-      isActive: users.isActive,
-      emailConfirmed: users.emailConfirmed,
-      subscriptionStatus: users.subscriptionStatus,
-      subscriptionEnds: users.subscriptionEnds,
-      lastLogin: users.lastLogin,
-      createdAt: users.createdAt,
-      companyId: users.companyId,
-      companyName: companies.name,
-      companyIco: companies.ico,
-      companyDic: companies.dic
-    })
-    .from(users)
-    .leftJoin(companies, eq(users.companyId, companies.id))
-    .orderBy(desc(users.createdAt));
-
-    // Get stats for each user
-    const usersWithStats = await Promise.all(
-      usersWithCompanies.map(async (user) => {
-        // Get invoice count and total revenue
-        const invoiceStats = await db.select({
-          count: sql<number>`count(*)`,
-          totalRevenue: sql<number>`coalesce(sum(${invoices.totalWithVat}), 0)`
-        })
-        .from(invoices)
-        .where(eq(invoices.companyId, user.companyId));
-
-        // Get expense count
-        const expenseStats = await db.select({
-          count: sql<number>`count(*)`
-        })
-        .from(expenses)
-        .where(eq(expenses.companyId, user.companyId));
-
-        // Get last activity (most recent invoice or expense)
-        const lastInvoice = await db.select({ createdAt: invoices.createdAt })
-          .from(invoices)
-          .where(eq(invoices.companyId, user.companyId))
-          .orderBy(desc(invoices.createdAt))
-          .limit(1);
-
-        const lastExpense = await db.select({ createdAt: expenses.createdAt })
-          .from(expenses)
-          .where(eq(expenses.companyId, user.companyId))
-          .orderBy(desc(expenses.createdAt))
-          .limit(1);
-
-        const lastActivity = [
-          lastInvoice[0]?.createdAt,
-          lastExpense[0]?.createdAt
-        ]
-        .filter(Boolean)
-        .sort((a, b) => new Date(b!).getTime() - new Date(a!).getTime())[0];
-
-        return {
-          ...user,
-          company: {
-            id: user.companyId,
-            name: user.companyName,
-            ico: user.companyIco,
-            dic: user.companyDic
-          },
-          stats: {
-            invoiceCount: Number(invoiceStats[0]?.count || 0),
-            totalRevenue: Number(invoiceStats[0]?.totalRevenue || 0),
-            expenseCount: Number(expenseStats[0]?.count || 0),
-            lastActivity: lastActivity?.toISOString() || user.createdAt.toISOString()
-          }
-        };
-      })
-    );
-
-    return usersWithStats;
+    try {
+      console.log('Getting all users with Drizzle ORM...');
+      
+      const allUsers = await db.select().from(users);
+      console.log(`Found ${allUsers.length} users`);
+      
+      return allUsers.map(user => ({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        isActive: user.isActive,
+        emailConfirmed: user.emailConfirmed,
+        subscriptionStatus: user.subscriptionStatus,
+        subscriptionEnds: null,
+        lastLogin: user.lastLogin,
+        createdAt: user.createdAt,
+        companyId: user.companyId,
+        company: { 
+          id: user.companyId, 
+          name: 'Doklad.ai', 
+          ico: '', 
+          dic: '' 
+        },
+        stats: { 
+          invoiceCount: 0,
+          totalRevenue: 0,
+          expenseCount: 0,
+          lastActivity: user.createdAt?.toISOString() || new Date().toISOString()
+        }
+      }));
+    } catch (error) {
+      console.error('Error in getAllUsersWithStats:', error);
+      throw error;
+    }
   }
 
   // Sessions
