@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer";
+import PDFDocument from "pdfkit";
 import type { Invoice, Customer, InvoiceItem } from "@shared/schema";
 import { QRGenerator } from "./qr-generator";
 
@@ -21,47 +22,56 @@ export async function generateInvoicePDF(
   
   const htmlContent = generateInvoiceHTML(invoice, qrCodeDataURL);
   
-  // Launch headless browser with fallback options
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: [
-      '--no-sandbox', 
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-accelerated-2d-canvas',
-      '--no-first-run',
-      '--no-zygote',
-      '--single-process',
-      '--disable-gpu',
-      '--disable-extensions',
-      '--disable-default-apps',
-      '--disable-background-timer-throttling',
-      '--disable-backgrounding-occluded-windows',
-      '--disable-renderer-backgrounding'
-    ]
-  });
-
   try {
-    const page = await browser.newPage();
-    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-    
-    // Generate PDF
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      margin: {
-        top: '20mm',
-        right: '15mm',
-        bottom: '20mm',
-        left: '15mm'
-      },
-      printBackground: true,
-      preferCSSPageSize: true,
-      displayHeaderFooter: false
+    // Try Puppeteer first
+    const browser = await puppeteer.launch({
+      headless: true,
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+      args: [
+        '--no-sandbox', 
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process',
+        '--disable-gpu',
+        '--disable-extensions',
+        '--disable-default-apps',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding'
+      ]
     });
 
-    return Buffer.from(pdfBuffer);
-  } finally {
-    await browser.close();
+    try {
+      const page = await browser.newPage();
+      await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+      
+      // Generate PDF
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        margin: {
+          top: '20mm',
+          right: '15mm',
+          bottom: '20mm',
+          left: '15mm'
+        },
+        printBackground: true,
+        preferCSSPageSize: true,
+        displayHeaderFooter: false
+      });
+
+      console.log('✅ PDF generated successfully with Puppeteer');
+      return Buffer.from(pdfBuffer);
+    } finally {
+      await browser.close();
+    }
+  } catch (puppeteerError) {
+    console.log('Puppeteer failed, falling back to alternative PDF generation:', puppeteerError.message);
+    
+    // Alternative PDF generation using PDFKit
+    return generatePDFWithPDFKit(invoice);
   }
 }
 
@@ -100,6 +110,121 @@ function generateInvoiceHTML(invoice: Invoice & { customer: Customer; items: Inv
       courier: "Kurýr"
     };
     return methods[method as keyof typeof methods] || "E-mail";
+  };
+
+// Alternative PDF generation using PDFKit
+function generatePDFWithPDFKit(invoice: Invoice & { customer: Customer; items: InvoiceItem[] }): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({ margin: 50 });
+      const buffers: Buffer[] = [];
+      
+      doc.on('data', buffers.push.bind(buffers));
+      doc.on('end', () => {
+        const pdfData = Buffer.concat(buffers);
+        console.log(`✅ PDFKit generated PDF: ${(pdfData.length / 1024).toFixed(1)} KB`);
+        resolve(pdfData);
+      });
+
+      // Header
+      doc.fontSize(24).text('FAKTURA', 50, 50, { align: 'center' });
+      doc.fontSize(16).text(`Číslo: ${invoice.invoiceNumber}`, 50, 100);
+      
+      // Company info
+      doc.fontSize(12);
+      doc.text('Dodavatel:', 50, 140);
+      doc.text('Test s.r.o.', 50, 155);
+      doc.text('Testovací 123', 50, 170);
+      doc.text('100 00 Praha', 50, 185);
+      doc.text('IČO: 12345678', 50, 200);
+      
+      // Customer info
+      doc.text('Odběratel:', 300, 140);
+      doc.text(invoice.customer.name, 300, 155);
+      if (invoice.customer.address) doc.text(invoice.customer.address, 300, 170);
+      if (invoice.customer.city) doc.text(`${invoice.customer.postalCode || ''} ${invoice.customer.city}`, 300, 185);
+      
+      // Dates
+      doc.text(`Datum vystavení: ${new Date(invoice.issueDate).toLocaleDateString('cs-CZ')}`, 50, 240);
+      doc.text(`Datum splatnosti: ${new Date(invoice.dueDate).toLocaleDateString('cs-CZ')}`, 300, 240);
+      
+      // Items table header
+      let yPosition = 280;
+      doc.text('Popis', 50, yPosition);
+      doc.text('Množství', 200, yPosition);
+      doc.text('Cena', 300, yPosition);
+      doc.text('Celkem', 400, yPosition);
+      
+      // Line under header
+      doc.moveTo(50, yPosition + 15).lineTo(500, yPosition + 15).stroke();
+      yPosition += 30;
+      
+      // Items
+      invoice.items?.forEach((item) => {
+        const total = Number(item.quantity) * Number(item.unitPrice);
+        doc.text(item.description, 50, yPosition);
+        doc.text(item.quantity, 200, yPosition);
+        doc.text(`${Number(item.unitPrice).toLocaleString('cs-CZ')} Kč`, 300, yPosition);
+        doc.text(`${total.toLocaleString('cs-CZ')} Kč`, 400, yPosition);
+        yPosition += 20;
+      });
+      
+      // Totals
+      yPosition += 20;
+      doc.moveTo(50, yPosition).lineTo(500, yPosition).stroke();
+      yPosition += 20;
+      
+      doc.text(`Celkem bez DPH: ${Number(invoice.subtotal).toLocaleString('cs-CZ')} Kč`, 300, yPosition);
+      yPosition += 20;
+      doc.text(`DPH: ${Number(invoice.vatAmount).toLocaleString('cs-CZ')} Kč`, 300, yPosition);
+      yPosition += 20;
+      doc.fontSize(14).text(`Celkem k úhradě: ${Number(invoice.total).toLocaleString('cs-CZ')} Kč`, 300, yPosition);
+      
+      // Footer
+      doc.fontSize(10).text('Děkujeme za spolupráci!', 50, 700, { align: 'center' });
+      
+      doc.end();
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+function generateInvoiceHTML(invoice: Invoice & { customer: Customer; items: InvoiceItem[] }, qrCodeDataURL?: string): string {
+  const formatDate = (date: Date | string) => {
+    return new Date(date).toLocaleDateString('cs-CZ');
+  };
+
+  const formatCurrency = (amount: string | number) => {
+    return new Intl.NumberFormat('cs-CZ', {
+      style: 'currency',
+      currency: 'CZK'
+    }).format(Number(amount));
+  };
+
+  const calculateItemTotal = (quantity: string, unitPrice: string) => {
+    return (parseFloat(quantity || '0') * parseFloat(unitPrice || '0')).toFixed(2);
+  };
+
+  const getPaymentMethodLabel = (method: string | null) => {
+    const methods = {
+      bank_transfer: "Bankovní převod",
+      card: "Platební karta",
+      cash: "Hotovost",
+      online: "Online platba",
+      cheque: "Šek"
+    };
+    return methods[method as keyof typeof methods] || "Bankovní převod";
+  };
+
+  const getDeliveryMethodLabel = (method: string | null) => {
+    const methods = {
+      pickup: "Osobní odběr",
+      delivery: "Doručení",
+      post: "Česká pošta", 
+      courier: "Kurýr"
+    };
+    return methods[method as keyof typeof methods] || "Osobní odběr";
   };
 
   return `
