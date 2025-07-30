@@ -367,6 +367,7 @@ export default function InvoiceDetail() {
                 variant="outline"
                 onClick={() => sendEmailMutation.mutate()}
                 disabled={sendEmailMutation.isPending}
+                className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
               >
                 <Mail className="mr-2 h-4 w-4" />
                 {sendEmailMutation.isPending ? 'Odesílání...' : 'Poslat emailem'}
