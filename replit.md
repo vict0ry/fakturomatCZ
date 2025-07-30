@@ -48,7 +48,8 @@ Technical preference: Always use AI for intelligent text/product matching instea
 - 🔧 **Database separation confirmed** - Development a production používají různé Neon databáze
 - 📝 **Scripts created** - create-production-admin.sql pro vytvoření admin účtu
 - 🎯 **Credentials**: admin@doklad.ai / admin123 (pouze development)
-- ⚠️ **Action needed**: Production databáze potřebuje admin uživatele nebo společnou DATABASE_URL
+- 🔧 **Unified database setup prepared** - Instructions created for production DATABASE_URL setup
+- 📋 **Next step**: Set production DATABASE_URL to same as development Neon database
 
 ### ADMIN PANEL ROUTING & LAYOUT FIXED (2025-07-30)
 - ✅ **Admin panel přesunut na vlastní route** - /admin místo zobrazování na hlavní stránce

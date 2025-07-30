@@ -1,57 +1,39 @@
-# Instrukce pro vymazání deploy databáze
+# UNIFIED DATABASE SETUP INSTRUCTIONS
 
-## Možnost 1: Přes Replit Database Tool
+## Problem
+Production a development používají různé databáze, proto admin login nefunguje na production.
 
-1. **Otevřete Database tool** v Replit workspace (vlevo v sidebar)
-2. **Připojte se k PostgreSQL** databázi
-3. **Vložte a spusťte** tento SQL script:
+## Solution: Unified Database
 
-```sql
--- Vymazat všechna data z deploy databáze
-DELETE FROM invoice_items;
-DELETE FROM expense_items;
-DELETE FROM invoice_history;
-DELETE FROM reminders;
-DELETE FROM payment_matching_rules;
-DELETE FROM bank_transactions;
-DELETE FROM invoices;
-DELETE FROM expenses;
-DELETE FROM customers;
-DELETE FROM chat_messages;
+### Step 1: Get Current DATABASE_URL
+Development používá: `postgresql://neondb_owner:****@ep-cool-boat-af1s1pq6.c-2.us-west-2.aws.neon.tech/neondb?sslmode=require`
 
--- Zkontrolovat výsledek
-SELECT 'invoices' as tabulka, COUNT(*) as pocet FROM invoices
-UNION ALL
-SELECT 'customers', COUNT(*) FROM customers
-UNION ALL  
-SELECT 'expenses', COUNT(*) FROM expenses;
+### Step 2: Update Production Environment
+V Replit Deployment nastavit environment variable:
+
+```
+DATABASE_URL=postgresql://neondb_owner:npz_...@ep-cool-boat-af1s1pq6.c-2.us-west-2.aws.neon.tech/neondb?sslmode=require
 ```
 
-## Možnost 2: Přes psql příkazový řádek
+### Step 3: Deploy
+Po nastavení DATABASE_URL udělat nový deployment.
 
-Pokud máte deploy DATABASE_URL:
-
+### Step 4: Verify
+Test production login:
 ```bash
-# Připojit se k deploy databázi
-psql "DEPLOY_DATABASE_URL_HERE"
-
-# Pak spustit SQL příkazy výše
+curl -X POST https://doklad.ai/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin@doklad.ai", "password": "admin123"}'
 ```
 
-## Možnost 3: JavaScript script
+Měl by vrátit status 200 s sessionId.
 
-```bash
-# Nastavit deploy DATABASE_URL a spustit
-DEPLOY_DATABASE_URL="your_deploy_url" node connect-deploy-db.js
-```
+## Expected Result
+✅ Development: admin@doklad.ai / admin123 - works
+✅ Production: admin@doklad.ai / admin123 - works (same database)
 
-## Po vymazání dat
-
-1. **Redeploy aplikaci** - použije nový kód bez mock dat
-2. **Data budou prázdná** - zobrazí se prázdné stavy
-3. **Znovu vytvořte data** podle potřeby
-
-## Kde najít deploy DATABASE_URL?
-
-- V **Deployments** záložce → **Environment Variables**
-- Nebo v **Database** tool → **Connection details**
+## Benefits
+- Single source of truth for data
+- Consistent behavior across environments  
+- No need to sync multiple databases
+- Simplified deployment process
