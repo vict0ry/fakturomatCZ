@@ -1,30 +1,61 @@
--- Vytvořit admin účet pro production databázi
--- Heslo: admin123 (bcrypt hash)
+-- Create admin user for production database
+-- This user will work on both development and production
 
--- Nejdříve zkontrolovat jestli admin už existuje
-SELECT username, email, role FROM users WHERE email = 'admin@doklad.ai';
-
--- Pokud neexistuje, vytvořit ho
--- Password hash pro "admin123": $2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy
-INSERT INTO users (
-  "companyId", 
-  username, 
+-- First ensure company exists
+INSERT INTO companies (
+  name, 
   email, 
-  "passwordHash", 
-  role, 
-  "firstName", 
-  "lastName", 
-  "emailConfirmed"
+  phone, 
+  ico, 
+  dic, 
+  address, 
+  city, 
+  postal_code, 
+  country, 
+  bank_account,
+  is_active
 ) VALUES (
-  1,
-  'admin', 
+  'Doklad.ai Admin', 
   'admin@doklad.ai', 
-  '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
-  'admin',
-  'Admin',
-  'Doklad.ai',
-  false
+  '+420 777 123 456', 
+  '12345678', 
+  'CZ12345678', 
+  'Václavské náměstí 1', 
+  'Praha', 
+  '110 00', 
+  'CZ', 
+  '123456789/0100',
+  true
 ) ON CONFLICT (email) DO NOTHING;
 
--- Ověřit že byl vytvořen
-SELECT id, username, email, role, "firstName", "lastName" FROM users WHERE email = 'admin@doklad.ai';
+-- Create admin user with bcrypt hash
+INSERT INTO users (
+  company_id,
+  username,
+  email,
+  password,
+  first_name,
+  last_name,
+  role,
+  access_level,
+  is_active,
+  email_confirmed
+) VALUES (
+  (SELECT id FROM companies WHERE email = 'admin@doklad.ai'),
+  'admin',
+  'admin@doklad.ai',
+  '$2b$12$g126JZp0G4wCEKsxJvA2F.OGqog3S40nhhjVttq7bn0WzmqUJR6Jq',
+  'Admin',
+  'Doklad.ai',
+  'admin',
+  'admin',
+  true,
+  true
+) ON CONFLICT (email) DO UPDATE SET
+  password = '$2b$12$g126JZp0G4wCEKsxJvA2F.OGqog3S40nhhjVttq7bn0WzmqUJR6Jq',
+  first_name = 'Admin',
+  last_name = 'Doklad.ai',
+  role = 'admin',
+  access_level = 'admin',
+  is_active = true,
+  email_confirmed = true;

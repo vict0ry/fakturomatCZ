@@ -1,101 +1,83 @@
-// Vytvoří admin účet pro production databázi
-import bcryptjs from 'bcryptjs';
-import { drizzle } from 'drizzle-orm/neon-http';
-import { neon } from '@neondatabase/serverless';
-import { users, companies } from './shared/schema.js';
+// Script to create admin user on production database
+import pkg from 'pg';
+const { Client } = pkg;
+
+const DATABASE_URL = process.env.DATABASE_URL;
+
+if (!DATABASE_URL) {
+  console.error('❌ DATABASE_URL not found');
+  process.exit(1);
+}
 
 async function createProductionAdmin() {
-  console.log('🏭 VYTVÁŘENÍ ADMIN ÚČTU PRO PRODUCTION');
-  console.log('=====================================\n');
+  const client = new Client({
+    connectionString: DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+  });
 
   try {
-    // Připojení k databázi
-    const databaseUrl = process.env.DATABASE_URL;
-    if (!databaseUrl) {
-      throw new Error('DATABASE_URL není nastaven');
-    }
+    await client.connect();
+    console.log('✅ Connected to database');
 
-    console.log('🔌 Připojuji se k databázi...');
-    const sql = neon(databaseUrl);
-    const db = drizzle(sql);
+    // Check if companies table exists
+    const companyCheck = await client.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_name = 'companies'
+      );
+    `);
 
-    // Zkontrolovat jestli admin už existuje
-    console.log('🔍 Kontroluji existenci admin účtu...');
-    const existingAdmin = await db
-      .select()
-      .from(users)
-      .where(users.email.eq('admin@doklad.ai'))
-      .limit(1);
-
-    if (existingAdmin.length > 0) {
-      console.log('✅ Admin účet už existuje:');
-      console.log(`   ID: ${existingAdmin[0].id}`);
-      console.log(`   Email: ${existingAdmin[0].email}`);
-      console.log(`   Role: ${existingAdmin[0].role}`);
+    if (!companyCheck.rows[0].exists) {
+      console.log('❌ Companies table does not exist');
       return;
     }
 
-    // Najít nebo vytvořit company
-    console.log('🏢 Kontroluji company...');
-    let company = await db
-      .select()
-      .from(companies)
-      .limit(1);
+    // Insert company
+    await client.query(`
+      INSERT INTO companies (
+        name, email, phone, ico, dic, address, city, postal_code, country, bank_account, is_active
+      ) VALUES (
+        'Doklad.ai Admin', 'admin@doklad.ai', '+420 777 123 456', '12345678', 'CZ12345678',
+        'Václavské náměstí 1', 'Praha', '110 00', 'CZ', '123456789/0100', true
+      ) ON CONFLICT (email) DO NOTHING;
+    `);
 
-    let companyId;
-    if (company.length === 0) {
-      console.log('🏢 Vytvářím admin company...');
-      const newCompany = await db
-        .insert(companies)
-        .values({
-          name: 'Doklad.ai Admin',
-          ico: '00000000',
-          dic: 'CZ00000000',
-          address: 'Praha',
-          email: 'admin@doklad.ai',
-          phone: '+420000000000'
-        })
-        .returning();
-      companyId = newCompany[0].id;
-      console.log(`✅ Company vytvořena s ID: ${companyId}`);
-    } else {
-      companyId = company[0].id;
-      console.log(`✅ Používám existující company ID: ${companyId}`);
+    // Get company ID
+    const companyResult = await client.query(`
+      SELECT id FROM companies WHERE email = 'admin@doklad.ai';
+    `);
+
+    const companyId = companyResult.rows[0]?.id;
+    if (!companyId) {
+      console.log('❌ Could not find or create company');
+      return;
     }
 
-    // Hashovat heslo
-    console.log('🔒 Hashuji heslo...');
-    const passwordHash = await bcryptjs.hash('admin123', 10);
+    // Insert admin user
+    const result = await client.query(`
+      INSERT INTO users (
+        company_id, username, email, password, first_name, last_name, role, access_level, is_active, email_confirmed
+      ) VALUES (
+        $1, 'admin', 'admin@doklad.ai', '$2b$12$g126JZp0G4wCEKsxJvA2F.OGqog3S40nhhjVttq7bn0WzmqUJR6Jq',
+        'Admin', 'Doklad.ai', 'admin', 'admin', true, true
+      ) ON CONFLICT (email) DO UPDATE SET
+        password = '$2b$12$g126JZp0G4wCEKsxJvA2F.OGqog3S40nhhjVttq7bn0WzmqUJR6Jq',
+        first_name = 'Admin',
+        last_name = 'Doklad.ai',
+        role = 'admin',
+        access_level = 'admin',
+        is_active = true,
+        email_confirmed = true
+      RETURNING id;
+    `, [companyId]);
 
-    // Vytvořit admin účet
-    console.log('👤 Vytvářím admin účet...');
-    const newAdmin = await db
-      .insert(users)
-      .values({
-        companyId: companyId,
-        username: 'admin',
-        email: 'admin@doklad.ai',
-        passwordHash: passwordHash,
-        role: 'admin',
-        firstName: 'Admin',
-        lastName: 'Doklad.ai',
-        emailConfirmed: false
-      })
-      .returning();
-
-    console.log('🎉 ADMIN ÚČET ÚSPĚŠNĚ VYTVOŘEN!');
-    console.log(`   ID: ${newAdmin[0].id}`);
-    console.log(`   Email: ${newAdmin[0].email}`);
-    console.log(`   Username: ${newAdmin[0].username}`);
-    console.log(`   Role: ${newAdmin[0].role}`);
-    console.log(`   Company ID: ${newAdmin[0].companyId}`);
-    console.log('\n🔑 PŘIHLAŠOVACÍ ÚDAJE:');
-    console.log('   Email: admin@doklad.ai');
-    console.log('   Heslo: admin123');
+    console.log('✅ Admin user created/updated with ID:', result.rows[0]?.id);
+    console.log('🔑 Credentials: admin@doklad.ai / admin123');
 
   } catch (error) {
-    console.log(`💥 Chyba při vytváření admin účtu: ${error.message}`);
-    console.log(error.stack);
+    console.error('❌ Error:', error.message);
+  } finally {
+    await client.end();
   }
 }
 

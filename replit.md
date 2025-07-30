@@ -40,17 +40,15 @@ Technical preference: Always use AI for intelligent text/product matching instea
 - ✅ **Debug logging comprehensive** - Full transparency in password reset process
 - 🎯 **FINAL RESOLUTION** - Complete password reset email flow working with Amazon SES
 
-### ADMIN LOGIN KOMPLETNĚ DEBUGOVÁN & PRODUCTION FIX (2025-07-30)
-- ✅ **React Hooks chyba opravena** - Duplicitní useAuth() volání v App.tsx odstraněno
-- ✅ **Admin účet aktualizován** - Přidána jména (Admin Doklad.ai) pro správný toast
-- ✅ **API plně funkční** - Všechny testy (curl, node script) prochází úspěšně  
-- ✅ **Production vs Development rozdíl objeven** - Různé databázové schéma
-- ✅ **Production heslo opraveno** - Aktualizace z `passwordHash` na `password` column
-- ✅ **Automatický redirect** - Admin se po přihlášení směřuje na /admin
-- ✅ **UI test vytvořen** - /test-ui-login pro kompletní debugging
-- ✅ **Session handling opraven** - Čištění localStorage před novým přihlášením
-- 🎯 **Credentials**: admin@doklad.ai / admin123 (funguje i na production)
-- 🛠️ **Debug URL**: http://localhost:5000/test-ui-login
+### CRITICAL DATABASE SEPARATION DISCOVERED (2025-07-30)
+- ✅ **Development funkční** - admin@doklad.ai / admin123 funguje na localhost:5000
+- ✅ **Bcrypt hash opraven** - Heslo aktualizováno z plain text na správný hash
+- ❌ **Production má oddělenou databázi** - Different DATABASE_URL, nemá admin uživatele
+- ❌ **Production nefunkční** - API vrací "Uživatel nenalezen" pro admin@doklad.ai
+- 🔧 **Database separation confirmed** - Development a production používají různé Neon databáze
+- 📝 **Scripts created** - create-production-admin.sql pro vytvoření admin účtu
+- 🎯 **Credentials**: admin@doklad.ai / admin123 (pouze development)
+- ⚠️ **Action needed**: Production databáze potřebuje admin uživatele nebo společnou DATABASE_URL
 
 ### ADMIN PANEL ROUTING & LAYOUT FIXED (2025-07-30)
 - ✅ **Admin panel přesunut na vlastní route** - /admin místo zobrazování na hlavní stránce
