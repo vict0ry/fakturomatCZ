@@ -1844,6 +1844,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all users with detailed information for admin management
+  app.get("/api/admin/users", requireAuth, requireAdmin, async (req: any, res) => {
+    try {
+      const users = await storage.getAllUsersWithStats();
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  // Update user (admin only)
+  app.patch("/api/admin/users/:id", requireAuth, requireAdmin, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const updates = req.body;
+      
+      // Don't allow admins to modify other admins unless they're super admin
+      const targetUser = await storage.getUserById(userId);
+      if (!targetUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      if (targetUser.role === 'admin' && req.user.role !== 'super_admin') {
+        return res.status(403).json({ message: "Cannot modify admin users" });
+      }
+      
+      const updatedUser = await storage.updateUser(userId, updates);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  // Ban/unban user
+  app.patch("/api/admin/users/:id/ban", requireAuth, requireAdmin, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const { banned } = req.body;
+      
+      const updatedUser = await storage.updateUser(userId, { isActive: !banned });
+      
+      res.json({ 
+        message: banned ? "User banned successfully" : "User unbanned successfully",
+        user: updatedUser 
+      });
+    } catch (error) {
+      console.error("Error banning/unbanning user:", error);
+      res.status(500).json({ message: "Failed to update user status" });
+    }
+  });
+
+  // Reset user password (admin only)
+  app.post("/api/admin/users/:id/reset-password", requireAuth, requireAdmin, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      
+      // Generate temporary password
+      const temporaryPassword = Math.random().toString(36).slice(-8);
+      const hashedPassword = bcrypt.hashSync(temporaryPassword, 12);
+      
+      await storage.updateUser(userId, { password: hashedPassword });
+      
+      // In production, you'd want to send this via email instead of returning it
+      res.json({ 
+        message: "Password reset successfully",
+        temporaryPassword: temporaryPassword
+      });
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      res.status(500).json({ message: "Failed to reset password" });
+    }
+  });
+
   app.get("/api/admin/revenue/stats/:timeframe", requireAuth, requireAdmin, async (req: any, res) => {
     try {
       const timeframe = req.params.timeframe;

@@ -27,6 +27,7 @@ import {
   Trash2,
   Edit
 } from 'lucide-react';
+import UserManagement from './user-management';
 
 interface UserStats {
   totalUsers: number;
@@ -251,9 +252,10 @@ export default function AdminDashboard() {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview">Přehled</TabsTrigger>
           <TabsTrigger value="users">Uživatelé</TabsTrigger>
+          <TabsTrigger value="user-management">Správa uživatelů</TabsTrigger>
           <TabsTrigger value="revenue">Příjmy</TabsTrigger>
           <TabsTrigger value="api-tokens">API Tokeny</TabsTrigger>
           <TabsTrigger value="settings">Nastavení</TabsTrigger>
@@ -460,6 +462,11 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* User Management Tab */}
+        <TabsContent value="user-management" className="space-y-6">
+          <UserManagement />
         </TabsContent>
 
         {/* API Tokens Tab */}
