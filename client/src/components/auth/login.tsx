@@ -37,6 +37,7 @@ export function Login() {
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
+    console.log('🔐 LOGIN ATTEMPT:', data);
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -46,12 +47,16 @@ export function Login() {
         body: JSON.stringify(data),
       });
 
+      console.log('📡 RESPONSE STATUS:', response.status);
+
       if (!response.ok) {
         const error = await response.json();
+        console.log('❌ ERROR RESPONSE:', error);
         throw new Error(error.message || 'Přihlášení selhalo');
       }
 
       const result = await response.json();
+      console.log('✅ SUCCESS RESPONSE:', result);
       
       // Použití auth context pro login
       login(result.user, result.sessionId);
