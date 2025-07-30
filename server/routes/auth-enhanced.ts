@@ -116,7 +116,7 @@ export default function setupEnhancedAuthRoutes(app: Express, sessions: Map<stri
 
       // Send password reset email
       try {
-        await emailService.sendPasswordReset(user, resetToken);
+        await emailService.sendPasswordResetEmail(user, resetToken);
         console.log(`✅ Password reset email sent to ${email}`);
       } catch (emailError) {
         console.error('❌ Failed to send password reset email:', emailError);

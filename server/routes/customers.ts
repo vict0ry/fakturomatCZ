@@ -70,7 +70,7 @@ router.get('/:id', async (req, res) => {
     const user = (req as any).user;
     const customerId = parseInt(req.params.id);
     
-    const customer = await storage.getCustomer(customerId);
+    const customer = await storage.getCustomer(customerId, user.companyId);
     
     if (!customer) {
       return res.status(404).json({ message: 'Customer not found' });
@@ -95,7 +95,7 @@ router.patch('/:id', async (req, res) => {
     const customerId = parseInt(req.params.id);
     
     // Check if customer exists and belongs to user's company
-    const existingCustomer = await storage.getCustomer(customerId);
+    const existingCustomer = await storage.getCustomer(customerId, user.companyId);
     if (!existingCustomer) {
       return res.status(404).json({ message: 'Customer not found' });
     }
@@ -109,7 +109,7 @@ router.patch('/:id', async (req, res) => {
     const validatedData = updateSchema.parse(req.body);
     
     // Update customer
-    const updatedCustomer = await storage.updateCustomer(customerId, validatedData);
+    const updatedCustomer = await storage.updateCustomer(customerId, validatedData, user.companyId);
     
     res.json(updatedCustomer);
   } catch (error) {
@@ -132,7 +132,7 @@ router.delete('/:id', async (req, res) => {
     const customerId = parseInt(req.params.id);
     
     // Check if customer exists and belongs to user's company
-    const existingCustomer = await storage.getCustomer(customerId);
+    const existingCustomer = await storage.getCustomer(customerId, user.companyId);
     if (!existingCustomer) {
       return res.status(404).json({ message: 'Customer not found' });
     }
@@ -142,7 +142,7 @@ router.delete('/:id', async (req, res) => {
     }
     
     // Soft delete - set isActive to false
-    await storage.updateCustomer(customerId, { isActive: false });
+    await storage.updateCustomer(customerId, { isActive: false }, user.companyId);
     
     res.json({ message: 'Customer deleted successfully' });
   } catch (error) {

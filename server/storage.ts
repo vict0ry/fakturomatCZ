@@ -26,6 +26,9 @@ export interface IStorage {
   updateUser(id: number, user: Partial<InsertUser>): Promise<User>;
   getCompanyUsers(companyId: number): Promise<User[]>;
   getAllUsersWithStats(): Promise<any[]>;
+  getAllUsers(filters?: { page?: number; limit?: number; search?: string; status?: string }): Promise<User[]>;
+  getAllCompanies(filters?: { page?: number; limit?: number; search?: string }): Promise<Company[]>;
+  getSystemStats(): Promise<any>;
   
   // Sessions
   createSession(session: InsertSession): Promise<Session>;
@@ -38,6 +41,7 @@ export interface IStorage {
   createCustomer(customer: InsertCustomer): Promise<Customer>;
   updateCustomer(id: number, customer: Partial<InsertCustomer>, companyId: number): Promise<Customer>;
   getCompanyCustomers(companyId: number): Promise<Customer[]>;
+  getCustomers(companyId: number, filters?: { page?: number; limit?: number; search?: string }): Promise<Customer[]>;
   searchCustomers(query: string, companyId: number): Promise<Customer[]>;
   getInactiveCustomers(companyId: number, daysSince: number): Promise<Customer[]>;
   
@@ -880,6 +884,116 @@ export class DatabaseStorage implements IStorage {
       growth: `${growth}%`,
       churnRate: '2.5%' // Mock for now
     };
+  }
+
+  // New required methods for admin and customer routes
+  async getAllUsers(filters?: { page?: number; limit?: number; search?: string; status?: string }): Promise<User[]> {
+    let query = db.select().from(users);
+    
+    if (filters?.search) {
+      query = query.where(or(
+        ilike(users.username, `%${filters.search}%`),
+        ilike(users.email, `%${filters.search}%`),
+        ilike(users.firstName, `%${filters.search}%`),
+        ilike(users.lastName, `%${filters.search}%`)
+      ));
+    }
+    
+    if (filters?.status) {
+      query = query.where(eq(users.subscriptionStatus, filters.status));
+    }
+    
+    query = query.orderBy(desc(users.createdAt));
+    
+    if (filters?.limit) {
+      query = query.limit(filters.limit);
+      if (filters?.page && filters.page > 1) {
+        query = query.offset((filters.page - 1) * filters.limit);
+      }
+    }
+    
+    return await query;
+  }
+
+  async getAllCompanies(filters?: { page?: number; limit?: number; search?: string }): Promise<Company[]> {
+    let query = db.select().from(companies);
+    
+    if (filters?.search) {
+      query = query.where(or(
+        ilike(companies.name, `%${filters.search}%`),
+        ilike(companies.ico, `%${filters.search}%`),
+        ilike(companies.email, `%${filters.search}%`)
+      ));
+    }
+    
+    query = query.orderBy(desc(companies.createdAt));
+    
+    if (filters?.limit) {
+      query = query.limit(filters.limit);
+      if (filters?.page && filters.page > 1) {
+        query = query.offset((filters.page - 1) * filters.limit);
+      }
+    }
+    
+    return await query;
+  }
+
+  async getSystemStats(): Promise<any> {
+    const totalUsersQuery = await db.select({ count: sql`count(*)` }).from(users);
+    const totalUsers = Number(totalUsersQuery[0]?.count || 0);
+
+    const totalCompaniesQuery = await db.select({ count: sql`count(*)` }).from(companies);
+    const totalCompanies = Number(totalCompaniesQuery[0]?.count || 0);
+
+    const totalInvoicesQuery = await db.select({ count: sql`count(*)` }).from(invoices);
+    const totalInvoices = Number(totalInvoicesQuery[0]?.count || 0);
+
+    const activeUsersQuery = await db.select({ count: sql`count(*)` })
+      .from(users)
+      .where(eq(users.isActive, true));
+    const activeUsers = Number(activeUsersQuery[0]?.count || 0);
+
+    const thisMonth = new Date();
+    thisMonth.setDate(1);
+    const newUsersThisMonthQuery = await db.select({ count: sql`count(*)` })
+      .from(users)
+      .where(gte(users.createdAt, thisMonth));
+    const newUsersThisMonth = Number(newUsersThisMonthQuery[0]?.count || 0);
+
+    return {
+      totalUsers,
+      totalCompanies,
+      totalInvoices,
+      activeUsers,
+      newUsersThisMonth,
+      conversionRate: totalUsers > 0 ? ((activeUsers / totalUsers) * 100).toFixed(1) : '0'
+    };
+  }
+
+  async getCustomers(companyId: number, filters?: { page?: number; limit?: number; search?: string }): Promise<Customer[]> {
+    let query = db.select().from(customers).where(eq(customers.companyId, companyId));
+    
+    if (filters?.search) {
+      query = query.where(and(
+        eq(customers.companyId, companyId),
+        or(
+          ilike(customers.name, `%${filters.search}%`),
+          ilike(customers.email, `%${filters.search}%`),
+          ilike(customers.ico, `%${filters.search}%`)
+        )
+      ));
+    }
+    
+    query = query.orderBy(desc(customers.createdAt));
+    
+    if (filters?.limit) {
+      query = query.limit(filters.limit);
+      if (filters?.page && filters.page > 1) {
+        query = query.offset((filters.page - 1) * filters.limit);
+      }
+    }
+    
+    return await query;
   }
 }
 
