@@ -196,43 +196,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllUsersWithStats(): Promise<any[]> {
-    try {
-      console.log('Getting all users with Drizzle ORM...');
-      
-      const allUsers = await db.select().from(users);
-      console.log(`Found ${allUsers.length} users`);
-      
-      return allUsers.map(user => ({
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-        isActive: user.isActive,
-        emailConfirmed: user.emailConfirmed,
-        subscriptionStatus: user.subscriptionStatus,
-        subscriptionEnds: null,
-        lastLogin: user.lastLogin,
-        createdAt: user.createdAt,
-        companyId: user.companyId,
-        company: { 
-          id: user.companyId, 
-          name: 'Doklad.ai', 
-          ico: '', 
-          dic: '' 
-        },
-        stats: { 
-          invoiceCount: 0,
-          totalRevenue: 0,
-          expenseCount: 0,
-          lastActivity: user.createdAt?.toISOString() || new Date().toISOString()
-        }
-      }));
-    } catch (error) {
-      console.error('Error in getAllUsersWithStats:', error);
-      throw error;
-    }
+    // Delegate to UserService
+    const { UserService } = await import('./modules/users/user.service');
+    const userService = new UserService();
+    return userService.getAllUsersWithStats();
   }
 
   // Sessions

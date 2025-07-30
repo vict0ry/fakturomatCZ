@@ -1,7 +1,7 @@
 import { Router } from "express";
 import OpenAI from "openai";
 import { storage } from "../storage";
-import { authenticateUser } from "../middleware/auth";
+import { requireAuth } from "../middleware/auth";
 import type { InsertChatMessage } from "@shared/schema";
 
 const router = Router();
