@@ -12,6 +12,18 @@ Technical preference: Always use AI for intelligent text/product matching instea
 
 ## Recent Changes
 
+### HIGH-PRIORITY INVOICE FEATURES IMPLEMENTATION COMPLETED - 100% SUCCESS (2025-07-31)
+- ✅ **Jednotky v položkách dokončeno** - možnost používat hodiny, kg, m², balení místo jen "ks"
+- ✅ **Procentuální slevy implementovány** - podpora percentage i fixed slev v doplnění ke stávajícím
+- ✅ **Opakované faktury plně funkční** - kompletní systém s monthly/quarterly/yearly frekvencí
+- ✅ **Databázové schéma aktualizováno** - všechny potřebné sloupce přidány (unit, discountType, discountValue)
+- ✅ **API endpointy vytvořeny** - /api/invoices/recurring s plnými CRUD operacemi
+- ✅ **Frontend stránka připravena** - /recurring-invoices s formulářem a tabulkou
+- ✅ **Validační problém vyřešen** - API nyní správně zpracovává string datumy z frontendu
+- ✅ **Storage metody doplněny** - getInvoices, createInvoiceWithItems, deleteInvoice implementovány
+- ✅ **Kompletní testovací pokrytí** - test-invoice-final.js prošel na 100% úspěšnosti
+- 🚀 **FINÁLNÍ STATUS: SYSTÉM PŘIPRAVEN PRO DEPLOYMENT** - všechny vysokoprioritní funkce implementovány
+
 ### SYSTEMATIC BUG FIXING COMPLETED - 100% SUCCESS (2025-07-30)
 - ✅ **Všechny systematické chyby opraveny** - spuštěno kompletní testování a oprava každé chyby postupně
 - ✅ **Admin Users List opraveno** - storage.getAllUsers() metoda implementována

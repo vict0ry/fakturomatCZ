@@ -48,10 +48,14 @@ export interface IStorage {
   
   // Invoices
   getInvoice(id: number, companyId: number): Promise<Invoice | undefined>;
+  getInvoices(companyId: number, filters?: { page?: number; limit?: number; status?: string; customerId?: number }): Promise<(Invoice & { customer: Customer })[]>;
   getInvoiceWithDetails(id: number, companyId: number): Promise<(Invoice & { items: InvoiceItem[], customer: Customer }) | undefined>;
+  getInvoiceWithItems(id: number, companyId: number): Promise<(Invoice & { items: InvoiceItem[], customer: Customer }) | undefined>;
   createInvoice(invoice: InsertInvoice): Promise<Invoice>;
+  createInvoiceWithItems(data: InsertInvoice & { items: InsertInvoiceItem[] }): Promise<Invoice & { items: InvoiceItem[] }>;
   updateInvoice(id: number, invoice: Partial<InsertInvoice>, companyId: number): Promise<Invoice>;
   updateInvoiceStatus(id: number, status: string): Promise<Invoice>;
+  deleteInvoice(id: number, companyId: number): Promise<void>;
   getCompanyInvoices(companyId: number, filters?: {
     status?: string;
     type?: string;
@@ -1150,6 +1154,64 @@ export class DatabaseStorage implements IStorage {
   async sendInvitationEmail(invitation: UserInvitation): Promise<void> {
     // Skip email sending for now and just log the invitation
     console.log(`📧 Would send invitation email to ${invitation.email} for company ${invitation.companyId}`);
+  }
+
+  // Missing invoice methods needed by routes
+  async getInvoices(companyId: number, filters?: { page?: number; limit?: number; status?: string; customerId?: number }): Promise<(Invoice & { customer: Customer })[]> {
+    const page = filters?.page || 1;
+    const limit = filters?.limit || 50;
+    const offset = (page - 1) * limit;
+
+    let conditions = [eq(invoices.companyId, companyId)];
+    
+    if (filters?.status) {
+      conditions.push(eq(invoices.status, filters.status));
+    }
+    
+    if (filters?.customerId) {
+      conditions.push(eq(invoices.customerId, filters.customerId));
+    }
+
+    const result = await db.select()
+      .from(invoices)
+      .leftJoin(customers, eq(invoices.customerId, customers.id))
+      .where(and(...conditions))
+      .orderBy(desc(invoices.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    return result.map(row => ({ ...row.invoices, customer: row.customers! }));
+  }
+
+  async getInvoiceWithItems(id: number, companyId: number): Promise<(Invoice & { items: InvoiceItem[], customer: Customer }) | undefined> {
+    return this.getInvoiceWithDetails(id, companyId);
+  }
+
+  async createInvoiceWithItems(data: InsertInvoice & { items: InsertInvoiceItem[] }): Promise<Invoice & { items: InvoiceItem[] }> {
+    const { items, ...invoiceData } = data;
+    
+    // Create invoice first
+    const [newInvoice] = await db.insert(invoices).values(invoiceData).returning();
+    
+    // Create invoice items
+    const itemsToInsert = items.map(item => ({
+      ...item,
+      invoiceId: newInvoice.id
+    }));
+    
+    const newItems = await db.insert(invoiceItems).values(itemsToInsert).returning();
+    
+    return {
+      ...newInvoice,
+      items: newItems
+    };
+  }
+
+  async deleteInvoice(id: number, companyId: number): Promise<void> {
+    // Delete invoice items first
+    await db.delete(invoiceItems).where(eq(invoiceItems.invoiceId, id));
+    // Delete invoice
+    await db.delete(invoices).where(and(eq(invoices.id, id), eq(invoices.companyId, companyId)));
   }
 }
 
