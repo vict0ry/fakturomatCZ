@@ -750,8 +750,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       try {
-        // Try Puppeteer first
-        const pdfBuffer = await generateInvoicePDF(invoice as any);
+        // Try modern PDF generation first  
+        const { generateModernInvoicePDF } = await import('./services/pdf-modern');
+        const pdfBuffer = await generateModernInvoicePDF(invoice as any);
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="Faktura_${invoice.invoiceNumber}.pdf"`);
         res.send(pdfBuffer);
