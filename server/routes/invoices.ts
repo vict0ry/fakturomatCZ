@@ -85,8 +85,33 @@ router.post('/', async (req, res) => {
   try {
     const user = (req as any).user;
     
+    // Handle customer creation if customerId is -1
+    let invoiceData = { ...req.body };
+    
+    if (req.body.customerId === -1 && req.body.customer) {
+      console.log('Creating new customer for invoice with data:', req.body.customer);
+      const customerData = {
+        ...req.body.customer,
+        companyId: user.companyId,
+      };
+      
+      // Remove auto-generated fields
+      delete customerData.id;
+      delete customerData.createdAt;
+      delete customerData.updatedAt;
+      
+      const newCustomer = await storage.createCustomer(customerData);
+      console.log('New customer created with ID:', newCustomer.id);
+      
+      // Update invoice data with the new customer ID
+      invoiceData.customerId = newCustomer.id;
+    }
+    
+    // Remove the embedded customer object since we don't need it anymore
+    delete invoiceData.customer;
+    
     // Validate request body using frontend-compatible schema
-    const validatedData = invoiceFormSchema.parse(req.body);
+    const validatedData = invoiceFormSchema.parse(invoiceData);
     
     // Convert string dates to Date objects for database storage
     const processedData = {
