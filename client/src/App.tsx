@@ -154,7 +154,7 @@ function AppContent() {
         <Header />
         <Sidebar />
         <main className="lg:ml-72 min-h-screen">
-          <div className="px-4 py-8 lg:px-8">
+          <div className="px-4 pt-4 lg:px-8">
             <AuthenticatedRouter />
           </div>
         </main>
