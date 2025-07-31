@@ -66,8 +66,14 @@ export function Login() {
         description: `Vítejte zpět, ${result.user.firstName || result.user.username}!`,
       });
       
-      // Přesměrování podle role
-      if (result.user.role === 'admin') {
+      // Zkontroluj returnTo parametr v URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const returnTo = urlParams.get('returnTo');
+      
+      // Přesměrování podle role nebo returnTo
+      if (returnTo && returnTo !== '/login' && returnTo !== '/') {
+        navigate(returnTo);
+      } else if (result.user.role === 'admin') {
         navigate('/admin');
       } else {
         navigate('/dashboard');

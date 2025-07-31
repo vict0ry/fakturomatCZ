@@ -39,6 +39,7 @@ import ResetPassword from "@/pages/ResetPassword";
 function PublicRouter() {
   return (
     <Switch>
+      {/* Veřejné routes které nevyžadují autentifikaci */}
       <Route path="/public/invoice/:token">
         {(params: any) => <PublicInvoicePage token={params.token} />}
       </Route>
@@ -50,20 +51,26 @@ function PublicRouter() {
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/accept-invitation" component={AcceptInvitation} />
       <Route path="/auth/accept-invitation" component={AcceptInvitation} />
-      {/* BEZPEČNOSTNÍ BLOKACE - Admin panel vyžaduje přihlášení */}
-      <Route path="/admin">
-        {() => (
-          <div className="min-h-screen flex items-center justify-center">
-            <div className="p-8 text-center">
-              <h1 className="text-2xl font-bold mb-4 text-red-600">🚫 Přístup odepřen</h1>
-              <p className="text-gray-600 mb-4">Pro přístup do admin panelu se musíte nejprve přihlásit.</p>
-              <a href="/login" className="text-blue-600 hover:underline">Přihlásit se</a>
-            </div>
-          </div>
-        )}
-      </Route>
+      
+      {/* Landing page pouze pro root */}
       <Route path="/" component={Landing} />
-      <Route component={NotFound} />
+      
+      {/* Všechny ostatní routes směřují na login */}
+      <Route>
+        {() => {
+          const currentPath = window.location.pathname;
+          // Přesměruj na login s return URL
+          window.location.href = `/login?returnTo=${encodeURIComponent(currentPath)}`;
+          return (
+            <div className="min-h-screen flex items-center justify-center">
+              <div className="p-8 text-center">
+                <h1 className="text-2xl font-bold mb-4">Přesměrování...</h1>
+                <p className="text-gray-600">Pro přístup k této stránce se musíte přihlásit.</p>
+              </div>
+            </div>
+          );
+        }}
+      </Route>
     </Switch>
   );
 }
