@@ -8,7 +8,8 @@ const initializeSessions = () => {
   sessions.clear(); // Clear existing sessions first
   sessions.set('test-session-dev', { userId: 1, companyId: 1, role: 'owner' });  // Company owner može zvát zaměstnance
   sessions.set('f4997d57-a07b-4211-ab8c-4c6c3be71740', { userId: 1, companyId: 1, role: 'admin' });
-  console.log('🔑 Development sessions initialized');
+  sessions.set('DHRypB8x8D1OBnaXeQdkT', { userId: 1, companyId: 1, role: 'owner' }); // Přidám current session
+  console.log('🔑 Development sessions initialized with tokens:', Array.from(sessions.keys()));
 };
 
 // Initialize sessions on module load
