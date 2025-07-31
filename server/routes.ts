@@ -673,41 +673,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/invoices/:id/send-email', requireAuth, async (req: any, res) => {
     try {
       const invoiceId = parseInt(req.params.id);
+      const { to, subject, message } = req.body;
+
       const invoice = await storage.getInvoiceWithDetails(invoiceId, req.user.companyId);
       
       if (!invoice) {
         return res.status(404).json({ error: 'Faktura nenalezena' });
       }
 
-      const customer = invoice.customerId ? await storage.getCustomer(invoice.customerId, req.user.companyId) : null;
-      if (!customer || !customer.email) {
-        return res.status(400).json({ error: 'Zákazník nemá email adresu' });
+      // Use provided email or customer email as fallback
+      const emailTo = to || invoice.customer?.email;
+      if (!emailTo) {
+        return res.status(400).json({ error: 'Email adresa není zadána' });
       }
 
       // Generate PDF
       const pdfBuffer = await generateInvoicePDF(invoice, req.user.companyId);
       
-      // Send email with PDF attachment
-      const emailSent = await emailService.sendInvoiceEmail(
+      // Send email with PDF attachment using custom parameters
+      const emailSent = await emailService.sendCustomInvoiceEmail({
+        to: emailTo,
+        subject: subject || `Faktura č. ${invoice.invoiceNumber}`,
+        message: message || 'V příloze zasíláme fakturu k uhrazení.',
         invoice,
         pdfBuffer
-      );
+      });
 
       if (emailSent) {
+        // Update invoice status to sent if it was draft
+        if (invoice.status === 'draft') {
+          await storage.updateInvoice(invoiceId, { status: 'sent' }, req.user.companyId);
+        }
+
         // Record activity in invoice history
         await storage.createInvoiceHistory({
           invoiceId: invoiceId,
           companyId: req.user.companyId,
           userId: req.user.userId,
           action: 'email_sent',
-          description: `Faktura odeslána emailem na ${customer.email}`,
+          description: `Faktura odeslána emailem na ${emailTo}`,
           oldValue: null,
-          newValue: { emailSentTo: customer.email, timestamp: new Date() }
+          newValue: { emailSentTo: emailTo, timestamp: new Date() }
         });
 
         res.json({ 
           message: 'Faktura byla úspěšně odeslána emailem',
-          sentTo: customer.email
+          sentTo: emailTo
         });
       } else {
         res.status(500).json({ error: 'Nepodařilo se odeslat email' });

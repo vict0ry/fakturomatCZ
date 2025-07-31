@@ -35,6 +35,8 @@ import { AuthProvider, useAuth } from "@/contexts/auth-context";
 import PublicInvoicePage from "@/pages/public-invoice";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
+import Subscription from "@/pages/subscription";
+import Pricing from "@/pages/pricing";
 
 function PublicRouter() {
   return (
@@ -51,7 +53,7 @@ function PublicRouter() {
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/accept-invitation" component={AcceptInvitation} />
       <Route path="/auth/accept-invitation" component={AcceptInvitation} />
-      <Route path="/pricing" component={() => import("./pages/pricing").then(m => m.default)} />
+      <Route path="/pricing" component={Pricing} />
       
       {/* Landing page pouze pro root */}
       <Route path="/" component={Landing} />
@@ -122,7 +124,7 @@ function AuthenticatedRouter() {
       <Route path="/email-settings" component={EmailSettings} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/bank-accounts" component={BankAccountsPage} />
-      <Route path="/subscription" component={() => import("./pages/subscription").then(m => m.default)} />
+      <Route path="/subscription" component={Subscription} />
       {/* BEZPEČNOSTNÍ BLOKACE - Admin panel je zakázán pro běžné uživatele */}
       <Route path="/admin">
         {() => (

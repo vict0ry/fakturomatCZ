@@ -13,6 +13,7 @@ import { Download, Edit, ArrowLeft, Send, Check, Clock, AlertTriangle, Plus, His
 
 import type { Invoice } from "@/lib/api";
 import { InvoiceForm } from "@/components/invoice-form";
+import { InvoiceEmailDialog } from "@/components/invoice-email-dialog";
 import { useState } from "react";
 
 function formatCurrency(amount: number) {
@@ -31,6 +32,7 @@ export default function InvoiceDetail() {
   const queryClient = useQueryClient();
 
   const [showHistory, setShowHistory] = useState(false);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
 
   const { data: invoice, isLoading, error } = useQuery({
     queryKey: ["/api/invoices", invoiceId],
@@ -77,12 +79,18 @@ export default function InvoiceDetail() {
   });
 
   const sendEmailMutation = useMutation({
-    mutationFn: () => fetch(`/api/invoices/${invoiceId}/send-email`, { 
-      method: 'POST',
-      credentials: 'include'
-    }).then(res => res.json()),
+    mutationFn: (emailData: { to: string; subject: string; message: string }) => 
+      fetch(`/api/invoices/${invoiceId}/send-email`, { 
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(emailData)
+      }).then(res => res.json()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices", invoiceId] });
+      setShowEmailDialog(false);
       toast({
         title: "Email odeslán",
         description: "Faktura byla úspěšně odeslána emailem.",
@@ -365,12 +373,12 @@ export default function InvoiceDetail() {
               
               <Button
                 variant="outline"
-                onClick={() => sendEmailMutation.mutate()}
+                onClick={() => setShowEmailDialog(true)}
                 disabled={sendEmailMutation.isPending}
                 className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
               >
                 <Mail className="mr-2 h-4 w-4" />
-                {sendEmailMutation.isPending ? 'Odesílání...' : 'Poslat emailem'}
+                Poslat emailem
               </Button>
               
               <Button 
@@ -718,6 +726,17 @@ export default function InvoiceDetail() {
           </div>
         </div>
       </div>
+
+      {/* Email Dialog */}
+      {invoice && (
+        <InvoiceEmailDialog
+          open={showEmailDialog}
+          onOpenChange={setShowEmailDialog}
+          invoice={invoice}
+          onSend={sendEmailMutation.mutate}
+          isLoading={sendEmailMutation.isPending}
+        />
+      )}
     </div>
   );
 }

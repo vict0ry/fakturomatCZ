@@ -1331,6 +1331,90 @@ Tým Doklad.ai
       return false;
     }
   }
+
+  // Custom invoice email with user-defined parameters
+  async sendCustomInvoiceEmail(params: {
+    to: string;
+    subject: string;
+    message: string;
+    invoice: any;
+    pdfBuffer: Buffer;
+  }): Promise<boolean> {
+    if (!this.isConfigured()) {
+      console.log('🔧 Email service not configured - custom invoice email cannot be sent');
+      return false;
+    }
+
+    try {
+      const { to, subject, message, invoice, pdfBuffer } = params;
+
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>${subject}</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); padding: 30px; text-align: center; color: white; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;">${this.fromName}</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Faktura k úhradě</p>
+          </div>
+          
+          <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+            <div style="white-space: pre-line; color: #333; line-height: 1.6;">
+              ${message}
+            </div>
+            
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #333;">Faktura ${invoice.invoiceNumber}</h3>
+              <p><strong>Datum vystavení:</strong> ${new Date(invoice.issueDate).toLocaleDateString('cs-CZ')}</p>
+              <p><strong>Datum splatnosti:</strong> ${new Date(invoice.dueDate).toLocaleDateString('cs-CZ')}</p>
+              <p><strong>Částka k úhradě:</strong> ${invoice.total} CZK</p>
+              ${invoice.customer ? `<p><strong>Zákazník:</strong> ${invoice.customer.name}</p>` : ''}
+            </div>
+            
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+            
+            <p style="color: #999; font-size: 12px; text-align: center;">
+              Tento email byl odeslán systémem Doklad.ai<br>
+              Faktura je přiložena jako PDF příloha.
+            </p>
+          </div>
+        </body>
+        </html>
+      `;
+
+      await this.transporter.sendMail({
+        from: `"${this.fromName}" <${this.fromEmail}>`,
+        to: to,
+        subject: subject,
+        html: htmlContent,
+        text: message, // Fallback plain text
+        attachments: [
+          {
+            filename: `faktura-${invoice.invoiceNumber}.pdf`,
+            content: pdfBuffer,
+            contentType: 'application/pdf'
+          }
+        ],
+        headers: {
+          'X-Mailer': 'Doklad.ai Professional v1.0',
+          'X-Priority': '3',
+          'X-Invoice-Number': invoice.invoiceNumber,
+          'List-Unsubscribe': '<mailto:unsubscribe@doklad.ai>',
+          'X-Entity-Ref-ID': `custom-invoice-${invoice.invoiceNumber}`,
+          'Message-ID': `<${Date.now()}-${Math.random().toString(36).substr(2, 9)}@doklad.ai>`
+        }
+      });
+
+      console.log(`✅ Custom invoice email sent to ${to} for invoice ${invoice.invoiceNumber}`);
+      return true;
+    } catch (error) {
+      console.error('❌ Custom invoice email error:', error);
+      return false;
+    }
+  }
 }
 
 export const emailService = new EmailService();
