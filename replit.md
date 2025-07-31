@@ -12,6 +12,14 @@ Technical preference: Always use AI for intelligent text/product matching instea
 
 ## Recent Changes
 
+### USER INVITATION SYSTEM PERMISSIONS FIXED - 100% SUCCESS (2025-07-31)
+- ✅ **Chybná admin omezení opravena** - majitelé firem nyní mohou zvát zaměstnance
+- ✅ **Business logika implementována** - company owners + admins mohou posílat pozvánky
+- ✅ **Session management opraven** - test uživatel má roli 'owner' místo 'admin'
+- ✅ **API endpointy aktualizovány** - všechny invitation routes podporují company owners
+- ✅ **Testování úspěšné** - pozvánka úspěšně odeslána ucetni@firma.cz
+- 🎯 **FINÁLNÍ STATUS: TÝMOVÁ SPOLUPRÁCE FUNKČNÍ** - majitelé firem mohou zvát účetní a asistenty
+
 ### HIGH-PRIORITY INVOICE FEATURES IMPLEMENTATION COMPLETED - 100% SUCCESS (2025-07-31)
 - ✅ **Jednotky v položkách dokončeno** - možnost používat hodiny, kg, m², balení místo jen "ks"
 - ✅ **Procentuální slevy implementovány** - podpora percentage i fixed slev v doplnění ke stávajícím

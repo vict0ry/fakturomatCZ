@@ -106,9 +106,9 @@ router.post('/users/invite', async (req, res) => {
   try {
     const user = (req as any).user;
     
-    // Only admin users can invite others
-    if (user.role !== 'admin') {
-      return res.status(403).json({ message: 'Only administrators can invite users' });
+    // Company owners and admins can invite users to their company
+    if (user.role !== 'admin' && user.role !== 'owner') {
+      return res.status(403).json({ message: 'Only company owners and administrators can invite users' });
     }
     
     const { email, firstName, lastName, role, accessLevel } = req.body;
@@ -174,9 +174,9 @@ router.get('/invitations', async (req, res) => {
   try {
     const user = (req as any).user;
     
-    // Only admin users can view invitations
-    if (user.role !== 'admin') {
-      return res.status(403).json({ message: 'Only administrators can view invitations' });
+    // Company owners and admins can view invitations
+    if (user.role !== 'admin' && user.role !== 'owner') {
+      return res.status(403).json({ message: 'Only company owners and administrators can view invitations' });
     }
     
     const invitations = await storage.getCompanyInvitations(user.companyId);
@@ -194,9 +194,9 @@ router.delete('/invitations/:id', async (req, res) => {
     const user = (req as any).user;
     const invitationId = parseInt(req.params.id);
     
-    // Only admin users can revoke invitations
-    if (user.role !== 'admin') {
-      return res.status(403).json({ message: 'Only administrators can revoke invitations' });
+    // Company owners and admins can revoke invitations
+    if (user.role !== 'admin' && user.role !== 'owner') {
+      return res.status(403).json({ message: 'Only company owners and administrators can revoke invitations' });
     }
     
     await storage.revokeInvitation(invitationId, user.companyId);
