@@ -1152,8 +1152,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   async sendInvitationEmail(invitation: UserInvitation): Promise<void> {
-    // Skip email sending for now and just log the invitation
-    console.log(`📧 Would send invitation email to ${invitation.email} for company ${invitation.companyId}`);
+    try {
+      // Get company information for the email
+      const company = invitation.companyId ? await this.getCompany(invitation.companyId) : null;
+      
+      // Import email service
+      const { emailService } = await import('./services/email-service');
+      
+      // Send the invitation email using the email service
+      const emailSent = await emailService.sendUserInvitationEmail(invitation, company);
+      
+      if (emailSent) {
+        console.log(`✅ Invitation email sent successfully to ${invitation.email} for company ${company?.name || invitation.companyId}`);
+      } else {
+        console.log(`⚠️ Failed to send invitation email to ${invitation.email} - email service not configured or error occurred`);
+      }
+    } catch (error) {
+      console.error(`❌ Error sending invitation email to ${invitation.email}:`, error);
+    }
   }
 
   // Missing invoice methods needed by routes

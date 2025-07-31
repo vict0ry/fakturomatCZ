@@ -120,6 +120,10 @@ router.get('/:id', async (req, res) => {
     const user = (req as any).user;
     const invoiceId = parseInt(req.params.id);
     
+    if (isNaN(invoiceId)) {
+      return res.status(400).json({ message: 'Invalid invoice ID' });
+    }
+    
     const invoice = await storage.getInvoiceWithItems(invoiceId, user.companyId);
     
     if (!invoice) {

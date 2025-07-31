@@ -604,6 +604,100 @@ Doklad.ai tým
       return false;
     }
   }
+
+  async sendUserInvitationEmail(invitation: any, company: any): Promise<boolean> {
+    if (!this.isConfigured()) {
+      console.log('📧 Email service not configured - skipping invitation email');
+      return false;
+    }
+
+    try {
+      const invitationUrl = `${process.env.NODE_ENV === 'production' ? 'https://doklad.ai' : 'http://localhost:5000'}/accept-invitation?token=${invitation.invitationToken}`;
+      
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Pozvánka do týmu - Doklad.ai</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center; color: white; border-radius: 15px 15px 0 0;">
+            <h1 style="margin: 0; font-size: 32px; font-weight: 700;">👥 Pozvánka do týmu</h1>
+            <p style="margin: 15px 0 0 0; font-size: 18px; opacity: 0.95;">Doklad.ai - Váš nový finanční asistent</p>
+          </div>
+          
+          <div style="background: white; padding: 40px 30px; border-radius: 0 0 15px 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <h2 style="color: #2d3748; margin-top: 0; font-size: 24px;">Ahoj ${invitation.firstName}! 👋</h2>
+            
+            <p style="color: #4a5568; line-height: 1.7; font-size: 16px; margin-bottom: 25px;">
+              Byli jste pozváni do týmu společnosti <strong>${company?.name || 'Neznámá společnost'}</strong> 
+              v systému Doklad.ai pro správu fakturace a účetnictví.
+            </p>
+
+            <div style="background: #f7fafc; padding: 25px; border-radius: 10px; margin: 25px 0; border-left: 4px solid #667eea;">
+              <h3 style="color: #2d3748; margin-top: 0; font-size: 18px;">📋 Detaily pozvánky:</h3>
+              <ul style="color: #4a5568; line-height: 1.6; padding-left: 20px; list-style: none;">
+                <li style="margin-bottom: 8px;"><strong>📧 Email:</strong> ${invitation.email}</li>
+                <li style="margin-bottom: 8px;"><strong>👤 Jméno:</strong> ${invitation.firstName} ${invitation.lastName}</li>
+                <li style="margin-bottom: 8px;"><strong>🏢 Společnost:</strong> ${company?.name || 'Neznámá společnost'}</li>
+                <li style="margin-bottom: 8px;"><strong>🔑 Role:</strong> ${invitation.role}</li>
+                <li style="margin-bottom: 8px;"><strong>📅 Platnost do:</strong> ${new Date(invitation.expiresAt).toLocaleDateString('cs-CZ')}</li>
+              </ul>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${invitationUrl}" 
+                 style="background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px;">
+                🚀 Přijmout pozvánku
+              </a>
+            </div>
+            
+            <p style="color: #666; line-height: 1.6; font-size: 14px;">
+              Pokud tlačítko nefunguje, zkopírujte tento odkaz do prohlížeče:<br>
+              <a href="${invitationUrl}" style="color: #667eea; word-break: break-all;">${invitationUrl}</a>
+            </p>
+            
+            <div style="background: #fff5f5; border: 1px solid #fed7d7; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <p style="color: #c53030; margin: 0; font-size: 14px;">
+                <strong>⚠️ Důležité:</strong> Tento odkaz vyprší ${new Date(invitation.expiresAt).toLocaleDateString('cs-CZ')} v ${new Date(invitation.expiresAt).toLocaleTimeString('cs-CZ')}. 
+                Pro dokončení registrace klikněte na odkaz co nejdříve.
+              </p>
+            </div>
+            
+            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+            
+            <p style="color: #999; font-size: 12px; text-align: center;">
+              Tento email byl odeslán systémem Doklad.ai<br>
+              Pokud jste tuto pozvánku neočekávali, ignorujte tento email.
+            </p>
+          </div>
+        </body>
+        </html>
+      `;
+
+      await this.transporter.sendMail({
+        from: `"${this.fromName}" <${this.fromEmail}>`,
+        to: invitation.email,
+        subject: `Pozvánka do týmu ${company?.name || 'Doklad.ai'} - Doklad.ai`,
+        html: htmlContent,
+        text: `Ahoj ${invitation.firstName}!\n\nByli jste pozváni do týmu společnosti ${company?.name || 'Neznámá společnost'} v systému Doklad.ai.\n\nPro přijetí pozvánky klikněte na tento odkaz: ${invitationUrl}\n\nOdkaz vyprší ${new Date(invitation.expiresAt).toLocaleDateString('cs-CZ')}.\n\nDoklad.ai tým`,
+        headers: {
+          'X-Mailer': 'Doklad.ai Professional v1.0',
+          'X-Priority': '3',
+          'List-Unsubscribe': '<mailto:unsubscribe@doklad.ai>',
+          'X-Entity-Ref-ID': `invitation-${invitation.invitationToken}`,
+          'Message-ID': `<${Date.now()}-${Math.random().toString(36).substr(2, 9)}@doklad.ai>`
+        }
+      });
+
+      console.log(`✅ User invitation email sent to ${invitation.email} for company ${company?.name || company?.id}`);
+      return true;
+    } catch (error) {
+      console.error('❌ User invitation email error:', error);
+      return false;
+    }
+  }
 }
 
 export const emailService = new EmailService();
