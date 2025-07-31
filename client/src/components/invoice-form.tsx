@@ -89,15 +89,6 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
   });
   const { toast } = useToast();
 
-  // Initialize customer data for editing
-  useEffect(() => {
-    if (invoice && invoice.customer) {
-      setSelectedCustomer(invoice.customer);
-      setCustomerSearch(invoice.customer.name || "");
-      setValue("customerId", invoice.customer.id);
-    }
-  }, [invoice, setValue]);
-
   const today = new Date().toISOString().split('T')[0];
   const defaultDueDate = new Date();
   defaultDueDate.setDate(defaultDueDate.getDate() + 14); // 14 days from today
@@ -160,13 +151,20 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
     },
   });
 
-  const { register, handleSubmit, setValue, watch, control, formState: { errors }, clearErrors } = form;
-  const { fields, append, remove } = useFieldArray({
+  const { register, handleSubmit, formState: { errors }, setValue, watch, control, clearErrors } = form;
+  const { fields: watchedItems, append, remove } = useFieldArray({
     control,
     name: "items",
   });
 
-  const watchedItems = watch("items");
+  // Initialize customer data for editing
+  useEffect(() => {
+    if (invoice && invoice.customer) {
+      setSelectedCustomer(invoice.customer);
+      setCustomerSearch(invoice.customer.name || "");
+      setValue("customerId", invoice.customer.id);
+    }
+  }, [invoice, setValue]);
 
   // Search customers (both database and ARES)
   const searchCustomers = async (query: string) => {
@@ -995,7 +993,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
               </CardHeader>
               <CardContent className="p-4 md:p-6">
                 <div className="space-y-4">
-                  {fields.map((item, index) => (
+                  {watchedItems.map((item, index) => (
                     <div key={`item-${index}`} className="p-4 border-2 border-gray-100 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-700/50">
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 md:gap-4 items-end">
                         <div className="sm:col-span-2 lg:col-span-4">
@@ -1099,6 +1097,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                           const vatRate = parseFloat(watchedItems[index]?.vatRate) || 21;
                           const discountType = watchedItems[index]?.discountType || "none";
                           const discountValue = parseFloat(watchedItems[index]?.discountValue) || 0;
+                          const isReverseCharge = watch("isReverseCharge");
                           
                           let baseAmount = quantity * unitPrice;
                           let discountAmount = 0;
@@ -1110,7 +1109,8 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                           }
                           
                           const subtotalAfterDiscount = Math.max(0, baseAmount - discountAmount);
-                          const vatAmount = (subtotalAfterDiscount * vatRate) / 100;
+                          // Reverse charge = no VAT calculation
+                          const vatAmount = isReverseCharge ? 0 : (subtotalAfterDiscount * vatRate) / 100;
                           const totalWithVat = subtotalAfterDiscount + vatAmount;
                           
                           return (
@@ -1130,8 +1130,10 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                                 <span className="font-medium">{formatCurrency(subtotalAfterDiscount)}</span>
                               </div>
                               <div className="flex justify-between text-sm">
-                                <span>DPH ({vatRate}%):</span>
-                                <span className="font-medium">{formatCurrency(vatAmount)}</span>
+                                <span>DPH ({vatRate}%){isReverseCharge ? " - přenesená daňová povinnost" : ""}:</span>
+                                <span className={`font-medium ${isReverseCharge ? "text-orange-600" : ""}`}>
+                                  {isReverseCharge ? "0,00 Kč" : formatCurrency(vatAmount)}
+                                </span>
                               </div>
                               <div className="flex justify-between text-sm font-bold border-t pt-2 mt-2">
                                 <span>Celkem s DPH:</span>
