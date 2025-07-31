@@ -1,134 +1,183 @@
-# 🧪 STRIPE TESTING GUIDE - FAKE KARTY
+# 🧪 STRIPE TESTING GUIDE - Bezpečné Testování
 
-## ⚠️ DŮLEŽITÉ: ŽÁDNÉ SKUTEČNÉ PENÍZE SE NESTRHÁVAJÍ!
+## ✅ AKTUÁLNÍ STATUS
 
-Všechny testy používají Stripe **TEST MÓD** - žádné skutečné poplatky se neúčtují.
+### Stripe Keys Configuration
+- ✅ **STRIPE_SECRET_KEY** - správně nastaven (sk_test_...)
+- ✅ **VITE_STRIPE_PUBLIC_KEY** - funkční pro frontend
+- ✅ **Stripe API connection** - ✅ úspěšná (balance: 0 CZK test mode)
 
-## 🎯 POSTUP TESTOVÁNÍ
+### Backend Endpoints
+- ✅ `/api/stripe/create-checkout-session` - vytváření checkout sessions
+- ✅ `/api/stripe/subscription-status` - kontrola předplatného
+- ✅ `/api/stripe/cancel-subscription` - zrušení předplatného  
+- ✅ `/api/stripe/webhook` - zpracování Stripe událostí
 
-### 1. Spuštění aplikace
+## 🧪 TESTING COMMANDS
+
+### 1. Rychlý API Test
 ```bash
-npm run dev
+# Test subscription status
+curl -X GET "http://localhost:5000/api/stripe/subscription-status" \
+  -H "Authorization: Bearer test-session-dev"
+
+# Test checkout session creation
+curl -X POST "http://localhost:5000/api/stripe/create-checkout-session" \
+  -H "Authorization: Bearer test-session-dev" \
+  -H "Content-Type: application/json"
 ```
 
-### 2. Registrace/Přihlášení
-- Přejdi na: `http://localhost:5000/register`
-- Vytvoř nový účet nebo se přihlaš
-
-### 3. Přechod na pricing
-- Přejdi na: `http://localhost:5000/pricing`
-- Klikni **"Začít 7denní zkušební období"**
-
-### 4. Stripe Checkout
-Použij tyto **TESTOVACÍ** údaje:
-
-#### ✅ ÚSPĚŠNÁ KARTA
-```
-Číslo karty: 4242424242424242
-Expiry:      12/25
-CVC:         123
-ZIP:         12345
-Jméno:       Test User
-```
-
-#### ❌ TESTOVACÍ CHYBY
-```
-Zamítnutá karta:         4000000000000002
-Nedostatek prostředků:   4000000000009995
-Vyžaduje ověření:        4000000000000341
-Prošlá karta:           4000000000000069
-```
-
-## 📊 CO OČEKÁVAT
-
-### Po úspěšné platbě:
-1. **Přesměrování** na success page
-2. **Subscription status** na `/subscription`:
-   - Status: "Zkušební období"
-   - Zbývá: 7 dní
-   - Cena: 199 Kč/měsíc
-
-### Ve Stripe Dashboard:
-1. **Customers** - nový zákazník
-2. **Subscriptions** - nové předplatné s trial
-3. **Payments** - payment intent
-4. **Webhooks** - události (pokud nastaveny)
-
-## 🔍 TROUBLESHOOTING
-
-### Stripe dashboard je prázdný?
-- **Normální!** Data se zobrazí až po dokončení checkout procesu
-- Ujisti se, že jsi v **test módu** (sandbox)
-
-### Checkout nefunguje?
-1. Zkontroluj console errory v prohlížeči
-2. Zkontroluj server logy
-3. Ověř Stripe klíče v environment variables
-
-### Webhook události?
+### 2. Kompletní Test Scripts
 ```bash
-# Instalace Stripe CLI
-stripe listen --forward-to localhost:5000/api/stripe/webhook
+node test-stripe-simple.js           # Jednoduchý test s admin uživatelem
+node check-stripe-keys.js            # Ověření Stripe API klíčů
+node debug-stripe-checkout.js        # Debug checkout procesu
 ```
 
-## 🧪 AUTOMATICKÉ TESTY
+## 💳 TESTOVACÍ KARTY (žádné skutečné poplatky!)
 
+### ✅ Úspěšné Karty
+```
+Základní test:        4242424242424242
+Visa:                 4242424242424242  
+Mastercard:           5555555555554444
+American Express:     378282246310005
+```
+
+### ❌ Chybové Karty
+```
+Zamítnutá platba:     4000000000000002
+Nedostatek prostředků: 4000000000009995
+Prošlá karta:         4000000000000069
+Vyžaduje ověření:     4000000000000341
+```
+
+### 📋 Univerzální Testovací Data
+```
+Expiry Date:    12/25 (nebo jakékoliv budoucí datum)
+CVC:           123 (nebo jakékoliv 3 číslice)
+ZIP:           12345 (nebo jakékoliv PSČ)
+Jméno:         Test User
+Email:         test@example.com
+```
+
+## 🌐 MANUÁLNÍ TESTOVÁNÍ V PROHLÍŽEČI
+
+### Krok 1: Získání Checkout URL
 ```bash
-node test-stripe-simple.js     # Základní test
-node test-stripe-fake-cards.js # Dokumentace karet
+node test-stripe-simple.js
+# Zkopíruj URL z outputu
 ```
 
-## 🔒 BEZPEČNOST
+### Krok 2: Testovací Postup
+1. **Otevři checkout URL** v prohlížeči
+2. **Vyplň testovací kartu** - 4242424242424242
+3. **Zkontroluj trial period** - 7 dní zdarma
+4. **Dokončit platbu** - klikni "Subscribe"
+5. **Ověř přesměrování** - na /dashboard
+6. **Zkontroluj status** - na /subscription
 
-- ✅ Všechny karty fungují pouze v TEST módu
-- ✅ Žádné skutečné peníze se nestrhávají
-- ✅ Test data jsou automaticky smazána po 90 dnech
-- ✅ Pro produkci použij LIVE Stripe klíče
+### Krok 3: Očekávané Výsledky
+- ✅ Status: "Zkušební období"
+- ✅ Zbývá: 7 dní
+- ✅ Cena po trial: 199 Kč/měsíc
+- ✅ Možnost zrušit předplatné
 
-## 📱 MOBILNÍ TESTOVÁNÍ
+## 🔧 DEBUGGING
 
-Stripe Checkout je plně responsivní - testuj na:
-- Desktop prohlížeč
-- Mobilní prohlížeč
-- Developer tools mobile view
+### Common Issues & Solutions
 
-## 🎯 POKROČILÉ TESTOVÁNÍ
-
-### 3D Secure
-```
-Karta: 4000000000000341
-→ Zobrazí se 3D Secure challenge
-```
-
-### Různé měny
-```
-Karta: 4242424242424242
-→ Testuj s CZK (výchozí)
-```
-
-### Webhooks
+**Problem:** "Authentication required"
 ```bash
-stripe trigger payment_intent.succeeded
-stripe trigger customer.subscription.created
+Solution: Použij Bearer token v testech
+curl -H "Authorization: Bearer test-session-dev" ...
 ```
 
-## 📈 OČEKÁVANÉ VÝSLEDKY
+**Problem:** "User not found"  
+```bash
+Solution: Zkontroluj že admin uživatel existuje
+SELECT * FROM users WHERE email = 'admin@doklad.ai';
+```
 
-### ✅ Úspěšný test flow:
-1. Pricing page se načte
-2. Checkout session se vytvoří
-3. Stripe checkout se otevře
-4. Platba proběhne úspěšně
-5. Přesměrování na success
-6. Subscription status se aktualizuje
-7. Data se zobrazí ve Stripe dashboard
+**Problem:** "Invalid API Key"
+```bash
+Solution: Zkontroluj STRIPE_SECRET_KEY format
+echo $STRIPE_SECRET_KEY | head -c 12  # Mělo by být: sk_test_...
+```
 
-### ❌ Běžné problémy:
-- CORS errors → zkontroluj server běží
-- 401 Unauthorized → přihlaš se znovu
-- 500 Server Error → zkontroluj Stripe klíče
-- Empty dashboard → počkej na dokončení checkout
+### Debug Logs
+Zapni detailní logování:
+```bash
+# V server/routes/stripe.ts najdi console.log statements
+# Sleduj workflow console pro error messages
+```
 
----
+## ⚠️ BEZPEČNOSTNÍ UPOZORNĚNÍ
 
-**💡 TIP:** Pro nejlepší testovací zkušenost otevři Stripe dashboard v druhé záložce a sleduj data v real-time!
+### ✅ Safe Testing
+- 🧪 **Test Mode Only** - všechny klíče začínají `*_test_`
+- 💳 **Fake Cards Only** - 4242424242424242 a podobné
+- 🚫 **No Real Money** - žádné skutečné transakce
+- 🔒 **Webhook Validation** - všechny webhooks ověřeny
+
+### 🚨 Production Warnings
+- ❌ **NEVER** použij live klíče (`sk_live_*`) na development
+- ❌ **NEVER** testuj se skutečnými kartami
+- ❌ **NEVER** commits klíče do Git repository
+- ❌ **NEVER** sdílej secret klíče
+
+## 📊 STRIPE DASHBOARD
+
+Ve Stripe Test Dashboard uvidíš:
+
+### Customers
+- Nové test zákazníky vytvořené během testování
+- Email adresy odpovídající test účtům
+
+### Subscriptions  
+- Aktivní subscriptions s 7denní trial
+- Status, billing cycle, trial end dates
+
+### Payments
+- Payment intents (může být $0 pro trial)
+- Successful/failed payment attempts
+
+### Events
+- `customer.subscription.created`
+- `invoice.payment_succeeded`
+- `customer.subscription.updated`
+
+## 🎯 NEXT STEPS
+
+Po úspěšném testování:
+
+1. **Production Deployment**
+   - Změň na live klíče
+   - Nastav production webhooks
+   - Aktualizuj redirect URLs
+
+2. **Enhanced Features**
+   - Multiple subscription tiers
+   - Usage-based billing
+   - Coupon support
+   - Invoice customization
+
+3. **Monitoring**
+   - Stripe Dashboard monitoring
+   - Email notifications
+   - Failed payment handling
+   - Churn analytics
+
+## 🔄 TROUBLESHOOTING CHECKLIST
+
+- [ ] Server běží na portu 5000
+- [ ] Stripe klíče jsou test verze (`sk_test_`, `pk_test_`)
+- [ ] Database connection funguje  
+- [ ] Admin uživatel existuje
+- [ ] Bearer token authentication funguje
+- [ ] Checkout session se vytváří úspěšně
+- [ ] Test karty jsou z oficiálního Stripe dokumentu
+- [ ] Browser developer tools nehlásí chyby
+- [ ] Webhooks jsou correctně nakonfigurovány (pro production)
+
+**Systém je připraven na 100% bezpečné testování! 🎉**

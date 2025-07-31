@@ -1,62 +1,108 @@
 #!/usr/bin/env node
 
 /**
- * JEDNODUCHÝ STRIPE TEST - BEZ DEPENDENCIES
+ * JEDNODUCHÝ STRIPE TEST S ADMIN UŽIVATELEM
  */
 
-console.log('🎯 STRIPE INTEGRATION TEST');
-console.log('==========================');
+console.log('🎯 JEDNODUCHÝ STRIPE TEST');
+console.log('=========================');
 console.log('');
 
-async function testStripeEndpoints() {
+async function testStripeSimple() {
   const baseUrl = 'http://localhost:5000';
   
-  // Test 1: Pricing page
-  console.log('📄 Testování pricing stránky...');
   try {
-    const response = await fetch(`${baseUrl}/pricing`);
-    if (response.ok) {
-      console.log('✅ Pricing stránka dostupná');
-    } else {
-      console.log(`❌ Pricing stránka nedostupná: ${response.status}`);
+    // 1. Přihlaš se jako admin
+    console.log('1. 🔐 Přihlašování jako admin...');
+    const loginResponse = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: 'admin@doklad.ai',
+        password: 'admin123'
+      })
+    });
+
+    if (!loginResponse.ok) {
+      console.log(`❌ Admin přihlášení selhalo: ${loginResponse.status}`);
+      const errorText = await loginResponse.text();
+      console.log(`   Error: ${errorText}`);
+      return;
     }
-  } catch (error) {
-    console.log(`❌ Chyba při přístupu k pricing: ${error.message}`);
-  }
-  
-  // Test 2: Subscription page
-  console.log('📊 Testování subscription stránky...');
-  try {
-    const response = await fetch(`${baseUrl}/subscription`);
-    if (response.ok) {
-      console.log('✅ Subscription stránka dostupná');
+
+    // Získej session cookie
+    const setCookieHeader = loginResponse.headers.get('set-cookie');
+    const sessionCookie = setCookieHeader ? setCookieHeader.split(';')[0] : '';
+
+    console.log('✅ Admin přihlášen úspěšně!');
+    console.log(`   Session: ${sessionCookie.substring(0, 30)}...`);
+
+    // 2. Test subscription status
+    console.log('');
+    console.log('2. 📊 Kontrola subscription status...');
+    const statusResponse = await fetch(`${baseUrl}/api/stripe/subscription-status`, {
+      headers: { 'Cookie': sessionCookie }
+    });
+
+    if (statusResponse.ok) {
+      const statusData = await statusResponse.json();
+      console.log('✅ Subscription status endpoint funguje!');
+      console.log(`   Status: ${statusData.status || 'žádné předplatné'}`);
+      console.log(`   Plan: ${statusData.planType || 'žádný plán'}`);
+      console.log(`   Trial: ${statusData.trialEndsAt || 'bez trial'}`);
     } else {
-      console.log(`❌ Subscription stránka nedostupná: ${response.status}`);
+      console.log(`❌ Subscription status selhává: ${statusResponse.status}`);
+      const errorText = await statusResponse.text();
+      console.log(`   Error: ${errorText}`);
+      return;
     }
+
+    // 3. Vytvoř checkout session
+    console.log('');
+    console.log('3. 💳 Vytváření Stripe checkout session...');
+    const checkoutResponse = await fetch(`${baseUrl}/api/stripe/create-checkout-session`, {
+      method: 'POST',
+      headers: {
+        'Cookie': sessionCookie,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (checkoutResponse.ok) {
+      const checkoutData = await checkoutResponse.json();
+      console.log('✅ Checkout session vytvořena úspěšně!');
+      console.log(`   Session ID: ${checkoutData.sessionId}`);
+      console.log('');
+      
+      console.log('🌐 MANUÁLNÍ TEST - CHECKOUT URL:');
+      console.log('==============================');
+      console.log(checkoutData.url);
+      console.log('');
+      console.log('💳 TESTOVACÍ KARTA (žádné skutečné peníze!):');
+      console.log('   Číslo: 4242424242424242');  
+      console.log('   Expiry: 12/25 (nebo jakékoliv budoucí datum)');
+      console.log('   CVC: 123 (nebo jakékoliv 3 číslice)');
+      console.log('   ZIP: 12345 (nebo jakékoliv PSČ)');
+      console.log('   Jméno: Test User');
+      console.log('');
+      console.log('🎯 POSTUP:');
+      console.log('1. Otevři výše uvedený URL v prohlížeči');
+      console.log('2. Vyplň testovací kartu (ŽÁDNÉ SKUTEČNÉ PENÍZE!)');
+      console.log('3. Klikni "Subscribe"');
+      console.log('4. Po úspěchu budeš přesměrován na dashboard');
+      console.log('5. Zkontroluj /subscription pro nový status');
+      console.log('');
+      console.log('🔄 Po dokončení spusť znovu test pro ověření');
+      
+    } else {
+      console.log(`❌ Checkout session selhává: ${checkoutResponse.status}`);
+      const errorText = await checkoutResponse.text();
+      console.log(`   Error: ${errorText}`);
+    }
+
   } catch (error) {
-    console.log(`❌ Chyba při přístupu k subscription: ${error.message}`);
+    console.error('🚨 Test error:', error.message);
   }
-  
-  console.log('');
-  console.log('🧪 MANUÁLNÍ TESTOVÁNÍ:');
-  console.log('======================');
-  console.log('1. Přejdi na: http://localhost:5000/pricing');
-  console.log('2. Přihlaš se (nebo se registruj)');
-  console.log('3. Klikni "Začít 7denní zkušební období"');
-  console.log('4. Použij TESTOVACÍ kartu: 4242424242424242');
-  console.log('5. Údaje: CVC=123, Expiry=12/25, ZIP=12345');
-  console.log('');
-  console.log('💳 TESTOVACÍ KARTY (žádné skutečné peníze!):');
-  console.log('✅ Úspěšná:              4242424242424242');
-  console.log('❌ Zamítnutá:            4000000000000002');
-  console.log('💸 Nedostatek prostředků: 4000000000009995');
-  console.log('🔐 Vyžaduje ověření:     4000000000000341');
-  console.log('');
-  console.log('📊 Po úspěšné platbě zkontroluj:');
-  console.log('- /subscription - status předplatného');
-  console.log('- Stripe dashboard - nový zákazník a subscription');
-  console.log('');
-  console.log('⚠️  DŮLEŽITÉ: Všechny platby jsou v TEST módu!');
 }
 
-testStripeEndpoints();
+testStripeSimple();
