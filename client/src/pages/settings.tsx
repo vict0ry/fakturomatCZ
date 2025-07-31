@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -16,6 +15,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Mail, Settings, Users, Building2, Save, UserPlus, Shield, Trash2, Clock, MessageSquare, AlertTriangle } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CompanyBrandingSettings } from '@/components/company-branding-settings';
 
 const companySettingsSchema = z.object({
   name: z.string().min(1, 'Název firmy je povinný'),
@@ -328,7 +328,9 @@ S pozdravem,
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="company">
+        <TabsContent value="company" className="space-y-6">
+          <CompanyBrandingSettings />
+          
           <Card>
             <CardHeader>
               <CardTitle>Údaje firmy</CardTitle>

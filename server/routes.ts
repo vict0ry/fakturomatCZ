@@ -123,6 +123,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const { registerEmailSettingsRoutes } = await import('./routes/email-settings');
   registerEmailSettingsRoutes(app);
   console.log('✅ Email settings routes registered');
+
+  // Register company branding routes
+  const companyBrandingRoutes = (await import('./routes/company-branding')).default;
+  app.use('/api/companies', companyBrandingRoutes);
+  console.log('✅ Company branding routes registered');
+
+  // Register invoice email routes
+  const invoiceEmailRoutes = (await import('./routes/invoice-email')).default;
+  app.use('/api/invoices', invoiceEmailRoutes);
+  console.log('✅ Invoice email routes registered');
   
   // Register modular routes
   app.use('/api', modularRoutes);

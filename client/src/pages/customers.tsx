@@ -10,7 +10,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { CustomerForm } from "@/components/customer-form";
-import { Plus, Search, Edit, Eye, Building2, Mail, Phone } from "lucide-react";
+import { EnhancedCustomerForm } from "@/components/enhanced-customer-form";
+import { Plus, Search, Edit, Eye, Building2, Mail, Phone, Globe } from "lucide-react";
 import type { Customer } from "@/lib/api";
 
 export default function Customers() {

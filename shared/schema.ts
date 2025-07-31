@@ -17,6 +17,16 @@ export const companies = pgTable("companies", {
   website: text("website"),
   bankAccount: text("bank_account"),
   iban: text("iban"),
+  swift: text("swift"),
+  // Company branding
+  logoUrl: text("logo_url"),
+  stampUrl: text("stamp_url"), // Digital signature/stamp
+  signature: text("signature"), // Base64 encoded signature
+  // Invoice appearance
+  enableQrCode: boolean("enable_qr_code").default(true),
+  invoiceTemplate: text("invoice_template").default("standard"),
+  primaryColor: text("primary_color").default("#f97316"), // Orange
+  secondaryColor: text("secondary_color").default("#374151"), // Gray
   // Payment matching settings
   enablePaymentMatching: boolean("enable_payment_matching").default(false),
   paymentMatchingProvider: text("payment_matching_provider").default("mailcow"), // mailcow, amazon_ses, gmail
@@ -89,12 +99,21 @@ export const customers = pgTable("customers", {
   name: text("name").notNull(),
   email: text("email"),
   phone: text("phone"),
+  contactPerson: text("contact_person"), // Contact person name
   ico: text("ico"), // Czech company registration number
   dic: text("dic"), // Czech VAT number
   address: text("address"),
   city: text("city"),
   postalCode: text("postal_code"),
   country: text("country").default("CZ"),
+  // Additional contact details
+  website: text("website"),
+  notes: text("notes"), // Internal notes about customer
+  // Customer preferences
+  preferredPaymentMethod: text("preferred_payment_method").default("bank_transfer"),
+  paymentTerms: integer("payment_terms").default(14), // Days
+  // Customer categorization
+  category: text("category").default("standard"), // vip, standard, problematic
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
