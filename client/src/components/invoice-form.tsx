@@ -22,6 +22,8 @@ const invoiceItemSchema = z.object({
   unit: z.string().default("ks"),
   unitPrice: z.string().min(1, "Jednotková cena je povinná"),
   vatRate: z.string().default("21"),
+  discountType: z.string().default("none"),
+  discountValue: z.string().default("0"),
   total: z.string().default("0"),
 });
 
@@ -116,6 +118,8 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
         unit: (item as any).unit || "ks",
         unitPrice: item.unitPrice,
         vatRate: item.vatRate,
+        discountType: (item as any).discountType || "none",
+        discountValue: (item as any).discountValue || "0",
         total: item.total,
       })) || [
         {
@@ -124,6 +128,8 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
           unit: "ks",
           unitPrice: "0",
           vatRate: "21",
+          discountType: "none",
+          discountValue: "0",
           total: "0",
         }
       ],
@@ -182,8 +188,22 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
       const quantity = parseFloat(item.quantity) || 0;
       const unitPrice = parseFloat(item.unitPrice) || 0;
       const vatRate = parseFloat(item.vatRate) || 21;
+      const discountType = item.discountType || "none";
+      const discountValue = parseFloat(item.discountValue) || 0;
       
-      const itemSubtotal = quantity * unitPrice;
+      // Calculate base amount
+      let itemSubtotal = quantity * unitPrice;
+      
+      // Apply discount
+      let discountAmount = 0;
+      if (discountType === "percentage") {
+        discountAmount = (itemSubtotal * discountValue) / 100;
+      } else if (discountType === "fixed") {
+        discountAmount = discountValue;
+      }
+      
+      itemSubtotal = Math.max(0, itemSubtotal - discountAmount);
+      
       // If reverse charge, VAT is 0
       const itemVat = isReverseCharge ? 0 : (itemSubtotal * vatRate) / 100;
       const itemTotal = itemSubtotal + itemVat;
@@ -214,6 +234,8 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
       unit: "ks",
       unitPrice: "0",
       vatRate: "21",
+      discountType: "none",
+      discountValue: "0",
       total: "0",
     });
   };
@@ -667,7 +689,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                             className="mt-1 h-11 border-2 border-gray-200 dark:border-gray-600"
                           />
                         </div>
-                        <div className="sm:col-span-1 lg:col-span-2">
+                        <div className="sm:col-span-1 lg:col-span-1">
                           <Label className="text-sm font-semibold">Cena za jednotku</Label>
                           <Input
                             type="number"
@@ -677,6 +699,32 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                             step="0.01"
                             className="mt-1 h-11 border-2 border-gray-200 dark:border-gray-600"
                           />
+                        </div>
+                        <div className="sm:col-span-1 lg:col-span-1">
+                          <Label className="text-sm font-semibold">Sleva</Label>
+                          <div className="flex space-x-1">
+                            <Input
+                              type="number"
+                              {...register(`items.${index}.discountValue`)}
+                              placeholder="0"
+                              min="0"
+                              step="0.01"
+                              className="mt-1 h-11 border-2 border-gray-200 dark:border-gray-600"
+                            />
+                            <Select
+                              value={watchedItems[index]?.discountType || "none"}
+                              onValueChange={(value) => setValue(`items.${index}.discountType`, value)}
+                            >
+                              <SelectTrigger className="w-20 mt-1 h-11 border-2 border-gray-200 dark:border-gray-600">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">-</SelectItem>
+                                <SelectItem value="percentage">%</SelectItem>
+                                <SelectItem value="fixed">Kč</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                         <div className="sm:col-span-1 lg:col-span-1">
                           <Label className="text-sm font-semibold">VAT %</Label>
@@ -708,18 +756,53 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                         </div>
                       </div>
                       <div className="mt-3 p-3 bg-white dark:bg-gray-800 rounded-lg border">
-                        <div className="flex justify-between text-sm">
-                          <span>Celkem bez DPH:</span>
-                          <span className="font-medium">{formatCurrency((parseFloat(watchedItems[index]?.quantity) || 0) * (parseFloat(watchedItems[index]?.unitPrice) || 0))}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span>DPH ({watchedItems[index]?.vatRate || 21}%):</span>
-                          <span className="font-medium">{formatCurrency(((parseFloat(watchedItems[index]?.quantity) || 0) * (parseFloat(watchedItems[index]?.unitPrice) || 0)) * ((parseFloat(watchedItems[index]?.vatRate) || 21) / 100))}</span>
-                        </div>
-                        <div className="flex justify-between text-sm font-bold border-t pt-2 mt-2">
-                          <span>Celkem s DPH:</span>
-                          <span className="text-blue-600">{formatCurrency(((parseFloat(watchedItems[index]?.quantity) || 0) * (parseFloat(watchedItems[index]?.unitPrice) || 0)) * (1 + ((parseFloat(watchedItems[index]?.vatRate) || 21) / 100)))}</span>
-                        </div>
+                        {(() => {
+                          const quantity = parseFloat(watchedItems[index]?.quantity) || 0;
+                          const unitPrice = parseFloat(watchedItems[index]?.unitPrice) || 0;
+                          const vatRate = parseFloat(watchedItems[index]?.vatRate) || 21;
+                          const discountType = watchedItems[index]?.discountType || "none";
+                          const discountValue = parseFloat(watchedItems[index]?.discountValue) || 0;
+                          
+                          let baseAmount = quantity * unitPrice;
+                          let discountAmount = 0;
+                          
+                          if (discountType === "percentage") {
+                            discountAmount = (baseAmount * discountValue) / 100;
+                          } else if (discountType === "fixed") {
+                            discountAmount = discountValue;
+                          }
+                          
+                          const subtotalAfterDiscount = Math.max(0, baseAmount - discountAmount);
+                          const vatAmount = (subtotalAfterDiscount * vatRate) / 100;
+                          const totalWithVat = subtotalAfterDiscount + vatAmount;
+                          
+                          return (
+                            <>
+                              <div className="flex justify-between text-sm">
+                                <span>Základ ({quantity} × {unitPrice} {watchedItems[index]?.unit || 'ks'}):</span>
+                                <span className="font-medium">{formatCurrency(baseAmount)}</span>
+                              </div>
+                              {discountAmount > 0 && (
+                                <div className="flex justify-between text-sm text-red-600">
+                                  <span>Sleva ({discountValue}{discountType === "percentage" ? "%" : " Kč"}):</span>
+                                  <span className="font-medium">-{formatCurrency(discountAmount)}</span>
+                                </div>
+                              )}
+                              <div className="flex justify-between text-sm">
+                                <span>Celkem bez DPH:</span>
+                                <span className="font-medium">{formatCurrency(subtotalAfterDiscount)}</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span>DPH ({vatRate}%):</span>
+                                <span className="font-medium">{formatCurrency(vatAmount)}</span>
+                              </div>
+                              <div className="flex justify-between text-sm font-bold border-t pt-2 mt-2">
+                                <span>Celkem s DPH:</span>
+                                <span className="text-blue-600">{formatCurrency(totalWithVat)}</span>
+                              </div>
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
                   ))}

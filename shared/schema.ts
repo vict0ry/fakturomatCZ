@@ -114,6 +114,14 @@ export const invoices = pgTable("invoices", {
   vatAmount: decimal("vat_amount", { precision: 10, scale: 2 }).notNull(),
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
   status: text("status").notNull().default("draft"), // draft, sent, paid, overdue, cancelled
+  // Opakované faktury
+  isRecurring: boolean("is_recurring").default(false),
+  recurringFrequency: text("recurring_frequency"), // monthly, quarterly, yearly
+  recurringInterval: integer("recurring_interval").default(1), // every X months/quarters/years
+  recurringEndDate: timestamp("recurring_end_date"),
+  recurringCount: integer("recurring_count"), // or after X invoices
+  lastRecurringDate: timestamp("last_recurring_date"),
+  parentInvoiceId: integer("parent_invoice_id").references(() => invoices.id), // link to original recurring invoice
   // Payment details
   paymentMethod: text("payment_method").default("bank_transfer"), // bank_transfer, card, cash, online, cheque
   bankAccount: text("bank_account"),
@@ -150,8 +158,13 @@ export const invoiceItems = pgTable("invoice_items", {
   invoiceId: integer("invoice_id").references(() => invoices.id),
   description: text("description").notNull(),
   quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
+  unit: text("unit").default("ks"), // ks, kg, hodiny, m², m³, balení, atd.
   unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
   vatRate: decimal("vat_rate", { precision: 5, scale: 2 }).notNull().default("21"), // Czech VAT rate
+  // Slevy
+  discountType: text("discount_type").default("none"), // none, percentage, fixed
+  discountValue: decimal("discount_value", { precision: 10, scale: 2 }).default("0"),
+  discountAmount: decimal("discount_amount", { precision: 10, scale: 2 }).default("0"),
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
 });
 

@@ -42,6 +42,12 @@ export function Sidebar({ className }: SidebarProps) {
       current: location === "/invoices" || location.startsWith("/invoices/"),
     },
     {
+      name: "Opakované faktury",
+      href: "/recurring-invoices",
+      icon: Calendar,
+      current: location === "/recurring-invoices",
+    },
+    {
       name: "Zákazníci",
       href: "/customers",
       icon: Users,

@@ -21,6 +21,7 @@ import ProfilePage from "@/pages/ProfilePage";
 import EmailSettings from "@/pages/EmailSettings";
 import BlogPage from "@/pages/blog";
 import BlogPostPage from "@/pages/blog-post";
+import RecurringInvoicesPage from "@/pages/recurring-invoices";
 import AcceptInvitation from "@/pages/accept-invitation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
@@ -95,6 +96,7 @@ function AuthenticatedRouter() {
       <Route path="/invoices" component={Invoices} />
       <Route path="/invoices/:id/edit" component={InvoiceEdit} />
       <Route path="/invoices/:id" component={InvoiceDetail} />
+      <Route path="/recurring-invoices" component={RecurringInvoicesPage} />
       <Route path="/customers" component={Customers} />
       <Route path="/expenses/new">
         {() => <ExpenseCreatePage />}
