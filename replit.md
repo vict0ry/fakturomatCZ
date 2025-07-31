@@ -136,6 +136,16 @@ Technical preference: Always use AI for intelligent text/product matching instea
 - ✅ **Email integration prepared** - Email system ready for production deployment
 - 🎯 **Status**: User invitation system production-ready with full CRUD functionality
 
+### ARES NAME SEARCH + ACCOUNT DEACTIVATION SYSTEM COMPLETED - 100% SUCCESS (2025-07-31)
+- ✅ **ARES name search v registraci implementovано** - formulář automaticky načte údaje při psaní názvu firmy
+- ✅ **Public ARES endpoint vytvořen** - `/api/test/ares/search/:name` bez autentifikace pro registraci
+- ✅ **Account deactivation systém finalizován** - úplná deaktivace účtu včetně cancel Stripe subscription
+- ✅ **Admin deactivation tested** - admin@doklad.ai account successfully deactivated with full logging
+- ✅ **Registration enhancement completed** - both IČO lookup i company name search funkční
+- ✅ **Storage methods updated** - deactivateUser() method přidána pro marking accounts inactive
+- ✅ **Test infrastructure expanded** - admin deactivation, public ARES search, authentication verified
+- 🎯 **FINÁLNÍ STATUS: PRODUKČNÍ REGISTRACE + ÚČET MANAGEMENT** - všechny funkce testovány a funkční
+
 ### COMPREHENSIVE PAYMENT MATCHING SYSTEM FULLY COMPLETED (2025-07-31)
 - ✅ **Bank Accounts API 100% functional** - All CRUD operations tested and working
 - ✅ **Payment email automation perfected** - Secure dedicated emails generated automatically
