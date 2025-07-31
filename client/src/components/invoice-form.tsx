@@ -13,7 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { customerAPI } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Search, Calculator } from "lucide-react";
+import { Plus, Trash2, Search, Calculator, Repeat } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { Customer, Invoice, InvoiceItem } from "@/lib/api";
 
 const invoiceItemSchema = z.object({
@@ -117,6 +118,11 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
       isReverseCharge: invoice?.isReverseCharge || false,
       status: invoice?.status || "draft",
       notes: invoice?.notes || "",
+      // Recurring invoice fields
+      isRecurring: (invoice as any)?.isRecurring || false,
+      recurringFrequency: (invoice as any)?.recurringFrequency || "monthly",
+      recurringInterval: (invoice as any)?.recurringInterval || 1,
+      recurringTemplateName: (invoice as any)?.recurringTemplateName || "",
       items: invoice?.items?.map(item => ({
         description: item.description,
         quantity: item.quantity,
@@ -471,6 +477,84 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                       </label>
                     </div>
                   </div>
+                </div>
+
+                {/* Recurring Invoice Section */}
+                <Separator className="my-6" />
+                
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      {...register("isRecurring")}
+                      className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                    />
+                    <div className="flex items-center space-x-2">
+                      <Repeat className="w-5 h-5 text-blue-600" />
+                      <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        Nastavit jako opakovanou fakturu
+                      </Label>
+                    </div>
+                  </div>
+                  
+                  {watch("isRecurring") && (
+                    <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800 space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                            Název šablony
+                          </Label>
+                          <Input
+                            {...register("recurringTemplateName")}
+                            placeholder="např. Měsíční hosting"
+                            className="border-blue-300 focus:border-blue-500"
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                            Frekvence
+                          </Label>
+                          <Select
+                            value={watch("recurringFrequency")}
+                            onValueChange={(value) => setValue("recurringFrequency", value as any)}
+                          >
+                            <SelectTrigger className="border-blue-300 focus:border-blue-500">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="monthly">📅 Měsíčně</SelectItem>
+                              <SelectItem value="quarterly">📅 Čtvrtletně</SelectItem>
+                              <SelectItem value="yearly">📅 Ročně</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                            Interval (každých X {watch("recurringFrequency") === "monthly" ? "měsíců" : watch("recurringFrequency") === "quarterly" ? "čtvrtletí" : "let"})
+                          </Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            max="12"
+                            {...register("recurringInterval", { valueAsNumber: true })}
+                            className="border-blue-300 focus:border-blue-500"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2 text-sm text-blue-700 dark:text-blue-300">
+                        <Repeat className="w-4 h-4" />
+                        <span>
+                          Tato faktura se bude automaticky generovat každé{" "}
+                          {watch("recurringInterval") || 1}{" "}
+                          {watch("recurringFrequency") === "monthly" ? "měsíc" : 
+                           watch("recurringFrequency") === "quarterly" ? "čtvrtletí" : "rok"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {invoice?.invoiceNumber && (

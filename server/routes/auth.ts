@@ -112,7 +112,7 @@ router.post('/register', async (req, res) => {
 
     console.log('Company created:', company.id);
 
-    // Create user
+    // Create user - first user in company becomes owner
     const user = await storage.createUser({
       username,
       email,
@@ -120,7 +120,7 @@ router.post('/register', async (req, res) => {
       firstName,
       lastName,
       companyId: company.id,
-      role: 'user'
+      role: 'owner'  // První uživatel ve firmě je automaticky owner
     });
 
     console.log('User created:', user.id);
