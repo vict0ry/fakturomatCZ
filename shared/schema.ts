@@ -161,10 +161,7 @@ export const invoiceItems = pgTable("invoice_items", {
   unit: text("unit").default("ks"), // ks, kg, hodiny, m², m³, balení, atd.
   unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
   vatRate: decimal("vat_rate", { precision: 5, scale: 2 }).notNull().default("21"), // Czech VAT rate
-  // Slevy
-  discountType: text("discount_type").default("none"), // none, percentage, fixed
-  discountValue: decimal("discount_value", { precision: 10, scale: 2 }).default("0"),
-  discountAmount: decimal("discount_amount", { precision: 10, scale: 2 }).default("0"),
+  // Celková částka položky
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
 });
 
