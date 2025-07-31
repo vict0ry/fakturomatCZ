@@ -9,6 +9,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Bell, User, ChevronDown, LogOut, Settings } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import { PlusMenu } from "./plus-menu";
+import { TopNavigation } from "./top-navigation";
 
 export function Header() {
   const { user, logout } = useAuth();
@@ -16,22 +18,10 @@ export function Header() {
   return (
     <header className="bg-white dark:bg-gray-900 border-b border-neutral-200 dark:border-neutral-700 px-4 sm:px-6 md:px-8 sticky top-0 z-50">
       <div className="flex justify-between items-center h-16">
-        {/* Left side - Navigation for larger screens */}
-        <div className="hidden lg:block">
-          <nav className="flex space-x-1">
-            <Link href="/" className="text-neutral-600 dark:text-neutral-300 hover:text-primary transition-colors px-3 py-2 text-sm font-medium">
-              Dashboard
-            </Link>
-            <Link href="/invoices" className="text-neutral-600 dark:text-neutral-300 hover:text-primary transition-colors px-3 py-2 text-sm font-medium">
-              Faktury
-            </Link>
-            <Link href="/customers" className="text-neutral-600 dark:text-neutral-300 hover:text-primary transition-colors px-3 py-2 text-sm font-medium">
-              Zákazníci
-            </Link>
-            <Link href="/analytics" className="text-neutral-600 dark:text-neutral-300 hover:text-primary transition-colors px-3 py-2 text-sm font-medium">
-              Analýzy
-            </Link>
-          </nav>
+        {/* Left side - Plus button and Navigation */}
+        <div className="flex items-center space-x-4">
+          <PlusMenu />
+          <TopNavigation />
         </div>
 
         {/* Center - Search (hidden on small screens) */}

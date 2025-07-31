@@ -23,7 +23,7 @@ import BlogPage from "@/pages/blog";
 import BlogPostPage from "@/pages/blog-post";
 import RecurringInvoicesPage from "@/pages/recurring-invoices";
 import AcceptInvitation from "@/pages/accept-invitation";
-import { Sidebar } from "@/components/layout/sidebar";
+// import { Sidebar } from "@/components/layout/sidebar"; // Odstraněno - nahrazeno plus menu
 import { Header } from "@/components/layout/header";
 import Landing from "@/pages/landing";
 import Register from "@/pages/register";
@@ -152,12 +152,11 @@ function AppContent() {
       );
     }
     
-    // Běžní uživatelé mají standardní layout
+    // Běžní uživatelé mají standardní layout s header a plus menu
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Header />
-        <Sidebar />
-        <main className="lg:ml-72 min-h-screen">
+        <main className="min-h-screen">
           <div className="px-4 pt-4 lg:px-8">
             <AuthenticatedRouter />
           </div>
