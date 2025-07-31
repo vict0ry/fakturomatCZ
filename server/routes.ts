@@ -29,11 +29,100 @@ import { sessions, requireAuth } from './middleware/auth';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
+  // Test endpoints for priority emails (development only) - registered first to avoid conflicts
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('🔧 Registering test endpoints...');
+    const { emailService } = await import('./services/email-service');
+    
+    // Debug endpoint to test JSON response
+    app.post('/api/test/debug', async (req, res) => {
+      console.log('🔍 Debug endpoint called');
+      res.json({ status: 'working', timestamp: new Date().toISOString() });
+    });
+    
+    app.post('/api/test/send-payment-failed-email', async (req, res) => {
+      try {
+        const { user, paymentDetails } = req.body;
+        const result = await emailService.sendPaymentFailedEmail(user, paymentDetails);
+        res.json({ success: result, message: result ? 'Email sent' : 'Email failed' });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    app.post('/api/test/send-trial-expiring-email', async (req, res) => {
+      try {
+        const { user, daysLeft } = req.body;
+        const result = await emailService.sendTrialExpiringEmail(user, daysLeft);
+        res.json({ success: result, message: result ? 'Email sent' : 'Email failed' });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    app.post('/api/test/send-email-confirmation', async (req, res) => {
+      try {
+        const { user, confirmationToken } = req.body;
+        const result = await emailService.sendEmailConfirmationEmail(user, confirmationToken);
+        res.json({ success: result, message: result ? 'Email sent' : 'Email failed' });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    app.post('/api/test/send-monthly-report', async (req, res) => {
+      try {
+        const { user, company, reportData } = req.body;
+        const result = await emailService.sendMonthlyReportEmail(user, company, reportData);
+        res.json({ success: result, message: result ? 'Email sent' : 'Email failed' });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    app.post('/api/test/send-onboarding-email', async (req, res) => {
+      try {
+        const { user, day } = req.body;
+        const result = await emailService.sendOnboardingEmail(user, day);
+        res.json({ success: result, message: result ? 'Email sent' : 'Email failed' });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    app.post('/api/test/add-to-email-queue', async (req, res) => {
+      try {
+        const queueData = req.body;
+        const result = await storage.addToEmailQueue(queueData);
+        res.json({ success: true, data: result });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    app.get('/api/test/pending-emails', async (req, res) => {
+      try {
+        const emails = await storage.getPendingEmails();
+        res.json(emails);
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+    
+    console.log('✅ All test endpoints registered');
+  }
+  
   // Register enhanced auth routes (includes password reset)
   setupEnhancedAuthRoutes(app, sessions);
   
   // Register company routes
   setupCompanyRoutes(app);
+  
+  // Import and register email settings routes
+  console.log('🔧 Registering email settings routes...');
+  const { registerEmailSettingsRoutes } = await import('./routes/email-settings');
+  registerEmailSettingsRoutes(app);
+  console.log('✅ Email settings routes registered');
   
   // Register modular routes
   app.use('/api', modularRoutes);
@@ -1813,4 +1902,87 @@ function generatePohodaXML(invoices: any[]): string {
   
   return xmlHeader + invoicesXML + xmlFooter;
 }
+
+  // Test endpoints for priority emails (development only)
+  if (process.env.NODE_ENV !== 'production') {
+    const { emailService } = await import('./services/email-service');
+    
+    // Debug endpoint to test JSON response
+    app.post('/api/test/debug', async (req, res) => {
+      console.log('🔍 Debug endpoint called');
+      res.json({ status: 'working', timestamp: new Date().toISOString() });
+    });
+    
+    app.post('/api/test/send-payment-failed-email', async (req, res) => {
+      try {
+        const { user, paymentDetails } = req.body;
+        const result = await emailService.sendPaymentFailedEmail(user, paymentDetails);
+        res.json({ success: result, message: result ? 'Email sent' : 'Email failed' });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    app.post('/api/test/send-trial-expiring-email', async (req, res) => {
+      try {
+        const { user, daysLeft } = req.body;
+        const result = await emailService.sendTrialExpiringEmail(user, daysLeft);
+        res.json({ success: result, message: result ? 'Email sent' : 'Email failed' });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    app.post('/api/test/send-email-confirmation', async (req, res) => {
+      try {
+        const { user, confirmationToken } = req.body;
+        const result = await emailService.sendEmailConfirmationEmail(user, confirmationToken);
+        res.json({ success: result, message: result ? 'Email sent' : 'Email failed' });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    app.post('/api/test/send-monthly-report', async (req, res) => {
+      try {
+        const { user, company, reportData } = req.body;
+        const result = await emailService.sendMonthlyReportEmail(user, company, reportData);
+        res.json({ success: result, message: result ? 'Email sent' : 'Email failed' });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    app.post('/api/test/send-onboarding-email', async (req, res) => {
+      try {
+        const { user, day } = req.body;
+        const result = await emailService.sendOnboardingEmail(user, day);
+        res.json({ success: result, message: result ? 'Email sent' : 'Email failed' });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    app.post('/api/test/add-to-email-queue', async (req, res) => {
+      try {
+        const queueData = req.body;
+        const result = await storage.addToEmailQueue(queueData);
+        res.json({ success: true, data: result });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    app.get('/api/test/pending-emails', async (req, res) => {
+      try {
+        const emails = await storage.getPendingEmails();
+        res.json(emails);
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+  }
+
+  const httpServer = createServer(app);
+  return httpServer;
 }

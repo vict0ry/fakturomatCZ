@@ -1,13 +1,14 @@
 import { 
   companies, users, customers, invoices, invoiceItems, chatMessages, reminders, sessions, invoiceHistory,
-  expenses, expenseItems, bankAccounts, userInvitations,
+  expenses, expenseItems, bankAccounts, userInvitations, emailSettings, emailQueue,
   type Company, type User, type Customer, type Invoice, type InvoiceItem, 
   type ChatMessage, type Reminder, type Session, type InvoiceHistory,
   type Expense, type ExpenseItem, type BankAccount, type UserInvitation,
+  type EmailSetting, type EmailQueue,
   type InsertCompany, type InsertUser, type InsertCustomer, type InsertInvoice, 
   type InsertInvoiceItem, type InsertChatMessage, type InsertReminder, type InsertSession, 
   type InsertInvoiceHistory, type InsertExpense, type InsertExpenseItem, type InsertBankAccount,
-  type InsertUserInvitation
+  type InsertUserInvitation, type InsertEmailSetting, type InsertEmailQueue
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, ilike, gte, lte, count, or, isNull, not } from "drizzle-orm";
@@ -1241,6 +1242,68 @@ export class DatabaseStorage implements IStorage {
     await db.delete(invoiceItems).where(eq(invoiceItems.invoiceId, id));
     // Delete invoice
     await db.delete(invoices).where(and(eq(invoices.id, id), eq(invoices.companyId, companyId)));
+  }
+
+  // Email Settings Management
+  async getEmailSettings(companyId: number): Promise<EmailSetting[]> {
+    return db.select().from(emailSettings).where(eq(emailSettings.companyId, companyId));
+  }
+
+  async getEmailSetting(companyId: number, emailType: string): Promise<EmailSetting | undefined> {
+    const [setting] = await db
+      .select()
+      .from(emailSettings)
+      .where(and(eq(emailSettings.companyId, companyId), eq(emailSettings.emailType, emailType)));
+    return setting;
+  }
+
+  async createEmailSetting(setting: InsertEmailSetting): Promise<EmailSetting> {
+    const [created] = await db.insert(emailSettings).values(setting).returning();
+    return created;
+  }
+
+  async updateEmailSetting(id: number, updates: Partial<InsertEmailSetting>): Promise<EmailSetting> {
+    const [updated] = await db
+      .update(emailSettings)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(emailSettings.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteEmailSetting(id: number): Promise<void> {
+    await db.delete(emailSettings).where(eq(emailSettings.id, id));
+  }
+
+  // Email Queue Management
+  async addToEmailQueue(emailData: InsertEmailQueue): Promise<EmailQueue> {
+    const [queued] = await db.insert(emailQueue).values(emailData).returning();
+    return queued;
+  }
+
+  async getPendingEmails(): Promise<EmailQueue[]> {
+    return db
+      .select()
+      .from(emailQueue)
+      .where(and(eq(emailQueue.status, 'pending'), lte(emailQueue.scheduledFor, new Date())));
+  }
+
+  async markEmailAsSent(id: number): Promise<void> {
+    await db
+      .update(emailQueue)
+      .set({ status: 'sent', sentAt: new Date() })
+      .where(eq(emailQueue.id, id));
+  }
+
+  async markEmailAsFailed(id: number, error: string): Promise<void> {
+    await db
+      .update(emailQueue)
+      .set({ 
+        status: 'failed', 
+        lastError: error,
+        attempts: sql`${emailQueue.attempts} + 1`
+      })
+      .where(eq(emailQueue.id, id));
   }
 }
 

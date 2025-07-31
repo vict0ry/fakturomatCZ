@@ -610,3 +610,54 @@ export type UserInvitation = typeof userInvitations.$inferSelect;
 export type InsertBankAccount = z.infer<typeof insertBankAccountSchema>;
 export type InsertPaymentMatch = z.infer<typeof insertPaymentMatchSchema>;
 export type InsertUserInvitation = z.infer<typeof insertUserInvitationSchema>;
+
+// Email settings management for admins
+export const emailSettings = pgTable("email_settings", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").references(() => companies.id),
+  emailType: text("email_type").notNull(), // 'payment_failed', 'trial_expiring', etc.
+  isEnabled: boolean("is_enabled").default(true),
+  subject: text("subject").notNull(),
+  htmlContent: text("html_content").notNull(),
+  textContent: text("text_content"),
+  triggerConditions: json("trigger_conditions"), // When to send (days before trial end, etc.)
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Email queue for scheduled sends
+export const emailQueue = pgTable("email_queue", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  companyId: integer("company_id").references(() => companies.id),
+  emailType: text("email_type").notNull(),
+  recipientEmail: text("recipient_email").notNull(),
+  subject: text("subject").notNull(),
+  htmlContent: text("html_content").notNull(),
+  textContent: text("text_content"),
+  scheduledFor: timestamp("scheduled_for").notNull(),
+  sentAt: timestamp("sent_at"),
+  status: text("status").notNull().default("pending"), // pending, sent, failed
+  attempts: integer("attempts").default(0),
+  lastError: text("last_error"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Email schemas
+export const insertEmailSettingSchema = createInsertSchema(emailSettings);
+export const insertEmailQueueSchema = createInsertSchema(emailQueue);
+
+export type EmailSetting = typeof emailSettings.$inferSelect;
+export type InsertEmailSetting = z.infer<typeof insertEmailSettingSchema>;
+export type EmailQueue = typeof emailQueue.$inferSelect;
+export type InsertEmailQueue = z.infer<typeof insertEmailQueueSchema>;
+
+// Email relations
+export const emailSettingsRelations = relations(emailSettings, ({ one }) => ({
+  company: one(companies, { fields: [emailSettings.companyId], references: [companies.id] }),
+}));
+
+export const emailQueueRelations = relations(emailQueue, ({ one }) => ({
+  user: one(users, { fields: [emailQueue.userId], references: [users.id] }),
+  company: one(companies, { fields: [emailQueue.companyId], references: [companies.id] }),
+}));
