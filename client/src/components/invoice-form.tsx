@@ -94,8 +94,9 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
     if (invoice && invoice.customer) {
       setSelectedCustomer(invoice.customer);
       setCustomerSearch(invoice.customer.name || "");
+      setValue("customerId", invoice.customer.id);
     }
-  }, [invoice]);
+  }, [invoice, setValue]);
 
   const today = new Date().toISOString().split('T')[0];
   const defaultDueDate = new Date();
@@ -354,8 +355,11 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
   };
 
   const handleFormSubmit = (data: InvoiceFormData) => {
+    // Check if we have a customerId from form data OR selectedCustomer
+    const hasCustomer = data.customerId && data.customerId > 0 || selectedCustomer;
+    
     // For edit mode, don't require customer selection if we already have customerId
-    if (!selectedCustomer && (!invoice || !invoice.customerId)) {
+    if (!hasCustomer && (!invoice || !invoice.customerId)) {
       toast({
         title: "Chyba",
         description: "Musíte vybrat zákazníka.",
@@ -371,7 +375,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
     }
 
     // For new customers from ARES without ID, create them first
-    if (selectedCustomer && !selectedCustomer.id) {
+    if (selectedCustomer && (!selectedCustomer.id || selectedCustomer.id === -1)) {
       const dataWithCustomer = data as any;
       dataWithCustomer.customer = selectedCustomer;
       dataWithCustomer.customerId = -1; // Flag for new customer
