@@ -349,21 +349,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sessionCompanyId: req.user.companyId,
         sessionUserId: req.user.userId,
         totalInvoices: allInvoices.length,
-        invoicesByCompany: {}
+        invoicesByCompany: {} as Record<number, any[]>
       };
       
       // Seskupit faktury podle companyId
       allInvoices.forEach(inv => {
         const cid = inv.companyId;
-        if (!sessionInfo.invoicesByCompany[cid]) {
+        if (cid && !sessionInfo.invoicesByCompany[cid]) {
           sessionInfo.invoicesByCompany[cid] = [];
         }
-        sessionInfo.invoicesByCompany[cid].push({
-          id: inv.id,
-          invoiceNumber: inv.invoiceNumber,
-          total: inv.total,
-          notes: inv.notes
-        });
+        if (cid) {
+          sessionInfo.invoicesByCompany[cid].push({
+            id: inv.id,
+            invoiceNumber: inv.invoiceNumber,
+            total: inv.total,
+            notes: inv.notes
+          });
+        }
       });
       
       res.json(sessionInfo);
@@ -423,7 +425,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const invoiceDataParsed = insertInvoiceSchema.parse(processedInvoiceData);
       
       // Generate invoice number if not provided
-      if (!invoiceDataParsed.invoiceNumber || invoiceDataParsed.invoiceNumber.trim() === '') {
+      if (!invoiceDataParsed.invoiceNumber || (typeof invoiceDataParsed.invoiceNumber === 'string' && invoiceDataParsed.invoiceNumber.trim() === '')) {
         const year = new Date().getFullYear();
         const count = await storage.getInvoiceCount(req.user.companyId, year);
         invoiceDataParsed.invoiceNumber = `${year}${String(count + 1).padStart(4, '0')}`;
@@ -548,10 +550,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const { dueDate } = req.body;
       
-      const invoice = await storage.updateInvoice(id, { 
-        dueDate: new Date(dueDate),
-        originalDueDate: req.body.originalDueDate ? new Date(req.body.originalDueDate) : undefined
-      }, req.user.companyId);
+      const updateData = { 
+        dueDate: new Date(dueDate) as any,
+        originalDueDate: req.body.originalDueDate ? new Date(req.body.originalDueDate) as any : undefined
+      };
+      const invoice = await storage.updateInvoice(id, updateData, req.user.companyId);
       
       res.json(invoice);
     } catch (error) {
@@ -570,7 +573,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'Faktura nenalezena' });
       }
 
-      const customer = await storage.getCustomer(invoice.customerId);
+      const customer = await storage.getCustomer(invoice.customerId, req.user.companyId);
       if (!customer || !customer.email) {
         return res.status(400).json({ error: 'Zákazník nemá email adresu' });
       }
@@ -1224,7 +1227,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         environment: process.env.NODE_ENV || 'unknown'
       });
     } catch (error) {
-      res.json({ error: error.message });
+      res.json({ error: (error as Error).message });
     }
   });
 
@@ -1281,7 +1284,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('Create admin error:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as Error).message });
     }
   });
 
@@ -1439,7 +1442,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Simple CSV generation (placeholder)
       const csvContent = `Číslo faktury,Zákazník,Částka,Datum\n${invoices.map(inv => 
-        `${inv.invoiceNumber},"${inv.customer.name}",${inv.totalAmount},${inv.issueDate}`
+        `${inv.invoiceNumber},"${(inv as any).customer?.name || 'N/A'}",${(inv as any).total || 0},${inv.issueDate}`
       ).join('\n')}`;
       
       res.setHeader('Content-Type', 'text/csv');
@@ -1455,7 +1458,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/invoices/:id/email", requireAuth, async (req: any, res) => {
     try {
       const invoiceId = parseInt(req.params.id);
-      const invoice = await storage.getInvoiceWithDetails(invoiceId);
+      const invoice = await storage.getInvoiceWithDetails(invoiceId, req.user.companyId);
       
       if (!invoice || invoice.companyId !== req.user.companyId) {
         return res.status(404).json({ message: "Invoice not found" });
@@ -1463,7 +1466,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Generate PDF
       const { generateInvoicePDF } = await import('./services/pdf');
-      const pdfBuffer = await generateInvoicePDF(invoice);
+      const pdfBuffer = await generateInvoicePDF(invoice, req.user.companyId);
       
       // Send email (placeholder - need email configuration)
       const emailSent = true; // await emailService.sendInvoiceEmail(invoice, pdfBuffer);
@@ -1484,7 +1487,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const invoiceId = parseInt(req.params.id);
       const { reminderType } = req.body;
       
-      const invoice = await storage.getInvoiceWithDetails(invoiceId);
+      const invoice = await storage.getInvoiceWithDetails(invoiceId, req.user.companyId);
       
       if (!invoice || invoice.companyId !== req.user.companyId) {
         return res.status(404).json({ message: "Invoice not found" });
