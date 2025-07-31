@@ -7,9 +7,7 @@ if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
 }
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2024-06-20',
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const router = Router();
 
@@ -18,7 +16,7 @@ const router = Router();
  */
 router.post('/create-checkout-session', requireAuth, async (req: any, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session?.userId;
     const user = await storage.getUser(userId);
     
     if (!user) {
@@ -92,7 +90,7 @@ router.post('/create-checkout-session', requireAuth, async (req: any, res) => {
  */
 router.get('/subscription-status', requireAuth, async (req: any, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session?.userId;
     const user = await storage.getUser(userId);
     
     if (!user) {
@@ -112,10 +110,11 @@ router.get('/subscription-status', requireAuth, async (req: any, res) => {
       try {
         const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
         subscriptionData = {
-          ...subscriptionData,
           status: subscription.status,
-          currentPeriodStart: new Date(subscription.current_period_start * 1000).toISOString(),
-          currentPeriodEnd: new Date(subscription.current_period_end * 1000).toISOString(),
+          trialEndsAt: user.trialEndsAt,
+          subscriptionStartedAt: user.subscriptionStartedAt,
+          planType: user.planType || 'monthly',
+          monthlyPrice: user.monthlyPrice || '199',
           trialEnd: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
         };
       } catch (stripeError) {
@@ -135,7 +134,7 @@ router.get('/subscription-status', requireAuth, async (req: any, res) => {
  */
 router.post('/cancel-subscription', requireAuth, async (req: any, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session?.userId;
     const user = await storage.getUser(userId);
     
     if (!user || !user.stripeSubscriptionId) {
