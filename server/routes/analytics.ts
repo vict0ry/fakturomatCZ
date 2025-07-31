@@ -1,20 +1,16 @@
 import { Router } from "express";
 import { storage } from "../storage";
+import { requireAuth } from "../middleware/auth";
 
 const router = Router();
 
-router.get("/", async (req: any, res) => {
+router.get("/", requireAuth, async (req: any, res) => {
   try {
-    // Check session authentication
-    if (!req.session || !req.session.userId) {
-      return res.status(401).json({ message: 'Authentication required' });
+    const companyId = req.user.companyId;
+    
+    if (!companyId) {
+      return res.status(400).json({ message: 'Company ID not found' });
     }
-
-    const user = await storage.getUser(req.session.userId);
-    if (!user) {
-      return res.status(401).json({ message: 'User not found' });
-    }
-    const companyId = user.companyId;
     
     // Get current month date range
     const now = new Date();

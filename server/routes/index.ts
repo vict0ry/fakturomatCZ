@@ -8,6 +8,7 @@ import adminRoutes from './admin';
 import companyRoutes from './company';
 import recurringInvoicesRoutes from './recurring-invoices';
 import searchRoutes from './search';
+import analyticsRoutes from './analytics';
 
 const router = Router();
 
@@ -21,5 +22,6 @@ router.use('/customers', customerRoutes);
 router.use('/admin', adminRoutes);
 router.use('/companies', companyRoutes);
 router.use('/search', searchRoutes);
+router.use('/analytics', analyticsRoutes);
 
 export default router;
