@@ -97,7 +97,7 @@ router.post('/', async (req, res) => {
       userId: user.id
     };
     
-    // Create invoice with items
+    // Create invoice with items  
     const invoice = await storage.createInvoiceWithItems(processedData);
     
     res.status(201).json(invoice);
@@ -120,7 +120,7 @@ router.get('/:id', async (req, res) => {
     const user = (req as any).user;
     const invoiceId = parseInt(req.params.id);
     
-    const invoice = await storage.getInvoiceWithItems(invoiceId);
+    const invoice = await storage.getInvoiceWithItems(invoiceId, user.companyId);
     
     if (!invoice) {
       return res.status(404).json({ message: 'Invoice not found' });
@@ -145,7 +145,7 @@ router.patch('/:id', async (req, res) => {
     const invoiceId = parseInt(req.params.id);
     
     // Check if invoice exists and belongs to user's company
-    const existingInvoice = await storage.getInvoice(invoiceId);
+    const existingInvoice = await storage.getInvoice(invoiceId, user.companyId);
     if (!existingInvoice) {
       return res.status(404).json({ message: 'Invoice not found' });
     }
@@ -159,7 +159,7 @@ router.patch('/:id', async (req, res) => {
     const validatedData = updateSchema.parse(req.body);
     
     // Update invoice
-    const updatedInvoice = await storage.updateInvoice(invoiceId, validatedData);
+    const updatedInvoice = await storage.updateInvoice(invoiceId, validatedData, user.companyId);
     
     res.json(updatedInvoice);
   } catch (error) {
@@ -182,7 +182,7 @@ router.delete('/:id', async (req, res) => {
     const invoiceId = parseInt(req.params.id);
     
     // Check if invoice exists and belongs to user's company
-    const existingInvoice = await storage.getInvoice(invoiceId);
+    const existingInvoice = await storage.getInvoice(invoiceId, user.companyId);
     if (!existingInvoice) {
       return res.status(404).json({ message: 'Invoice not found' });
     }
@@ -192,7 +192,7 @@ router.delete('/:id', async (req, res) => {
     }
     
     // Delete invoice
-    await storage.deleteInvoice(invoiceId);
+    await storage.deleteInvoice(invoiceId, user.companyId);
     
     res.json({ message: 'Invoice deleted successfully' });
   } catch (error) {
