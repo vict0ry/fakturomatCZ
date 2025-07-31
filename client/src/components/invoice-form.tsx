@@ -37,6 +37,11 @@ const invoiceSchema = z.object({
   vatAmount: z.string().default("0"),
   total: z.string().default("0"),
   currency: z.string().default("CZK"),
+  // Recurring invoice fields
+  isRecurring: z.boolean().default(false),
+  recurringFrequency: z.enum(["monthly", "quarterly", "yearly"]).optional(),
+  recurringInterval: z.number().min(1).max(12).optional(),
+  recurringTemplateName: z.string().optional(),
   // Payment details
   paymentMethod: z.enum(["bank_transfer", "card", "cash", "online", "cheque"]).default("bank_transfer"),
   bankAccount: z.string().optional(),
