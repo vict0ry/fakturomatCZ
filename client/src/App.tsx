@@ -51,6 +51,7 @@ function PublicRouter() {
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/accept-invitation" component={AcceptInvitation} />
       <Route path="/auth/accept-invitation" component={AcceptInvitation} />
+      <Route path="/pricing" component={() => import("./pages/pricing").then(m => m.default)} />
       
       {/* Landing page pouze pro root */}
       <Route path="/" component={Landing} />
@@ -121,6 +122,7 @@ function AuthenticatedRouter() {
       <Route path="/email-settings" component={EmailSettings} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/bank-accounts" component={BankAccountsPage} />
+      <Route path="/subscription" component={() => import("./pages/subscription").then(m => m.default)} />
       {/* BEZPEČNOSTNÍ BLOKACE - Admin panel je zakázán pro běžné uživatele */}
       <Route path="/admin">
         {() => (

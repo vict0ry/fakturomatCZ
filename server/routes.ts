@@ -19,6 +19,7 @@ import setupEmailRoutes from "./routes/email";
 import setupCompanyRoutes from "./routes/company";
 import setupEnhancedAuthRoutes from "./routes/auth-enhanced";
 import invitationRoutes from "./routes/invitation";
+import stripeRoutes from "./routes/stripe";
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
 
@@ -39,6 +40,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register invitation routes
   app.use('/api/invitations', invitationRoutes);
+  
+  // Register Stripe routes
+  app.use('/api/stripe', stripeRoutes);
   
   /**
    * @openapi

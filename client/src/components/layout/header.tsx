@@ -11,6 +11,7 @@ import { Bell, User, ChevronDown, LogOut, Settings } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { PlusMenu } from "./plus-menu";
 import { TopNavigation } from "./top-navigation";
+import { SubscriptionStatus } from "../subscription-status";
 
 export function Header() {
   const { user, logout } = useAuth();
@@ -53,9 +54,12 @@ export function Header() {
                 <div className="w-8 h-8 bg-neutral-300 rounded-full flex items-center justify-center">
                   <User className="h-4 w-4 text-neutral-600" />
                 </div>
-                <span className="hidden sm:block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  {user ? (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : (user.username !== user.email ? user.username : user.email.split('@')[0])) : 'Uživatel'}
-                </span>
+                <div className="hidden sm:block text-right">
+                  <div className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    {user ? (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : (user.username !== user.email ? user.username : user.email.split('@')[0])) : 'Uživatel'}
+                  </div>
+                  <SubscriptionStatus />
+                </div>
                 <ChevronDown className="h-4 w-4 text-neutral-400" />
               </Button>
             </DropdownMenuTrigger>
@@ -73,6 +77,16 @@ export function Header() {
                   <div className="flex items-center w-full">
                     <Settings className="mr-2 h-4 w-4" />
                     Nastavení
+                  </div>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/subscription">
+                  <div className="flex items-center w-full">
+                    <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0h3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    Předplatné
                   </div>
                 </Link>
               </DropdownMenuItem>
