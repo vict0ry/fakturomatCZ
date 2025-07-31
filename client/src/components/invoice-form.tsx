@@ -253,7 +253,8 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
 
   // Calculate totals
   const calculateTotals = () => {
-    if (!watchedItems || watchedItems.length === 0) {
+    const currentItems = watch("items");
+    if (!currentItems || currentItems.length === 0) {
       setValue("subtotal", "0.00");
       setValue("vatAmount", "0.00");
       setValue("total", "0.00");
@@ -263,7 +264,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
     let subtotal = 0;
     let vatAmount = 0;
 
-    watchedItems.forEach((item, index) => {
+    currentItems.forEach((item, index) => {
       if (!item) return;
       
       const quantity = parseFloat(item.quantity) || 0;
@@ -303,13 +304,14 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
     setValue("total", total.toFixed(2));
   };
 
-  // Watch reverse charge for calculation
+  // Watch all relevant values for calculation
+  const watchedItemsArray = watch("items");
   const isReverseCharge = watch("isReverseCharge");
 
   // Recalculate when items or reverse charge change
   useEffect(() => {
     calculateTotals();
-  }, [watchedItems, isReverseCharge]);
+  }, [watchedItemsArray, isReverseCharge]);
 
   const addItem = () => {
     append({
