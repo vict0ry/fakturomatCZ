@@ -1,12 +1,13 @@
 import { 
   companies, users, customers, invoices, invoiceItems, chatMessages, reminders, sessions, invoiceHistory,
-  expenses, expenseItems, bankAccounts,
+  expenses, expenseItems, bankAccounts, userInvitations,
   type Company, type User, type Customer, type Invoice, type InvoiceItem, 
   type ChatMessage, type Reminder, type Session, type InvoiceHistory,
-  type Expense, type ExpenseItem, type BankAccount,
+  type Expense, type ExpenseItem, type BankAccount, type UserInvitation,
   type InsertCompany, type InsertUser, type InsertCustomer, type InsertInvoice, 
   type InsertInvoiceItem, type InsertChatMessage, type InsertReminder, type InsertSession, 
-  type InsertInvoiceHistory, type InsertExpense, type InsertExpenseItem, type InsertBankAccount
+  type InsertInvoiceHistory, type InsertExpense, type InsertExpenseItem, type InsertBankAccount,
+  type InsertUserInvitation
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, ilike, gte, lte, count, or, isNull, not } from "drizzle-orm";
@@ -127,6 +128,15 @@ export interface IStorage {
   getExpenseItems(expenseId: number): Promise<ExpenseItem[]>;
   updateExpenseItem(id: number, item: Partial<InsertExpenseItem>): Promise<ExpenseItem>;
   deleteExpenseItem(id: number): Promise<void>;
+  
+  // User Invitations
+  createUserInvitation(invitation: Omit<InsertUserInvitation, 'id' | 'invitationToken' | 'expiresAt' | 'createdAt' | 'updatedAt'>): Promise<UserInvitation>;
+  getPendingInvitationByEmail(email: string, companyId: number): Promise<UserInvitation | undefined>;
+  getCompanyInvitations(companyId: number): Promise<UserInvitation[]>;
+  getInvitationByToken(token: string): Promise<UserInvitation | undefined>;
+  acceptInvitation(token: string, password: string): Promise<User>;
+  revokeInvitation(invitationId: number, companyId: number): Promise<void>;
+  sendInvitationEmail(invitation: UserInvitation): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1028,6 +1038,118 @@ export class DatabaseStorage implements IStorage {
       .where(eq(bankAccounts.id, id))
       .returning();
     return updatedBankAccount;
+  }
+
+  // User Invitations
+  async createUserInvitation(invitation: Omit<InsertUserInvitation, 'id' | 'invitationToken' | 'expiresAt' | 'createdAt' | 'updatedAt'>): Promise<UserInvitation> {
+    const { randomUUID } = await import('crypto');
+    const invitationToken = randomUUID();
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); // Expire in 7 days
+
+    const [newInvitation] = await db
+      .insert(userInvitations)
+      .values({
+        ...invitation,
+        invitationToken,
+        expiresAt
+      })
+      .returning();
+    return newInvitation;
+  }
+
+  async getPendingInvitationByEmail(email: string, companyId: number): Promise<UserInvitation | undefined> {
+    const [invitation] = await db
+      .select()
+      .from(userInvitations)
+      .where(
+        and(
+          eq(userInvitations.email, email),
+          eq(userInvitations.companyId, companyId),
+          eq(userInvitations.status, 'pending')
+        )
+      );
+    return invitation || undefined;
+  }
+
+  async getCompanyInvitations(companyId: number): Promise<UserInvitation[]> {
+    return await db
+      .select()
+      .from(userInvitations)
+      .where(eq(userInvitations.companyId, companyId))
+      .orderBy(desc(userInvitations.createdAt));
+  }
+
+  async getInvitationByToken(token: string): Promise<UserInvitation | undefined> {
+    const [invitation] = await db
+      .select()
+      .from(userInvitations)
+      .where(eq(userInvitations.invitationToken, token));
+    return invitation || undefined;
+  }
+
+  async acceptInvitation(token: string, password: string): Promise<User> {
+    const invitation = await this.getInvitationByToken(token);
+    if (!invitation) {
+      throw new Error('Invalid invitation token');
+    }
+
+    if (invitation.status !== 'pending') {
+      throw new Error('Invitation is no longer valid');
+    }
+
+    if (new Date() > invitation.expiresAt) {
+      throw new Error('Invitation has expired');
+    }
+
+    // Create the user
+    const bcrypt = await import('bcryptjs');
+    const hashedPassword = await bcrypt.default.hash(password, 10);
+
+    const newUser = await this.createUser({
+      companyId: invitation.companyId,
+      username: invitation.email,
+      email: invitation.email,
+      password: hashedPassword,
+      firstName: invitation.firstName,
+      lastName: invitation.lastName,
+      role: invitation.role,
+      accessLevel: invitation.accessLevel,
+      emailConfirmed: true
+    });
+
+    // Mark invitation as accepted
+    await db
+      .update(userInvitations)
+      .set({
+        status: 'accepted',
+        acceptedAt: new Date(),
+        acceptedBy: newUser.id,
+        updatedAt: new Date()
+      })
+      .where(eq(userInvitations.id, invitation.id));
+
+    return newUser;
+  }
+
+  async revokeInvitation(invitationId: number, companyId: number): Promise<void> {
+    await db
+      .update(userInvitations)
+      .set({
+        status: 'revoked',
+        updatedAt: new Date()
+      })
+      .where(
+        and(
+          eq(userInvitations.id, invitationId),
+          eq(userInvitations.companyId, companyId)
+        )
+      );
+  }
+
+  async sendInvitationEmail(invitation: UserInvitation): Promise<void> {
+    // Skip email sending for now and just log the invitation
+    console.log(`📧 Would send invitation email to ${invitation.email} for company ${invitation.companyId}`);
   }
 }
 

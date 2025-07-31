@@ -21,6 +21,7 @@ import ProfilePage from "@/pages/ProfilePage";
 import EmailSettings from "@/pages/EmailSettings";
 import BlogPage from "@/pages/blog";
 import BlogPostPage from "@/pages/blog-post";
+import AcceptInvitation from "@/pages/accept-invitation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import Landing from "@/pages/landing";
@@ -46,6 +47,7 @@ function PublicRouter() {
       <Route path="/login" component={Login} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
+      <Route path="/auth/accept-invitation" component={AcceptInvitation} />
       {/* BEZPEČNOSTNÍ BLOKACE - Admin panel vyžaduje přihlášení */}
       <Route path="/admin">
         {() => (

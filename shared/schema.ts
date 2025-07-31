@@ -563,11 +563,40 @@ export const paymentMatchesRelations = relations(paymentMatches, ({ one }) => ({
   matchedByUser: one(users, { fields: [paymentMatches.matchedBy], references: [users.id] }),
 }));
 
+// User Invitations
+export const userInvitations = pgTable("user_invitations", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").references(() => companies.id),
+  invitedBy: integer("invited_by").references(() => users.id),
+  email: text("email").notNull(),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  role: text("role").notNull().default("user"), // admin, user, viewer
+  accessLevel: text("access_level").notNull().default("read"), // read, create, accounting, admin
+  
+  // Invitation tokens and status
+  invitationToken: text("invitation_token").notNull().unique(),
+  status: text("status").notNull().default("pending"), // pending, accepted, expired, revoked
+  
+  // Expiration
+  expiresAt: timestamp("expires_at").notNull(),
+  
+  // Acceptance tracking
+  acceptedAt: timestamp("accepted_at"),
+  acceptedBy: integer("accepted_by").references(() => users.id),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Bank account schemas and types
 export const insertBankAccountSchema = createInsertSchema(bankAccounts);
 export const insertPaymentMatchSchema = createInsertSchema(paymentMatches);
+export const insertUserInvitationSchema = createInsertSchema(userInvitations);
 
 export type BankAccount = typeof bankAccounts.$inferSelect;
 export type PaymentMatch = typeof paymentMatches.$inferSelect;
+export type UserInvitation = typeof userInvitations.$inferSelect;
 export type InsertBankAccount = z.infer<typeof insertBankAccountSchema>;
 export type InsertPaymentMatch = z.infer<typeof insertPaymentMatchSchema>;
+export type InsertUserInvitation = z.infer<typeof insertUserInvitationSchema>;

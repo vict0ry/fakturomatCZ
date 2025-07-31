@@ -101,4 +101,116 @@ router.get('/users', async (req, res) => {
   }
 });
 
-export default router;
+// POST /api/companies/users/invite - Invite new user
+router.post('/users/invite', async (req, res) => {
+  try {
+    const user = (req as any).user;
+    
+    // Only admin users can invite others
+    if (user.role !== 'admin') {
+      return res.status(403).json({ message: 'Only administrators can invite users' });
+    }
+    
+    const { email, firstName, lastName, role, accessLevel } = req.body;
+    
+    // Validate required fields
+    if (!email || !firstName || !lastName) {
+      return res.status(400).json({ 
+        message: 'Email, first name, and last name are required' 
+      });
+    }
+    
+    // Check if user with this email already exists in the company
+    const existingUser = await storage.getUserByEmail(email);
+    if (existingUser && existingUser.companyId === user.companyId) {
+      return res.status(400).json({ 
+        message: 'User with this email already exists in your company' 
+      });
+    }
+    
+    // Check if there's already a pending invitation for this email
+    const existingInvitation = await storage.getPendingInvitationByEmail(email, user.companyId);
+    if (existingInvitation) {
+      return res.status(400).json({ 
+        message: 'Invitation already sent to this email address' 
+      });
+    }
+    
+    // Create invitation
+    const invitation = await storage.createUserInvitation({
+      companyId: user.companyId,
+      invitedBy: user.id,
+      email,
+      firstName,
+      lastName,
+      role: role || 'user',
+      accessLevel: accessLevel || 'read'
+    });
+    
+    // Send invitation email
+    await storage.sendInvitationEmail(invitation);
+    
+    res.status(201).json({
+      message: 'Invitation sent successfully',
+      invitation: {
+        id: invitation.id,
+        email: invitation.email,
+        firstName: invitation.firstName,
+        lastName: invitation.lastName,
+        role: invitation.role,
+        status: invitation.status,
+        expiresAt: invitation.expiresAt
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error inviting user:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// GET /api/companies/invitations - Get pending invitations
+router.get('/invitations', async (req, res) => {
+  try {
+    const user = (req as any).user;
+    
+    // Only admin users can view invitations
+    if (user.role !== 'admin') {
+      return res.status(403).json({ message: 'Only administrators can view invitations' });
+    }
+    
+    const invitations = await storage.getCompanyInvitations(user.companyId);
+    res.json(invitations);
+    
+  } catch (error) {
+    console.error('Error fetching invitations:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// DELETE /api/companies/invitations/:id - Revoke invitation
+router.delete('/invitations/:id', async (req, res) => {
+  try {
+    const user = (req as any).user;
+    const invitationId = parseInt(req.params.id);
+    
+    // Only admin users can revoke invitations
+    if (user.role !== 'admin') {
+      return res.status(403).json({ message: 'Only administrators can revoke invitations' });
+    }
+    
+    await storage.revokeInvitation(invitationId, user.companyId);
+    res.json({ message: 'Invitation revoked successfully' });
+    
+  } catch (error) {
+    console.error('Error revoking invitation:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Setup function to mount the router
+export default function setupCompanyRoutes(app: any) {
+  app.use('/api/company', router);
+}
+
+export { router };

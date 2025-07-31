@@ -18,6 +18,7 @@ import bcrypt from "bcryptjs";
 import setupEmailRoutes from "./routes/email";
 import setupCompanyRoutes from "./routes/company";
 import setupEnhancedAuthRoutes from "./routes/auth-enhanced";
+import invitationRoutes from "./routes/invitation";
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
 
@@ -30,8 +31,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register enhanced auth routes (includes password reset)
   setupEnhancedAuthRoutes(app, sessions);
   
+  // Register company routes
+  setupCompanyRoutes(app);
+  
   // Register modular routes
   app.use('/api', modularRoutes);
+  
+  // Register invitation routes
+  app.use('/api/invitations', invitationRoutes);
   
   /**
    * @openapi
