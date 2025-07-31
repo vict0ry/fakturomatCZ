@@ -16,17 +16,17 @@ export function Header() {
   const { user, logout } = useAuth();
 
   return (
-    <header className="bg-white dark:bg-gray-900 border-b border-neutral-200 dark:border-neutral-700 px-4 sm:px-6 md:px-8 sticky top-0 z-50">
-      <div className="flex justify-between items-center h-16">
+    <header className="bg-white dark:bg-gray-900 border-b border-neutral-200 dark:border-neutral-700 px-4 sm:px-6 md:px-8 sticky top-0 z-50 w-full overflow-x-hidden">
+      <div className="flex items-center justify-between h-16 max-w-7xl mx-auto">
         {/* Left side - Plus button and Navigation */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-4 flex-shrink-0">
           <PlusMenu />
           <TopNavigation />
         </div>
 
         {/* Center - Search (hidden on small screens) */}
-        <div className="hidden md:block flex-1 max-w-lg mx-8">
-          <div className="relative">
+        <div className="hidden md:flex flex-1 max-w-lg mx-4">
+          <div className="relative w-full">
             <input
               type="text"
               placeholder="Hledat faktury, zákazníky..."
@@ -41,7 +41,7 @@ export function Header() {
         </div>
 
         {/* Right side - User menu */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-4 flex-shrink-0">
           <Button variant="ghost" size="sm" className="text-neutral-500 hover:text-neutral-700">
             <Bell className="h-5 w-5" />
             <span className="sr-only">Oznámení</span>

@@ -74,8 +74,8 @@ export function TopNavigation() {
   ];
 
   return (
-    <nav className="hidden lg:flex items-center space-x-1">
-      {navigation.map((item) => {
+    <nav className="hidden lg:flex items-center space-x-1 overflow-x-auto">
+      {navigation.slice(0, 6).map((item) => {
         const Icon = item.icon;
         return (
           <Link key={item.name} href={item.href}>
@@ -83,13 +83,13 @@ export function TopNavigation() {
               variant={item.current ? "default" : "ghost"}
               size="sm"
               className={cn(
-                "flex items-center gap-2 px-3 py-2 text-sm font-medium transition-colors",
+                "flex items-center gap-1 px-2 py-2 text-sm font-medium transition-colors whitespace-nowrap",
                 item.current
                   ? "bg-primary text-primary-foreground"
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
               )}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="h-4 w-4 flex-shrink-0" />
               <span className="hidden xl:block">{item.name}</span>
             </Button>
           </Link>

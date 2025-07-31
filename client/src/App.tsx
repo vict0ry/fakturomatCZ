@@ -48,6 +48,7 @@ function PublicRouter() {
       <Route path="/login" component={Login} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
+      <Route path="/accept-invitation" component={AcceptInvitation} />
       <Route path="/auth/accept-invitation" component={AcceptInvitation} />
       {/* BEZPEČNOSTNÍ BLOKACE - Admin panel vyžaduje přihlášení */}
       <Route path="/admin">
@@ -154,10 +155,10 @@ function AppContent() {
     
     // Běžní uživatelé mají standardní layout s header a plus menu
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
         <Header />
-        <main className="min-h-screen">
-          <div className="px-4 pt-4 lg:px-8">
+        <main className="min-h-screen w-full">
+          <div className="container mx-auto px-4 pt-4 max-w-7xl">
             <AuthenticatedRouter />
           </div>
         </main>
