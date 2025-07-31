@@ -12,6 +12,7 @@ import { Link, useLocation } from "wouter";
 import { PlusMenu } from "./plus-menu";
 import { TopNavigation } from "./top-navigation";
 import { SubscriptionStatus } from "../subscription-status";
+import { GlobalSearch } from "../global-search";
 
 export function Header() {
   const { user, logout } = useAuth();
@@ -25,20 +26,9 @@ export function Header() {
           <TopNavigation />
         </div>
 
-        {/* Center - Search (hidden on small screens) */}
-        <div className="hidden md:flex flex-1 max-w-lg mx-4">
-          <div className="relative w-full">
-            <input
-              type="text"
-              placeholder="Hledat faktury, zákazníky..."
-              className="w-full pl-4 pr-10 py-2 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-gray-800 text-neutral-900 dark:text-neutral-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-              <kbd className="hidden sm:inline-flex items-center px-2 py-1 text-xs text-neutral-500 bg-neutral-100 border border-neutral-300 rounded">
-                ⌘K
-              </kbd>
-            </div>
-          </div>
+        {/* Center - Global Search */}
+        <div className="flex-1 flex justify-center max-w-md mx-4">
+          <GlobalSearch className="w-full" />
         </div>
 
         {/* Right side - User menu */}

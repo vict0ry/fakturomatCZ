@@ -7,6 +7,7 @@ import customerRoutes from './customers';
 import adminRoutes from './admin';
 import companyRoutes from './company';
 import recurringInvoicesRoutes from './recurring-invoices';
+import searchRoutes from './search';
 
 const router = Router();
 
@@ -19,5 +20,6 @@ router.use('/customers', customerRoutes);
 // router.use('/expenses', expenseRoutes); // temporarily disabled
 router.use('/admin', adminRoutes);
 router.use('/companies', companyRoutes);
+router.use('/search', searchRoutes);
 
 export default router;
