@@ -87,14 +87,15 @@ router.post('/register', async (req, res) => {
     console.log('Processing company:', { name, ico, dic });
     console.log('Password extracted:', password ? 'YES' : 'NO');
 
-    // Validate required fields
-    if (!username || !email || !password || !name) {
+    // Validate required fields (username is optional for nested format, email is used instead)
+    const usernameOrEmail = username || email;
+    if (!usernameOrEmail || !email || !password || !name) {
       console.log('Missing fields:', { username: !!username, email: !!email, password: !!password, name: !!name });
-      return res.status(400).json({ message: 'Required fields missing: username, email, password, company name' });
+      return res.status(400).json({ message: 'Required fields missing: email, password, company name' });
     }
 
     // Check if user already exists
-    const existingUser = await storage.getUserByUsername(username) || 
+    const existingUser = (username && await storage.getUserByUsername(username)) || 
                          await storage.getUserByEmail(email);
     
     if (existingUser) {
@@ -121,7 +122,7 @@ router.post('/register', async (req, res) => {
 
     // Create user - first user in company becomes owner
     const user = await storage.createUser({
-      username,
+      username: username || email, // Use email as username if username not provided
       email,
       password: hashedPassword,
       firstName,
@@ -131,6 +132,16 @@ router.post('/register', async (req, res) => {
     });
 
     console.log('User created:', user.id);
+
+    // Send welcome email
+    try {
+      const { emailService } = await import('../services/email-service');
+      await emailService.sendWelcomeEmail(user, company);
+      console.log('✅ Welcome email sent to:', email);
+    } catch (emailError) {
+      console.error('⚠️ Failed to send welcome email:', emailError);
+      // Don't fail registration if email fails
+    }
 
     // Create session
     const sessionId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);

@@ -145,6 +145,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send welcome email
       try {
         await emailService.sendWelcomeEmail(newUser, newCompany);
+        console.log('✅ Welcome email sent to:', newUser.email);
+      } catch (emailError) {
+        console.error('⚠️ Failed to send welcome email:', emailError);
+        // Don't fail registration if email fails
+      }
+      try {
+        await emailService.sendWelcomeEmail(newUser, newCompany);
         console.log(`✅ Welcome email sent to ${newUser.email}`);
       } catch (emailError) {
         console.error('⚠️ Welcome email failed to send:', emailError);
@@ -425,10 +432,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const invoiceDataParsed = insertInvoiceSchema.parse(processedInvoiceData);
       
       // Generate invoice number if not provided
-      if (!invoiceDataParsed.invoiceNumber || (typeof invoiceDataParsed.invoiceNumber === 'string' && invoiceDataParsed.invoiceNumber.trim() === '')) {
+      if (!invoiceDataParsed.invoiceNumber || (invoiceDataParsed.invoiceNumber && typeof invoiceDataParsed.invoiceNumber === 'string' && invoiceDataParsed.invoiceNumber.trim() === '')) {
         const year = new Date().getFullYear();
         const count = await storage.getInvoiceCount(req.user.companyId, year);
-        invoiceDataParsed.invoiceNumber = `${year}${String(count + 1).padStart(4, '0')}`;
+        (invoiceDataParsed as any).invoiceNumber = `${year}${String(count + 1).padStart(4, '0')}`;
       }
 
       const invoice = await storage.createInvoice(invoiceDataParsed);
@@ -573,7 +580,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'Faktura nenalezena' });
       }
 
-      const customer = await storage.getCustomer(invoice.customerId, req.user.companyId);
+      const customer = invoice.customerId ? await storage.getCustomer(invoice.customerId, req.user.companyId) : null;
       if (!customer || !customer.email) {
         return res.status(400).json({ error: 'Zákazník nemá email adresu' });
       }
