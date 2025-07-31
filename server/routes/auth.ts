@@ -31,6 +31,13 @@ router.post('/login', async (req, res) => {
     const sessionId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     sessions.set(sessionId, { userId: user.id!, companyId: user.companyId!, role: user.role });
 
+    // Set session cookie for Stripe integration
+    res.cookie('sessionId', sessionId, {
+      httpOnly: true,
+      secure: false, // Development only
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    });
+
     res.json({
       user: {
         id: user.id,

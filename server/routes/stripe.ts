@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import Stripe from 'stripe';
 import { storage } from '../storage';
+import { sessions } from '../middleware/auth';
 
 // Simple auth check for Stripe routes (works with both session cookies and Bearer tokens)
 const requireStripeAuth = (req: any, res: any, next: any) => {
-  // Check Bearer token (for API tests)
+  // Check Bearer token (for API tests + logged in users)
   const token = req.headers.authorization?.replace('Bearer ', '');
   const DEVELOPMENT_TOKENS = ['test-session-dev', 'f4997d57-a07b-4211-ab8c-4c6c3be71740', 'DHRypB8x8D1OBnaXeQdkT'];
   
@@ -13,12 +14,47 @@ const requireStripeAuth = (req: any, res: any, next: any) => {
     return next();
   }
   
-  // Check session cookie (for web app)
+  // Check if token is an actual session ID from login
+  if (token) {
+    const sessionData = sessions.get(token);
+    if (sessionData && sessionData.userId) {
+      req.session = sessionData;
+      return next();
+    }
+  }
+  
+  // Check session cookie from login
+  const sessionId = req.cookies?.sessionId;
+  if (sessionId) {
+    const sessionData = sessions.get(sessionId);
+    if (sessionData && sessionData.userId) {
+      req.session = sessionData;
+      return next();
+    }
+  }
+  
+  // Check if we are in a proper express session (from login)
+  if (req.session && req.session.passport && req.session.passport.user) {
+    // Extract user ID from passport session
+    const userId = req.session.passport.user.id || req.session.passport.user;
+    req.session.userId = userId;
+    return next();
+  }
+  
+  // Check direct session userId (fallback)
   if (req.session && req.session.userId) {
     return next();
   }
   
-  console.log('❌ Stripe auth failed - no valid session or token');
+  console.log('❌ Stripe auth failed - no valid session or token', {
+    hasSession: !!req.session,
+    hasPassport: !!(req.session && req.session.passport),
+    sessionUserId: req.session?.userId,
+    authorization: req.headers.authorization?.substring(0, 20),
+    token: token ? token.substring(0, 15) + '...' : 'none',
+    sessionExists: token ? !!sessions.get(token) : false
+  });
+  
   return res.status(401).json({ message: 'Authentication required' });
 };
 

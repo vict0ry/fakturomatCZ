@@ -46,6 +46,8 @@ export default function Register() {
     bankAccount: ''
   });
 
+  const [aresLoading, setAresLoading] = useState(false);
+
   // Step 3: Trial & Payment
   const [paymentData, setPaymentData] = useState({
     cardNumber: '',
@@ -303,8 +305,46 @@ export default function Register() {
                         <Input
                           id="ico"
                           value={companyData.ico}
-                          onChange={(e) => setCompanyData(prev => ({...prev, ico: e.target.value}))}
+                          onChange={async (e) => {
+                            const ico = e.target.value;
+                            setCompanyData(prev => ({...prev, ico}));
+                            
+                            // Auto-fill from ARES if IČO is 8 digits
+                            if (ico.length === 8 && /^\d{8}$/.test(ico)) {
+                              setAresLoading(true);
+                              try {
+                                const response = await fetch(`/api/test/ares/${ico}`);
+                                if (response.ok) {
+                                  const data = await response.json();
+                                  if (data.data) {
+                                    setCompanyData(prev => ({
+                                      ...prev,
+                                      companyName: data.data.name || prev.companyName,
+                                      dic: data.data.dic || prev.dic,
+                                      address: data.data.address || prev.address,
+                                      city: data.data.city || prev.city,
+                                      postalCode: data.data.postalCode || prev.postalCode
+                                    }));
+                                    toast({
+                                      title: "ARES",
+                                      description: `Údaje načteny pro: ${data.data.name}`,
+                                    });
+                                  }
+                                }
+                              } catch (error) {
+                                console.error('ARES lookup failed:', error);
+                              } finally {
+                                setAresLoading(false);
+                              }
+                            }
+                          }}
+                          disabled={aresLoading}
                         />
+                        {aresLoading && (
+                          <p className="text-sm text-gray-500 mt-1">
+                            📡 Načítám údaje z ARES...
+                          </p>
+                        )}
                       </div>
                       <div>
                         <Label htmlFor="dic">DIČ</Label>

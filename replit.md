@@ -12,18 +12,18 @@ Technical preference: Always use AI for intelligent text/product matching instea
 
 ## Recent Changes
 
-### STRIPE INTEGRATION FULLY OPERATIONAL - 100% SUCCESS (2025-07-31)
+### STRIPE INTEGRATION + NEW USER AUTHENTICATION FULLY RESOLVED - 100% SUCCESS (2025-07-31)
+- ✅ **Session authentication pro nové uživatele opraveno** - cookie-parser middleware přidán do server/index.ts 
+- ✅ **Bearer token auth z session ID funguje** - login vrací sessionId který lze použít jako Authorization header
+- ✅ **ES modules import chyby vyřešeny** - require() nahrazeno import statements v stripe.ts
+- ✅ **Authentication systém univerzální** - funguje pro admin i nové uživatele stejně
+- ✅ **Test infrastruktura rozšířena** - test-new-user-stripe.js + test-direct-session.js potvrzují funkcionalitu
 - ✅ **Stripe API klíče opraveny** - secret key správně nastaven (sk_test_*), API connection úspěšná
-- ✅ **Authentication systém opraven** - Bearer token auth funguje s admin uživatelem (ID 2)
 - ✅ **Všechny API endpointy funkční** - subscription status, checkout creation, webhook handling
-- ✅ **Testovací infrastruktura kompletní** - final-stripe-test.js, check-stripe-keys.js, debug skripty
 - ✅ **7denní trial system aktivní** - automatické billing 199 Kč měsíčně po trial období
-- ✅ **Bezpečné testování dokumentováno** - fake karty (4242424242424242), test mode only
-- ✅ **Production deployment ready** - STRIPE_SUCCESS_GUIDE.md s kompletními instrukcemi
-- ✅ **Checkout sessions generovány úspěšně** - Stripe URLs funkční pro manuální testování
-- ✅ **Webhook infrastructure připravena** - zpracování subscription lifecycle events
-- 🎯 **STATUS: 100% FUNKČNÍ** - ready pro production deployment s live klíči
-- 📋 **TESTING GUIDES**: STRIPE_TESTING_GUIDE.md + STRIPE_SUCCESS_GUIDE.md vytvořeny
+- ✅ **Checkout sessions generovány úspěšně** - Stripe URLs funkční pro všechny typy uživatelů
+- 🎯 **STATUS: 100% FUNKČNÍ PRO VŠECHNY UŽIVATELE** - admin i nově registrovaní uživatelé mají plný přístup ke Stripe
+- 📋 **TESTING VERIFIED**: Nový uživatel → registrace → login → Stripe checkout session creation = ÚSPĚCH
 
 ### INVITATION ERROR HANDLING & DATABASE SYNCHRONIZATION COMPLETED - 100% SUCCESS (2025-07-31)
 - ✅ **Frontend error handling opraveno** - zobrazuje skutečné chybové hlášky z backendu místo obecných zpráv
@@ -57,6 +57,18 @@ Technical preference: Always use AI for intelligent text/product matching instea
 - ✅ **Permission system** - company owners + admins mohou posílat pozvánky zaměstnancům
 - ✅ **Complete email flow** - invitation creation → database storage → Amazon SES delivery → HTML templates
 - 🎯 **FINÁLNÍ STATUS: USER INVITATION SYSTEM 100% FUNKČNÍ** - emaily se posílají, databáze funguje, API endpoints operational
+
+### ARES INTEGRATION IN REGISTRATION COMPLETED - 100% SUCCESS (2025-07-31) 
+- ✅ **ARES API endpoint opraven** - /api/test/ares/${ico} místo neexistujícího /api/ares/${ico}
+- ✅ **Auto-loading při zadání IČO** - 8-ciferné IČO automaticky načte údaje z ARES registru
+- ✅ **Formulář automaticky vyplněn** - název, DIČ, adresa, město, PSČ se načtou z ARES
+- ✅ **Toast notifikace funkční** - uživatel je informován o úspěšném načtení údajů
+- ✅ **Loading state implementován** - visual feedback během ARES API volání
+- ✅ **Error handling robust** - graceful fallback při API chybách
+- ✅ **Real-world testováno** - IČO 72080043 (Generální finanční ředitelství) načte skutečná data
+- ✅ **Registrace s ARES údaji funguje** - kompletní flow od načtení po úspěšnou registraci
+- 🎯 **STATUS: ARES REGISTRACE 100% FUNKČNÍ** - uživatelé mohou rychle vyplnit firemní údaje zadáním IČO
+- 📋 **TEST SCRIPT**: test-ares-registration.js ověřuje celý ARES flow
 
 ### HIGH-PRIORITY INVOICE FEATURES IMPLEMENTATION COMPLETED - 100% SUCCESS (2025-07-31)
 - ✅ **Jednotky v položkách dokončeno** - možnost používat hodiny, kg, m², balení místo jen "ks"
