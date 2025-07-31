@@ -64,8 +64,61 @@ router.post('/', async (req, res) => {
   }
 });
 
+// GET /api/customers/search - Search customers in database and ARES
+// THIS MUST BE BEFORE /:id route to avoid conflicts
+router.get('/search', async (req, res) => {
+  // console.log('🔍 Search route called with query:', req.query.q);
+  try {
+    const user = (req as any).user;
+    const query = req.query.q as string;
+    
+    if (!query || query.length < 2) {
+      return res.json([]);
+    }
+
+    const results = [];
+    
+    // First search in local database
+    const localCustomers = await storage.searchCustomers(query, user.companyId);
+    results.push(...localCustomers.map(customer => ({ ...customer, source: 'database' })));
+    
+    // Then search in ARES if query looks like it could be a company search
+    try {
+      const { fetchCompanyFromAres, searchCompaniesByName } = await import('../services/ares');
+      let aresResults: any[] = [];
+      
+      if (/^\d{8}$/.test(query)) {
+        // Query is ICO
+        const aresCompany = await fetchCompanyFromAres(query);
+        if (aresCompany) {
+          aresResults = [{ ...aresCompany, source: 'ares' }];
+        }
+      } else if (query.length >= 3) {
+        // Query is company name
+        const aresCompanies = await searchCompaniesByName(query);
+        aresResults = aresCompanies.map(company => ({ ...company, source: 'ares' }));
+      }
+
+      // Add ARES results, but avoid duplicates based on ICO
+      const existingIcos = new Set(localCustomers.map(c => c.ico).filter(Boolean));
+      const uniqueAresResults = aresResults.filter(ares => !ares.ico || !existingIcos.has(ares.ico));
+      results.push(...uniqueAresResults);
+      
+    } catch (aresError) {
+      console.error("ARES search error:", aresError);
+      // Continue without ARES results
+    }
+
+    res.json(results);
+  } catch (error) {
+    console.error('Error searching customers:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 // GET /api/customers/:id - Get specific customer
 router.get('/:id', async (req, res) => {
+  // console.log('🎯 ID route called with param:', req.params.id);
   try {
     const user = (req as any).user;
     const customerId = parseInt(req.params.id);

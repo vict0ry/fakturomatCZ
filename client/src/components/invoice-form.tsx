@@ -75,6 +75,18 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
   const [customerSearch, setCustomerSearch] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [showCustomerResults, setShowCustomerResults] = useState(false);
+  const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
+  const [newCustomerData, setNewCustomerData] = useState({
+    name: "",
+    ico: "",
+    dic: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    postalCode: "",
+    country: "CZ"
+  });
   const { toast } = useToast();
 
   // Initialize customer data for editing
@@ -155,7 +167,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
 
   const watchedItems = watch("items");
 
-  // Search customers
+  // Search customers (both database and ARES)
   const searchCustomers = async (query: string) => {
     if (!query || query.length < 2) {
       setCustomers([]);
@@ -166,9 +178,14 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
     try {
       const results = await customerAPI.search(query);
       setCustomers(results);
-      setShowCustomerResults(results.length > 0);
+      setShowCustomerResults(true); // Always show results container, even if empty
     } catch (error) {
       console.error("Customer search error:", error);
+      toast({
+        title: "Chyba při vyhledávání",
+        description: "Nepodařilo se vyhledat zákazníky",
+        variant: "destructive",
+      });
     }
   };
 
@@ -178,6 +195,61 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
     setValue("customerId", customer.id);
     clearErrors("customerId"); // Clear validation error
     setShowCustomerResults(false);
+  };
+
+  const createNewCustomer = () => {
+    // Create customer from current search or manual entry
+    const customerName = customerSearch || newCustomerData.name;
+    
+    if (!customerName.trim()) {
+      toast({
+        title: "Chyba",
+        description: "Zadejte název zákazníka",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newCustomer = {
+      id: -1, // Temporary ID for new customer
+      name: customerName,
+      ico: newCustomerData.ico,
+      dic: newCustomerData.dic,
+      email: newCustomerData.email,
+      phone: newCustomerData.phone,
+      address: newCustomerData.address,
+      city: newCustomerData.city,
+      postalCode: newCustomerData.postalCode,
+      country: newCustomerData.country,
+      isActive: true,
+      companyId: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    setSelectedCustomer(newCustomer);
+    setValue("customerId", -1);
+    clearErrors("customerId");
+    setShowCustomerResults(false);
+    setShowNewCustomerForm(false);
+    
+    // Reset form
+    setNewCustomerData({
+      name: "",
+      ico: "",
+      dic: "",
+      email: "",
+      phone: "",
+      address: "",
+      city: "",
+      postalCode: "",
+      country: "CZ"
+    });
+
+    toast({
+      title: "Zákazník připraven",
+      description: "Nový zákazník bude vytvořen při uložení faktury",
+    });
   };
 
   // Calculate totals
@@ -657,6 +729,178 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                                 </div>
                               </div>
                             ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* No Results Found - Show Manual Add Option */}
+                    {customerSearch.length >= 3 && showCustomerResults && customers.length === 0 && (
+                      <Card className="mt-4 border-2 border-orange-200 dark:border-orange-700 shadow-xl">
+                        <CardContent className="p-4">
+                          <div className="text-center space-y-3">
+                            <div className="text-orange-600 dark:text-orange-400">
+                              <span className="text-2xl">🔍</span>
+                              <p className="text-sm font-medium mt-2">
+                                Nenalezen žádný zákazník pro "{customerSearch}"
+                              </p>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                Možná se jedná o zahraniční firmu nebo nového zákazníka
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                setNewCustomerData(prev => ({ ...prev, name: customerSearch }));
+                                setShowNewCustomerForm(true);
+                              }}
+                              className="w-full border-orange-300 text-orange-700 hover:bg-orange-50"
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              Přidat "{customerSearch}" jako nového zákazníka
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Always Show Manual Add Option */}
+                    {!selectedCustomer && (
+                      <div className="mt-4 text-center">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setShowNewCustomerForm(true)}
+                          className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Přidat nového zákazníka ručně
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* New Customer Form */}
+                    {showNewCustomerForm && (
+                      <Card className="mt-4 border-2 border-blue-200 dark:border-blue-700 shadow-xl">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+                              ➕ Přidat nového zákazníka
+                            </h3>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowNewCustomerForm(false)}
+                              className="text-gray-500 hover:text-red-500"
+                            >
+                              ❌
+                            </Button>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="pt-0 space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium">Název společnosti *</Label>
+                              <Input
+                                value={newCustomerData.name}
+                                onChange={(e) => setNewCustomerData(prev => ({ ...prev, name: e.target.value }))}
+                                placeholder="Název firmy nebo jméno"
+                                className="border-blue-300 focus:border-blue-500"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium">Email</Label>
+                              <Input
+                                type="email"
+                                value={newCustomerData.email}
+                                onChange={(e) => setNewCustomerData(prev => ({ ...prev, email: e.target.value }))}
+                                placeholder="email@firma.cz"
+                                className="border-blue-300 focus:border-blue-500"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium">IČO</Label>
+                              <Input
+                                value={newCustomerData.ico}
+                                onChange={(e) => setNewCustomerData(prev => ({ ...prev, ico: e.target.value }))}
+                                placeholder="12345678"
+                                maxLength={8}
+                                className="border-blue-300 focus:border-blue-500"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium">DIČ</Label>
+                              <Input
+                                value={newCustomerData.dic}
+                                onChange={(e) => setNewCustomerData(prev => ({ ...prev, dic: e.target.value }))}
+                                placeholder="CZ12345678"
+                                className="border-blue-300 focus:border-blue-500"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">Adresa</Label>
+                            <Input
+                              value={newCustomerData.address}
+                              onChange={(e) => setNewCustomerData(prev => ({ ...prev, address: e.target.value }))}
+                              placeholder="Ulice a číslo popisné"
+                              className="border-blue-300 focus:border-blue-500"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium">Město</Label>
+                              <Input
+                                value={newCustomerData.city}
+                                onChange={(e) => setNewCustomerData(prev => ({ ...prev, city: e.target.value }))}
+                                placeholder="Praha"
+                                className="border-blue-300 focus:border-blue-500"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium">PSČ</Label>
+                              <Input
+                                value={newCustomerData.postalCode}
+                                onChange={(e) => setNewCustomerData(prev => ({ ...prev, postalCode: e.target.value }))}
+                                placeholder="11000"
+                                className="border-blue-300 focus:border-blue-500"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium">Telefon</Label>
+                              <Input
+                                value={newCustomerData.phone}
+                                onChange={(e) => setNewCustomerData(prev => ({ ...prev, phone: e.target.value }))}
+                                placeholder="+420 123 456 789"
+                                className="border-blue-300 focus:border-blue-500"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex space-x-3 pt-4">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => setShowNewCustomerForm(false)}
+                              className="flex-1"
+                            >
+                              Zrušit
+                            </Button>
+                            <Button
+                              type="button"
+                              onClick={createNewCustomer}
+                              className="flex-1 bg-blue-600 hover:bg-blue-700"
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              Přidat zákazníka
+                            </Button>
                           </div>
                         </CardContent>
                       </Card>
