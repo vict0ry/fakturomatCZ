@@ -1,0 +1,106 @@
+🧾 Modul: Vytvořit fakturu
+🗣️ Základní filozofie
+Vše musí být řízeno konverzací. Uživateli stačí říct např. „Vystav mi fakturu pro Novák s.r.o. za webdesign 10 000 Kč.“ AI to pochopí, doplní detaily a zeptá se jen na nejasnosti.
+
+1. 🧍 Identifikace subjektu (vystavovatele)
+Název firmy / jméno
+
+IČO, DIČ
+
+Sídlo
+
+Bankovní účet (možnost více účtů, CZK/EUR)
+
+Kontaktní údaje (email, telefon)
+
+Logo a podpis
+
+Režim plátce/neplátce DPH
+
+➡️ AI by mělo umět načíst data z profilu nebo je získat dotazem při prvním použití.
+
+2. 👤 Odběratel (kupující)
+Název/jméno firmy nebo osoby
+
+IČO, DIČ
+
+Sídlo
+
+Možnost načíst data z ARES nebo ručně
+
+Možnost uložit kontakt pro příště
+
+3. 🧾 Položky faktury
+Popis služby/zboží
+
+Jednotková cena, množství, měrná jednotka
+
+Sleva (procentuální / absolutní)
+
+DPH (sazba 0%, 10%, 21%, nebo osvobozeno)
+
+Možnost přidat více položek
+
+Automatický součet
+
+➡️ Např. „Přidej grafický návrh za 5000 Kč bez DPH“.
+
+4. 📅 Termíny a metadata
+Datum vystavení
+
+Datum splatnosti (počítáno např. +14 dní, ale přepsatelné)
+
+Datum zdanitelného plnění (volitelné)
+
+Variabilní symbol (číslo faktury)
+
+Specifikace formátu číslování (např. 2025-001)
+
+Stavy: návrh, odeslaná, uhrazená, po splatnosti
+
+5. 💬 Poznámky a texty
+Text před položkami a za položkami (např. „Děkujeme za spolupráci“)
+
+Speciální poznámky pro klienta
+
+Interní poznámka (neviditelná pro klienta)
+
+6. 💱 Měna a jazyk
+Měna: CZK, EUR, USD atd.
+
+Jazyk: ČJ, AJ, NJ atd.
+
+Přepočet pomocí ČNB kurzů
+
+Automatický překlad textů
+
+7. 📤 Export a odeslání
+Export do PDF (možnost s logem, podpisem)
+
+Odeslání emailem (včetně předpřipraveného textu)
+
+Odeslání přes API (např. do účetního systému)
+
+QR kód (pro rychlou platbu)
+
+8. 📈 Pokročilé funkce
+Opakované faktury (např. každý měsíc)
+
+Upomínky (při neuhrazení do X dní)
+
+Napojení na FIO API / bankovní výpisy (detekce platby)
+
+Vlastní šablony faktur (vizuální design)
+
+Vystavení zálohové faktury / proforma / daňového dokladu
+
+EET (volitelně pro hotovostní platby)
+
+9. 📊 Statistiky a historie
+Přehled vystavených faktur
+
+Vyhledávání a filtrování (podle klienta, stavu, data, částky)
+
+Tiskový výstup pro účetní
+
+Možnost exportu do Excelu / CSV
