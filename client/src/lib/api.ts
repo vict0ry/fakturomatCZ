@@ -12,6 +12,15 @@ export interface Customer {
   postalCode?: string;
   country?: string;
   source?: 'local' | 'ares';
+  // Enhanced fields
+  website?: string;
+  contactPerson?: string;
+  contactPersonEmail?: string;
+  contactPersonPhone?: string;
+  category?: 'standard' | 'vip' | 'problematic';
+  paymentTerms?: number;
+  notes?: string;
+  isActive?: boolean;
 }
 
 export interface Invoice {

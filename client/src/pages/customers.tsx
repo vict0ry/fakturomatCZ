@@ -78,8 +78,10 @@ export default function Customers() {
     createCustomerMutation.mutate(customerData);
   };
 
-  const handleUpdateCustomer = (customerData: Customer) => {
-    updateCustomerMutation.mutate(customerData);
+  const handleUpdateCustomer = (customerData: any) => {
+    if (editingCustomer) {
+      updateCustomerMutation.mutate({ id: editingCustomer.id, ...customerData });
+    }
   };
 
   return (
@@ -237,9 +239,10 @@ export default function Customers() {
                             <DialogTitle>Upravit zákazníka</DialogTitle>
                           </DialogHeader>
                           {editingCustomer && (
-                            <CustomerForm
-                              customer={editingCustomer}
+                            <EnhancedCustomerForm
+                              initialData={editingCustomer}
                               onSubmit={handleUpdateCustomer}
+                              onCancel={() => setEditingCustomer(null)}
                               isLoading={updateCustomerMutation.isPending}
                             />
                           )}

@@ -108,6 +108,8 @@ export const customers = pgTable("customers", {
   country: text("country").default("CZ"),
   // Additional contact details
   website: text("website"),
+  contactPersonEmail: text("contact_person_email"),
+  contactPersonPhone: text("contact_person_phone"),
   notes: text("notes"), // Internal notes about customer
   // Customer preferences
   preferredPaymentMethod: text("preferred_payment_method").default("bank_transfer"),
@@ -140,7 +142,7 @@ export const invoices = pgTable("invoices", {
   recurringEndDate: timestamp("recurring_end_date"),
   recurringCount: integer("recurring_count"), // or after X invoices
   lastRecurringDate: timestamp("last_recurring_date"),
-  parentInvoiceId: integer("parent_invoice_id").references(() => invoices.id), // link to original recurring invoice
+  parentInvoiceId: integer("parent_invoice_id"), // link to original recurring invoice
   // Payment details
   paymentMethod: text("payment_method").default("bank_transfer"), // bank_transfer, card, cash, online, cheque
   bankAccount: text("bank_account"),
