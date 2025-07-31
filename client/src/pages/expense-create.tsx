@@ -133,20 +133,7 @@ export default function ExpenseCreatePage({ id }: ExpenseCreatePageProps) {
       const method = expenseId ? 'PATCH' : 'POST';
       const url = expenseId ? `/api/expenses/${expenseId}` : '/api/expenses';
       
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(data)
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `Nepodařilo se ${expenseId ? 'upravit' : 'vytvořit'} náklad`);
-      }
-
+      const response = await apiRequest(method, url, data);
       return response.json();
     },
     onSuccess: () => {
