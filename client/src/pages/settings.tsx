@@ -178,7 +178,10 @@ S pozdravem,
         },
         body: JSON.stringify(data)
       });
-      if (!response.ok) throw new Error('Failed to save company settings');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to save company settings');
+      }
       return response.json();
     },
     onSuccess: () => {
@@ -188,10 +191,10 @@ S pozdravem,
       });
       queryClient.invalidateQueries({ queryKey: ['/api/company/settings'] });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
-        title: 'Chyba',
-        description: 'Nepodařilo se uložit nastavení firmy.',
+        title: 'Chyba při ukládání nastavení',
+        description: error.message,
         variant: 'destructive'
       });
     }
@@ -208,7 +211,10 @@ S pozdravem,
         },
         body: JSON.stringify(data)
       });
-      if (!response.ok) throw new Error('Failed to save email settings');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to save email settings');
+      }
       return response.json();
     },
     onSuccess: () => {
@@ -218,10 +224,10 @@ S pozdravem,
       });
       queryClient.invalidateQueries({ queryKey: ['/api/email/settings'] });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
-        title: 'Chyba',
-        description: 'Nepodařilo se uložit email nastavení.',
+        title: 'Chyba při ukládání email nastavení',
+        description: error.message,
         variant: 'destructive'
       });
     }
@@ -236,7 +242,10 @@ S pozdravem,
           'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
         }
       });
-      if (!response.ok) throw new Error('Failed to test email');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to test email');
+      }
       return response.json();
     },
     onSuccess: () => {
@@ -245,10 +254,10 @@ S pozdravem,
         description: 'Testovací email byl úspěšně odeslán.'
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: 'Email test neúspěšný',
-        description: 'Nepodařilo se odeslat testovací email. Zkontrolujte nastavení.',
+        description: error.message,
         variant: 'destructive'
       });
     }
@@ -265,7 +274,12 @@ S pozdravem,
         },
         body: JSON.stringify(data)
       });
-      if (!response.ok) throw new Error('Failed to invite user');
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to invite user');
+      }
+      
       return response.json();
     },
     onSuccess: () => {
@@ -276,10 +290,10 @@ S pozdravem,
       userInviteForm.reset();
       queryClient.invalidateQueries({ queryKey: ['/api/company/users'] });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
-        title: 'Chyba',
-        description: 'Nepodařilo se odeslat pozvánku.',
+        title: 'Chyba při odesílání pozvánky',
+        description: error.message,
         variant: 'destructive'
       });
     }
