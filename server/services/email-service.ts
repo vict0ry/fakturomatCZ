@@ -45,9 +45,9 @@ export class EmailService {
       secure: hasAmazonSES ? false : 
               hasMailcow ? (process.env.PRODUCTION_SMTP_PORT === '465') : 
               false,
-      auth: hasAmazonSES && process.env.SMTP_USER && process.env.SMTP_PASS ? {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+      auth: hasAmazonSES ? {
+        user: process.env.AWS_ACCESS_KEY_ID!,
+        pass: process.env.AWS_SECRET_ACCESS_KEY!,
       } : hasMailcow && process.env.PRODUCTION_SMTP_USER && process.env.PRODUCTION_SMTP_PASS ? {
         user: process.env.PRODUCTION_SMTP_USER,
         pass: process.env.PRODUCTION_SMTP_PASS,
@@ -70,8 +70,8 @@ export class EmailService {
       host: config.host,
       port: config.port,
       secure: config.secure,
-      auth: config.auth,
-      dkim: config.dkim,
+      ...(config.auth && { auth: config.auth }),
+      ...(config.dkim && { dkim: config.dkim }),
       tls: {
         rejectUnauthorized: false
       }
@@ -601,6 +601,140 @@ Doklad.ai tým
       return true;
     } catch (error) {
       console.error('❌ Welcome email error:', error);
+      return false;
+    }
+  }
+
+  async sendAccountDeactivationEmail(user: any, company: any, reason?: string): Promise<boolean> {
+    if (!this.isConfigured()) {
+      console.log('📧 Email service not configured - skipping deactivation email');
+      return false;
+    }
+
+    try {
+      const feedbackUrl = `${process.env.NODE_ENV === 'production' ? 'https://doklad.ai' : 'http://localhost:5000'}/feedback?type=deactivation&email=${encodeURIComponent(user.email)}`;
+      
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Mrzí nás, že odcházíte - Doklad.ai</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
+          <div style="background: linear-gradient(135deg, #e53e3e 0%, #fc8181 100%); padding: 40px 30px; text-align: center; color: white; border-radius: 15px 15px 0 0;">
+            <h1 style="margin: 0; font-size: 32px; font-weight: 700;">😢 Mrzí nás, že odcházíte</h1>
+            <p style="margin: 15px 0 0 0; font-size: 18px; opacity: 0.95;">Vaše zpětná vazba je pro nás velmi důležitá</p>
+          </div>
+          
+          <div style="background: white; padding: 40px 30px; border-radius: 0 0 15px 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <h2 style="color: #2d3748; margin-top: 0; font-size: 24px;">Ahoj ${user.firstName || user.username}! 👋</h2>
+            
+            <p style="color: #4a5568; line-height: 1.7; font-size: 16px; margin-bottom: 25px;">
+              <strong>Velmi nás mrzí, že jste se rozhodli opustit Doklad.ai.</strong> 
+              Váš účet byl úspěšně deaktivován a všechna předplatná zrušena.
+            </p>
+
+            <div style="background: #fff5f5; padding: 25px; border-radius: 10px; margin: 25px 0; border-left: 4px solid #e53e3e;">
+              <h3 style="color: #2d3748; margin-top: 0; font-size: 18px;">💔 Co se stalo:</h3>
+              <ul style="color: #4a5568; line-height: 1.6; padding-left: 20px;">
+                <li><strong>✅ Účet deaktivován</strong> - ${user.email}</li>
+                <li><strong>💳 Předplatné zrušeno</strong> - Žádné další platby</li>
+                <li><strong>🔒 Data zachována</strong> - Po dobu 30 dní pro případné obnovení</li>
+                <li><strong>📧 Komunikace ukončena</strong> - Žádné další marketingové emaily</li>
+              </ul>
+            </div>
+
+            ${reason ? `
+            <div style="background: #f7fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h4 style="color: #2d3748; margin-top: 0;">📝 Váš důvod odchodu:</h4>
+              <p style="color: #4a5568; font-style: italic; margin: 0;">"${reason}"</p>
+            </div>
+            ` : ''}
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${feedbackUrl}" 
+                 style="background: #e53e3e; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px; margin-bottom: 15px;">
+                💬 Napište nám důvod odchodu
+              </a>
+              <br>
+              <a href="mailto:podpora@doklad.ai?subject=Žádost o obnovení účtu&body=Dobrý den, chtěl bych obnovit svůj deaktivovaný účet." 
+                 style="background: #48bb78; color: white; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 14px;">
+                🔄 Obnovit účet
+              </a>
+            </div>
+            
+            <div style="background: #e6fffa; border: 1px solid #81e6d9; padding: 20px; border-radius: 8px; margin: 25px 0;">
+              <h4 style="color: #234e52; margin-top: 0;">🎁 Něco hezkého na cestu:</h4>
+              <p style="color: #234e52; margin: 0; line-height: 1.6;">
+                Děkujeme za důvěru, kterou jste nám věnovali. Pokud se někdy rozhodnete vrátit, 
+                budeme se těšit! Do té doby vám přejeme hodně úspěchů v podnikání. 
+                <strong>Zachovejte si pozitivní energii!</strong> ✨
+              </p>
+            </div>
+            
+            <p style="color: #666; line-height: 1.6; font-size: 14px;">
+              Máte-li jakékoliv dotazy nebo potřebujete pomoc s daty, neváhejte nás kontaktovat na 
+              <a href="mailto:podpora@doklad.ai" style="color: #e53e3e;">podpora@doklad.ai</a>
+            </p>
+            
+            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+            
+            <p style="color: #999; font-size: 12px; text-align: center;">
+              S pozdravem a přáním všeho dobrého,<br>
+              <strong>Tým Doklad.ai</strong> 💙
+            </p>
+          </div>
+        </body>
+        </html>
+      `;
+
+      const textContent = `
+Mrzí nás, že odcházíte - Doklad.ai
+
+Ahoj ${user.firstName || user.username}!
+
+Velmi nás mrzí, že jste se rozhodli opustit Doklad.ai.
+Váš účet byl úspěšně deaktivován a všechna předplatná zrušena.
+
+Co se stalo:
+• Účet deaktivován: ${user.email}
+• Předplatné zrušeno: Žádné další platby
+• Data zachována: Po dobu 30 dní pro případné obnovení
+• Komunikace ukončena: Žádné další marketingové emaily
+
+${reason ? `Váš důvod odchodu: "${reason}"` : ''}
+
+Něco hezkého na cestu:
+Děkujeme za důvěru, kterou jste nám věnovali. Pokud se někdy rozhodnete vrátit, 
+budeme se těšit! Do té doby vám přejeme hodně úspěchů v podnikání.
+
+Napište nám důvod: ${feedbackUrl}
+Obnovit účet: podpora@doklad.ai
+
+S pozdravem a přáním všeho dobrého,
+Tým Doklad.ai
+      `;
+
+      await this.transporter.sendMail({
+        from: `"${this.fromName}" <${this.fromEmail}>`,
+        to: user.email!,
+        subject: '😢 Mrzí nás, že odcházíte - Doklad.ai',
+        html: htmlContent,
+        text: textContent,
+        headers: {
+          'X-Mailer': 'Doklad.ai Professional v1.0',
+          'X-Priority': '3',
+          'List-Unsubscribe': '<mailto:unsubscribe@doklad.ai>',
+          'X-Entity-Ref-ID': 'account-deactivation',
+          'Message-ID': `<${Date.now()}-${Math.random().toString(36).substr(2, 9)}@doklad.ai>`
+        }
+      });
+
+      console.log(`✅ Deactivation email sent to ${user.email}`);
+      return true;
+    } catch (error) {
+      console.error('❌ Deactivation email error:', error);
       return false;
     }
   }

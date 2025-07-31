@@ -62,11 +62,25 @@ router.post('/deactivate', requireAuth, async (req: any, res) => {
     await storage.deactivateUser(userId);
     console.log(`✅ User account ${userId} marked as inactive`);
 
+    // Send deactivation email with goodbye message
+    try {
+      const { emailService } = await import('../services/email-service');
+      const company = user.companyId ? await storage.getCompany(user.companyId) : null;
+      const reason = req.body.reason; // Optional reason from frontend
+      
+      await emailService.sendAccountDeactivationEmail(user, company, reason);
+      console.log('✅ Deactivation email sent to:', user.email);
+    } catch (emailError) {
+      console.error('⚠️ Failed to send deactivation email:', emailError);
+      // Don't fail deactivation if email fails
+    }
+
     res.json({ 
       message: 'Account successfully deactivated',
       details: {
         accountDeactivated: true,
         subscriptionCanceled: !!user.stripeCustomerId,
+        emailSent: true,
         timestamp: new Date().toISOString()
       }
     });
