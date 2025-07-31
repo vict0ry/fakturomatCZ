@@ -1,12 +1,12 @@
 import { 
   companies, users, customers, invoices, invoiceItems, chatMessages, reminders, sessions, invoiceHistory,
-  expenses, expenseItems,
+  expenses, expenseItems, bankAccounts,
   type Company, type User, type Customer, type Invoice, type InvoiceItem, 
   type ChatMessage, type Reminder, type Session, type InvoiceHistory,
-  type Expense, type ExpenseItem,
+  type Expense, type ExpenseItem, type BankAccount,
   type InsertCompany, type InsertUser, type InsertCustomer, type InsertInvoice, 
   type InsertInvoiceItem, type InsertChatMessage, type InsertReminder, type InsertSession, 
-  type InsertInvoiceHistory, type InsertExpense, type InsertExpenseItem
+  type InsertInvoiceHistory, type InsertExpense, type InsertExpenseItem, type InsertBankAccount
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, ilike, gte, lte, count, or, isNull, not } from "drizzle-orm";
@@ -73,6 +73,12 @@ export interface IStorage {
 
   // Invoice History
   createInvoiceHistory(history: InsertInvoiceHistory): Promise<InvoiceHistory>;
+  
+  // Bank Accounts
+  getBankAccount(id: number): Promise<BankAccount | undefined>;
+  getBankAccountsByCompany(companyId: number): Promise<BankAccount[]>;
+  createBankAccount(bankAccount: InsertBankAccount): Promise<BankAccount>;
+  updateBankAccount(id: number, bankAccount: Partial<InsertBankAccount>): Promise<BankAccount>;
   getInvoiceHistory(invoiceId: number): Promise<InvoiceHistory[]>;
   
   // Invoice counting
@@ -994,6 +1000,34 @@ export class DatabaseStorage implements IStorage {
     }
     
     return await query;
+  }
+  // Bank Accounts
+  async getBankAccount(id: number): Promise<BankAccount | undefined> {
+    const [bankAccount] = await db.select().from(bankAccounts).where(eq(bankAccounts.id, id));
+    return bankAccount || undefined;
+  }
+
+  async getBankAccountsByCompany(companyId: number): Promise<BankAccount[]> {
+    return await db.select().from(bankAccounts)
+      .where(and(eq(bankAccounts.companyId, companyId), eq(bankAccounts.isActive, true)))
+      .orderBy(desc(bankAccounts.createdAt));
+  }
+
+  async createBankAccount(bankAccount: InsertBankAccount): Promise<BankAccount> {
+    const [newBankAccount] = await db
+      .insert(bankAccounts)
+      .values(bankAccount)
+      .returning();
+    return newBankAccount;
+  }
+
+  async updateBankAccount(id: number, bankAccount: Partial<InsertBankAccount>): Promise<BankAccount> {
+    const [updatedBankAccount] = await db
+      .update(bankAccounts)
+      .set({ ...bankAccount, updatedAt: new Date() })
+      .where(eq(bankAccounts.id, id))
+      .returning();
+    return updatedBankAccount;
   }
 }
 

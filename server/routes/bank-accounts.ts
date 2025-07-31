@@ -21,6 +21,8 @@ const bankAccountFormSchema = insertBankAccountSchema.omit({
   lastProcessedPayment: true
 });
 
+
+
 // GET /api/bank-accounts - Get all bank accounts for company
 router.get('/', async (req, res) => {
   try {
@@ -129,7 +131,7 @@ router.patch('/:id', async (req, res) => {
     const validatedData = updateSchema.parse(req.body);
     
     // Handle payment email generation if payment matching was enabled
-    let updateData = { ...validatedData };
+    let updateData: any = { ...validatedData };
     
     if (validatedData.enablePaymentMatching && !existingAccount.paymentEmail) {
       // Generate payment email credentials for the first time
