@@ -294,9 +294,48 @@ export default function Register() {
                       <Input
                         id="companyName"
                         value={companyData.companyName}
-                        onChange={(e) => setCompanyData(prev => ({...prev, companyName: e.target.value}))}
+                        onChange={async (e) => {
+                          const name = e.target.value;
+                          setCompanyData(prev => ({...prev, companyName: name}));
+                          
+                          // Auto-search ARES when typing company name (no auth needed for public search)
+                          if (name.length >= 3) {
+                            setAresLoading(true);
+                            try {
+                              const response = await fetch(`/api/test/ares/search/${encodeURIComponent(name)}`);
+                              if (response.ok) {
+                                const aresResults = await response.json();
+                                if (aresResults && aresResults.length > 0) {
+                                  const topResult = aresResults[0];
+                                  setCompanyData(prev => ({
+                                    ...prev,
+                                    ico: topResult.ico || prev.ico,
+                                    dic: topResult.dic || prev.dic,
+                                    address: topResult.address || prev.address,
+                                    city: topResult.city || prev.city,
+                                    postalCode: topResult.postalCode || prev.postalCode
+                                  }));
+                                  toast({
+                                    title: "ARES",
+                                    description: `Údaje načteny pro: ${topResult.name}`,
+                                  });
+                                }
+                              }
+                            } catch (error) {
+                              console.error('ARES name search failed:', error);
+                            } finally {
+                              setAresLoading(false);
+                            }
+                          }
+                        }}
                         required
+                        disabled={aresLoading}
                       />
+                      {aresLoading && (
+                        <p className="text-sm text-gray-500 mt-1">
+                          📡 Vyhledávám v ARES registru...
+                        </p>
+                      )}
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4">

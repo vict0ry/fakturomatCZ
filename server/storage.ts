@@ -25,6 +25,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, user: Partial<InsertUser>): Promise<User>;
+  deactivateUser(id: number): Promise<User>;
   getCompanyUsers(companyId: number): Promise<User[]>;
   getAllUsersWithStats(): Promise<any[]>;
   getAllUsers(filters?: { page?: number; limit?: number; search?: string; status?: string }): Promise<User[]>;
@@ -203,6 +204,18 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return updatedUser;
+  }
+
+  async deactivateUser(id: number): Promise<User> {
+    const [deactivatedUser] = await db
+      .update(users)
+      .set({ 
+        isActive: false, 
+        updatedAt: new Date() 
+      })
+      .where(eq(users.id, id))
+      .returning();
+    return deactivatedUser;
   }
 
   async getUserByEmailConfirmationToken(token: string): Promise<User | undefined> {

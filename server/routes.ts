@@ -262,6 +262,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Customer routes are now handled by modular routes
 
+  // Account routes
+  app.use('/api/account', (await import('./routes/account')).default);
+  
+  // Public ARES routes (no auth required)  
+  app.use('/api/test/ares', (await import('./routes/public-ares')).default);
+
   // Customer PATCH route also handled by modular routes
 
   /**

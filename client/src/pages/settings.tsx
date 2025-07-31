@@ -13,7 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Mail, Settings, Users, Building2, Save, UserPlus, Shield, Trash2, Clock, MessageSquare } from 'lucide-react';
+import { Mail, Settings, Users, Building2, Save, UserPlus, Shield, Trash2, Clock, MessageSquare, AlertTriangle } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -309,7 +309,7 @@ S pozdravem,
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="company" className="flex items-center gap-2">
             <Building2 className="h-4 w-4" />
             Firma
@@ -321,6 +321,10 @@ S pozdravem,
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             Uživatelé
+          </TabsTrigger>
+          <TabsTrigger value="account" className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            Účet
           </TabsTrigger>
         </TabsList>
 
@@ -767,6 +771,86 @@ S pozdravem,
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="account">
+          <Card className="border-red-200">
+            <CardHeader>
+              <CardTitle className="text-red-700 flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5" />
+                Zrušení účtu
+              </CardTitle>
+              <CardDescription>
+                Zrušení účtu deaktivuje vaše předplatné a označí účet jako neaktivní. Data zůstanou zachována pro případné obnovení.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <h4 className="font-medium text-yellow-800 mb-2">Co se stane při zrušení účtu:</h4>
+                <ul className="text-sm text-yellow-700 space-y-1">
+                  <li>• Stripe předplatné bude okamžitě zrušeno</li>
+                  <li>• Žádné další platby nebudou strhávány</li>
+                  <li>• Účet bude označen jako "neaktivní"</li>
+                  <li>• Všechna data (faktury, zákazníci) zůstanou zachována</li>
+                  <li>• Účet lze kdykoli znovu aktivovat kontaktováním podpory</li>
+                </ul>
+              </div>
+
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <h4 className="font-medium text-red-800 mb-2">Upozornění:</h4>
+                <p className="text-sm text-red-700">
+                  Tato akce je nevratná bez kontaktování podpory. Ujistěte se, že máte zálohována všechna důležitá data.
+                </p>
+              </div>
+
+              <Button 
+                variant="destructive" 
+                onClick={() => {
+                  const confirmed = window.confirm(
+                    'Opravdu chcete zrušit svůj účet? Tato akce deaktivuje předplatné a označí účet jako neaktivní.'
+                  );
+                  if (confirmed) {
+                    // Call deactivation API
+                    fetch('/api/account/deactivate', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
+                      }
+                    }).then(async (response) => {
+                      if (response.ok) {
+                        toast({
+                          title: 'Účet deaktivován',
+                          description: 'Váš účet byl úspěšně deaktivován a předplatné zrušeno.',
+                        });
+                        // Redirect to login after 3 seconds
+                        setTimeout(() => {
+                          window.location.href = '/';
+                        }, 3000);
+                      } else {
+                        const error = await response.json();
+                        toast({
+                          title: 'Chyba při deaktivaci',
+                          description: error.message || 'Nepodařilo se deaktivovat účet.',
+                          variant: 'destructive'
+                        });
+                      }
+                    }).catch(() => {
+                      toast({
+                        title: 'Chyba',
+                        description: 'Nepodařilo se spojit se serverem.',
+                        variant: 'destructive'
+                      });
+                    });
+                  }
+                }}
+                className="w-full"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Zrušit účet a deaktivovat předplatné
+              </Button>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
