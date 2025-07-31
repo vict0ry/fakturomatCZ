@@ -262,7 +262,6 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
 
     let subtotal = 0;
     let vatAmount = 0;
-    const isReverseCharge = watch("isReverseCharge");
 
     watchedItems.forEach((item, index) => {
       if (!item) return;
@@ -304,10 +303,13 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
     setValue("total", total.toFixed(2));
   };
 
+  // Watch reverse charge for calculation
+  const isReverseCharge = watch("isReverseCharge");
+
   // Recalculate when items or reverse charge change
   useEffect(() => {
     calculateTotals();
-  }, [watchedItems, watch("isReverseCharge")]);
+  }, [watchedItems, isReverseCharge]);
 
   const addItem = () => {
     append({
