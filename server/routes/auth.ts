@@ -29,7 +29,7 @@ router.post('/login', async (req, res) => {
 
     // Create session
     const sessionId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    sessions.set(sessionId, { userId: user.id, companyId: user.companyId, role: user.role });
+    sessions.set(sessionId, { userId: user.id!, companyId: user.companyId!, role: user.role });
 
     res.json({
       user: {
@@ -52,10 +52,39 @@ router.post('/login', async (req, res) => {
 
 router.post('/register', async (req, res) => {
   try {
-    const {
-      username, email, password, firstName, lastName,
-      companyName, ico, dic, address, city, postalCode, phone, website
-    } = req.body;
+    console.log('Registration request body:', JSON.stringify(req.body, null, 2));
+    
+    // Handle both nested format {user: {...}, company: {...}} and flat format
+    let userData, companyData;
+    
+    if (req.body.user && req.body.company) {
+      // New nested format
+      userData = req.body.user;
+      companyData = req.body.company;
+    } else {
+      // Old flat format - fallback
+      const {
+        username, email, password, firstName, lastName,
+        companyName, ico, dic, address, city, postalCode, phone, website
+      } = req.body;
+      
+      userData = { username, email, password, firstName, lastName };
+      companyData = { name: companyName, ico, dic, address, city, postalCode, phone, website };
+    }
+
+    // Extract user data
+    const { username, email, password, firstName, lastName } = userData;
+    const { name, ico, dic, address, city, postalCode, phone, website } = companyData;
+
+    console.log('Processing user:', { username, email, firstName, lastName, passwordLength: password?.length });
+    console.log('Processing company:', { name, ico, dic });
+    console.log('Password extracted:', password ? 'YES' : 'NO');
+
+    // Validate required fields
+    if (!username || !email || !password || !name) {
+      console.log('Missing fields:', { username: !!username, email: !!email, password: !!password, name: !!name });
+      return res.status(400).json({ message: 'Required fields missing: username, email, password, company name' });
+    }
 
     // Check if user already exists
     const existingUser = await storage.getUserByUsername(username) || 
@@ -70,7 +99,7 @@ router.post('/register', async (req, res) => {
 
     // Create company first
     const company = await storage.createCompany({
-      name: companyName,
+      name,
       ico,
       dic,
       address,
@@ -80,6 +109,8 @@ router.post('/register', async (req, res) => {
       phone,
       website
     });
+
+    console.log('Company created:', company.id);
 
     // Create user
     const user = await storage.createUser({
@@ -92,9 +123,11 @@ router.post('/register', async (req, res) => {
       role: 'user'
     });
 
+    console.log('User created:', user.id);
+
     // Create session
     const sessionId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    sessions.set(sessionId, { userId: user.id, companyId: user.companyId, role: user.role });
+    sessions.set(sessionId, { userId: user.id!, companyId: user.companyId!, role: user.role });
 
     res.status(201).json({
       user: {
