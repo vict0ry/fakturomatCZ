@@ -1965,6 +1965,69 @@ function generatePohodaXML(invoices: any[]): string {
         res.status(500).json({ error: error.message });
       }
     });
+
+    // Test endpoint for production debugging
+    app.post('/api/test/verify-production-functions', async (req, res) => {
+      try {
+        const { invoiceId } = req.body;
+        
+        if (!invoiceId) {
+          return res.status(400).json({ error: 'Invoice ID required' });
+        }
+
+        // 1. Check if invoice exists
+        const invoice = await storage.getInvoice(invoiceId, 1); // Using company ID 1
+        if (!invoice) {
+          return res.json({ 
+            success: false, 
+            error: `Invoice ${invoiceId} not found`,
+            invoiceExists: false 
+          });
+        }
+
+        // 2. Test history logging
+        await storage.createInvoiceHistory({
+          invoiceId: invoiceId,
+          companyId: 1,
+          userId: 1,
+          action: 'test_production_logging',
+          description: `Test logování z produkce - ${new Date().toISOString()}`,
+          metadata: JSON.stringify({ source: 'production_test', timestamp: Date.now() })
+        });
+
+        // 3. Get history
+        const history = await storage.getInvoiceHistory(invoiceId);
+
+        // 4. Test email
+        const emailResult = await emailService.sendMonthlyReportEmail(
+          { firstName: 'Test', lastName: 'User', email: 'test@example.com' },
+          { name: 'Test Company' },
+          { totalInvoices: 1, totalAmount: '1000' }
+        );
+
+        res.json({
+          success: true,
+          invoiceExists: true,
+          invoice: {
+            id: invoice.id,
+            invoiceNumber: invoice.invoiceNumber,
+            status: invoice.status
+          },
+          historyCount: history.length,
+          latestHistory: history[0] || null,
+          emailSent: emailResult,
+          timestamp: new Date().toISOString()
+        });
+
+      } catch (error) {
+        console.error('Production test error:', error);
+        res.status(500).json({ 
+          success: false, 
+          error: error.message,
+          timestamp: new Date().toISOString()
+        });
+      }
+    });
   }
 
   const httpServer = createServer(app);
