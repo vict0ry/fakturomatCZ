@@ -149,19 +149,7 @@ export const invoiceAPI = {
     return response.blob();
   },
 
-  addItem: async (invoiceId: number, item: Omit<InvoiceItem, 'id' | 'invoiceId'>): Promise<InvoiceItem> => {
-    const response = await apiRequest("POST", `/api/invoices/${invoiceId}/items`, item);
-    return response.json();
-  },
 
-  updateItem: async (itemId: number, item: Partial<InvoiceItem>): Promise<InvoiceItem> => {
-    const response = await apiRequest("PUT", `/api/invoice-items/${itemId}`, item);
-    return response.json();
-  },
-
-  deleteItem: async (itemId: number): Promise<void> => {
-    await apiRequest("DELETE", `/api/invoice-items/${itemId}`);
-  },
 };
 
 // Statistics API
