@@ -40,9 +40,9 @@ router.post('/send-email', requireAuth, async (req, res) => {
     // Import email service
     const { emailService } = await import('../services/email-service');
     
-    // Generate PDF attachment
-    // Note: In a real implementation you would generate the actual PDF
-    const pdfBuffer = Buffer.from('Mock PDF content'); // This should be actual PDF
+    // Generate actual PDF attachment using invoice data
+    const { generateInvoicePDF } = await import('../services/pdf-generator');
+    const pdfBuffer = await generateInvoicePDF(invoice, company);
     
     // Send email with PDF attachment
     const success = await emailService.sendInvoiceEmail({

@@ -45,9 +45,9 @@ export class EmailService {
       secure: hasAmazonSES ? false : 
               hasMailcow ? (process.env.PRODUCTION_SMTP_PORT === '465') : 
               false,
-      auth: hasAmazonSES ? {
-        user: process.env.SMTP_USER!,
-        pass: process.env.SMTP_PASS!,
+      auth: hasAmazonSES && process.env.SMTP_USER && process.env.SMTP_PASS ? {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
       } : hasMailcow && process.env.PRODUCTION_SMTP_USER && process.env.PRODUCTION_SMTP_PASS ? {
         user: process.env.PRODUCTION_SMTP_USER,
         pass: process.env.PRODUCTION_SMTP_PASS,
@@ -291,7 +291,107 @@ export class EmailService {
     }
   }
 
-  async sendInvoiceEmail(
+  async sendInvoiceEmail(params: {
+    to: string;
+    cc?: string;
+    bcc?: string;
+    subject: string;
+    message: string;
+    invoiceNumber: string;
+    customerName: string;
+    companyName: string;
+    pdfAttachment: {
+      filename: string;
+      content: Buffer;
+      contentType: string;
+    };
+  }): Promise<boolean> {
+    if (!this.isConfigured()) {
+      return false;
+    }
+
+    try {
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>${params.subject}</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;">${params.companyName}</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Faktura</p>
+          </div>
+          
+          <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+            <h2 style="color: #333; margin-top: 0;">Dobrý den ${params.customerName},</h2>
+            
+            <p style="color: #666; line-height: 1.6;">
+              ${params.message}
+            </p>
+            
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #333;">Faktura ${params.invoiceNumber}</h3>
+              <p style="color: #666;">Faktura je připojena jako PDF soubor.</p>
+            </div>
+            
+            <p style="color: #666; line-height: 1.6;">
+              Děkujeme za spolupráci.
+            </p>
+            
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+            
+            <p style="color: #999; font-size: 12px; text-align: center;">
+              Tento email byl odeslán systémem Doklad.ai
+            </p>
+          </div>
+        </body>
+        </html>
+      `;
+
+      const mailOptions: any = {
+        from: `"${this.fromName}" <${this.fromEmail}>`,
+        to: params.to,
+        subject: params.subject,
+        html: htmlContent,
+        text: `${params.message}\n\nFaktura ${params.invoiceNumber} je připojena jako PDF soubor.\n\nDěkujeme za spolupráci.\n\n${params.companyName}`,
+        attachments: [
+          {
+            filename: params.pdfAttachment.filename,
+            content: params.pdfAttachment.content,
+            contentType: params.pdfAttachment.contentType
+          }
+        ],
+        headers: {
+          'X-Mailer': 'Doklad.ai Professional v1.0',
+          'X-Priority': '3',
+          'X-Invoice-Number': params.invoiceNumber,
+          'List-Unsubscribe': '<mailto:unsubscribe@doklad.ai>',
+          'X-Entity-Ref-ID': `invoice-${params.invoiceNumber}`,
+          'Message-ID': `<${Date.now()}-${Math.random().toString(36).substr(2, 9)}@doklad.ai>`
+        }
+      };
+
+      // Add CC and BCC if provided
+      if (params.cc) {
+        mailOptions.cc = params.cc;
+      }
+      if (params.bcc) {
+        mailOptions.bcc = params.bcc;
+      }
+
+      await this.transporter.sendMail(mailOptions);
+
+      console.log(`✅ Invoice email sent to ${params.to}`);
+      return true;
+    } catch (error) {
+      console.error('❌ Invoice email sending error:', error);
+      return false;
+    }
+  }
+
+  async sendInvoiceEmailLegacy(
     invoice: Invoice & { customer: Customer; items: InvoiceItem[] },
     pdfBuffer: Buffer,
     customMessage?: string
