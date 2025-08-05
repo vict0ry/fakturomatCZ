@@ -2,21 +2,9 @@ import { Express } from 'express';
 import { emailService } from '../services/email-service';
 import { generateInvoicePDF } from '../services/pdf';
 import { storage } from '../storage';
+import { requireAuth } from '../middleware/auth';
 
-// Import sessions from main routes file
-let sessions: Map<string, any>;
-
-function requireAuth(req: any, res: any, next: any) {
-  const sessionId = req.headers.authorization?.replace('Bearer ', '') || req.cookies?.sessionId;
-  if (!sessionId || !sessions.has(sessionId)) {
-    return res.status(401).json({ message: 'Authentication required' });
-  }
-  req.user = sessions.get(sessionId);
-  next();
-}
-
-export default function setupEmailRoutes(app: Express, sessionStore: Map<string, any>) {
-  sessions = sessionStore;
+export default function setupEmailRoutes(app: Express) {
 
 // Email settings endpoints
 app.post('/api/email/settings', requireAuth, async (req: any, res) => {

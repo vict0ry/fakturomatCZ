@@ -17,7 +17,7 @@ initializeSessions();
 
 // Authentication middleware
 export const requireAuth = (req: any, res: Response, next: NextFunction) => {
-  const sessionId = req.headers.authorization?.replace('Bearer ', '');
+  const sessionId = req.headers.authorization?.replace('Bearer ', '') || req.cookies?.sessionId || req.cookies?.['connect.sid'];
   const session = sessions.get(sessionId || '');
   
   if (!session) {

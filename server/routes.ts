@@ -122,6 +122,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   console.log('🔧 Registering email settings routes...');
   const { registerEmailSettingsRoutes } = await import('./routes/email-settings');
   registerEmailSettingsRoutes(app);
+  console.log('🔗 Registering /api/email-settings routes...');
+  
+  // Register email routes (including invoice email sending)
+  setupEmailRoutes(app);
   console.log('✅ Email settings routes registered');
 
   // Register company branding routes
@@ -1369,7 +1373,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Mount additional routes (most routes are now in modular modules)
-  setupEmailRoutes(app, sessions);
+  // setupEmailRoutes(app, sessions); // Already registered above
   // setupCompanyRoutes already handled by modular routes
   // setupEnhancedAuthRoutes already called above
   

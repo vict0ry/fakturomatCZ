@@ -82,14 +82,23 @@ export default function InvoiceDetail() {
 
   const sendEmailMutation = useMutation({
     mutationFn: (emailData: { to: string; subject: string; message: string }) => 
-      fetch(`/api/invoices/${invoiceId}/send-email`, { 
+      fetch(`/api/invoices/${invoiceId}/email`, { 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify(emailData)
-      }).then(res => res.json()),
+        body: JSON.stringify({
+          to: emailData.to,
+          subject: emailData.subject,
+          customMessage: emailData.message
+        })
+      }).then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices", invoiceId] });
       setShowEmailDialog(false);
@@ -763,6 +772,16 @@ export default function InvoiceDetail() {
                 >
                   <Download className="mr-2 h-4 w-4" />
                   {downloadPDFMutation.isPending ? 'Stahování...' : 'Stáhnout PDF'}
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+                  onClick={() => setShowEmailDialog(true)}
+                  disabled={sendEmailMutation.isPending}
+                >
+                  <Mail className="mr-2 h-4 w-4" />
+                  {sendEmailMutation.isPending ? 'Odesílání...' : 'Poslat emailem'}
                 </Button>
                 
                 {invoice!.status !== 'sent' && (
