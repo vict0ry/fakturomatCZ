@@ -2028,6 +2028,36 @@ function generatePohodaXML(invoices: any[]): string {
         });
       }
     });
+
+    // Simple history endpoint without auth for testing
+    app.get('/api/test/invoice/:id/history', async (req, res) => {
+      try {
+        const invoiceId = parseInt(req.params.id);
+        
+        if (isNaN(invoiceId)) {
+          return res.status(400).json({ error: 'Invalid invoice ID' });
+        }
+
+        // Get history without auth check
+        const history = await storage.getInvoiceHistory(invoiceId);
+        
+        res.json({
+          success: true,
+          invoiceId: invoiceId,
+          historyCount: history.length,
+          history: history,
+          timestamp: new Date().toISOString()
+        });
+
+      } catch (error) {
+        console.error('History test error:', error);
+        res.status(500).json({ 
+          success: false, 
+          error: error.message,
+          timestamp: new Date().toISOString()
+        });
+      }
+    });
   }
 
   const httpServer = createServer(app);
