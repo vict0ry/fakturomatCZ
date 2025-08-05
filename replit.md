@@ -9,6 +9,7 @@ Doklad.ai is a comprehensive, AI-powered invoice management system designed for 
 Preferred communication style: Simple, everyday language.
 Technical preference: Always use AI for intelligent text/product matching instead of manual word searching or pattern matching.
 **KRITICKÁ BEZPEČNOSTNÍ PREFERENCE**: Před smazáním jakékoliv funkcionality (databázové sloupce, API endpointy, kód) VŽDY nejprve upozornit uživatele a počkat na jeho souhlas. Nikdy nemazat nic co by mohlo narušit funkcionalitet systému bez explicitního povolení.
+**AUDIT TRAIL PREFERENCE**: Pro logování změn používat database triggers místo application-level logging pro garantované zachycení všech změn.
 
 ## System Architecture
 
