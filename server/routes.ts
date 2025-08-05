@@ -1975,8 +1975,16 @@ function generatePohodaXML(invoices: any[]): string {
           return res.status(400).json({ error: 'Invoice ID required' });
         }
 
-        // 1. Check if invoice exists
-        const invoice = await storage.getInvoice(invoiceId, 1); // Using company ID 1
+        // SECURITY: Only test with hardcoded safe invoice for development
+        if (process.env.NODE_ENV === 'production') {
+          return res.status(403).json({ 
+            success: false, 
+            error: 'Test endpoint disabled in production for security' 
+          });
+        }
+
+        // 1. Check if invoice exists (only in development)
+        const invoice = await storage.getInvoice(invoiceId, 1);
         if (!invoice) {
           return res.json({ 
             success: false, 
@@ -1985,17 +1993,17 @@ function generatePohodaXML(invoices: any[]): string {
           });
         }
 
-        // 2. Test history logging
+        // 2. Test history logging (development only)
         await storage.createInvoiceHistory({
           invoiceId: invoiceId,
           companyId: 1,
           userId: 1,
-          action: 'test_production_logging',
-          description: `Test logování z produkce - ${new Date().toISOString()}`,
-          metadata: JSON.stringify({ source: 'production_test', timestamp: Date.now() })
+          action: 'test_development_logging',
+          description: `Test logování z developmentu - ${new Date().toISOString()}`,
+          metadata: JSON.stringify({ source: 'development_test', timestamp: Date.now() })
         });
 
-        // 3. Get history
+        // 3. Get history (development only)
         const history = await storage.getInvoiceHistory(invoiceId);
 
         // 4. Test email
@@ -2029,35 +2037,7 @@ function generatePohodaXML(invoices: any[]): string {
       }
     });
 
-    // Simple history endpoint without auth for testing
-    app.get('/api/test/invoice/:id/history', async (req, res) => {
-      try {
-        const invoiceId = parseInt(req.params.id);
-        
-        if (isNaN(invoiceId)) {
-          return res.status(400).json({ error: 'Invalid invoice ID' });
-        }
-
-        // Get history without auth check
-        const history = await storage.getInvoiceHistory(invoiceId);
-        
-        res.json({
-          success: true,
-          invoiceId: invoiceId,
-          historyCount: history.length,
-          history: history,
-          timestamp: new Date().toISOString()
-        });
-
-      } catch (error) {
-        console.error('History test error:', error);
-        res.status(500).json({ 
-          success: false, 
-          error: error.message,
-          timestamp: new Date().toISOString()
-        });
-      }
-    });
+    // REMOVED: Security risk - unauth access to any invoice history
   }
 
   const httpServer = createServer(app);
