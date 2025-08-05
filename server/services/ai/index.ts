@@ -543,6 +543,24 @@ Kontext: ${context}`;
       console.log('Creating new invoice item:', newItem);
       const createdItem = await userContext.storage.createInvoiceItem(newItem);
 
+      // Log item addition to history
+      await userContext.storage.createInvoiceHistory({
+        invoiceId: invoiceId,
+        companyId: userContext.companyId,
+        userId: userContext.userId,
+        action: 'item_added',
+        description: `Položka "${args.description}" byla přidána prostřednictvím AI (${args.quantity} ${args.unit} za ${unitPrice} ${finalCurrency}/${args.unit})`,
+        metadata: JSON.stringify({
+          itemDescription: args.description,
+          quantity: args.quantity,
+          unit: args.unit,
+          unitPrice: unitPrice,
+          currency: finalCurrency,
+          total: total,
+          source: 'ai_chat'
+        })
+      });
+
       // Get all current items to recalculate totals
       const allItems = await userContext.storage.getInvoiceItems(invoiceId);
       let newSubtotal = 0;

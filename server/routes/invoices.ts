@@ -113,9 +113,17 @@ router.post('/', async (req, res) => {
     // Validate request body using frontend-compatible schema
     const validatedData = invoiceFormSchema.parse(invoiceData);
     
+    // Generate invoice number if not provided
+    if (!validatedData.invoiceNumber) {
+      const year = new Date().getFullYear();
+      const timestamp = Date.now();
+      validatedData.invoiceNumber = `${year}${String(timestamp).slice(-6)}`;
+    }
+
     // Convert string dates to Date objects for database storage
     const processedData = {
       ...validatedData,
+      invoiceNumber: validatedData.invoiceNumber,
       issueDate: new Date(validatedData.issueDate),
       dueDate: new Date(validatedData.dueDate),
       companyId: user.companyId,
@@ -124,6 +132,22 @@ router.post('/', async (req, res) => {
     
     // Create invoice with items  
     const invoice = await storage.createInvoiceWithItems(processedData);
+    
+    // Log invoice creation to history
+    await storage.createInvoiceHistory({
+      invoiceId: invoice.id,
+      companyId: user.companyId,
+      userId: user.id,
+      action: 'created',
+      description: `Faktura ${invoice.invoiceNumber} byla vytvořena ručně prostřednictvím formuláře`,
+      metadata: JSON.stringify({
+        type: processedData.type,
+        amount: processedData.total,
+        currency: processedData.currency,
+        source: 'manual_form',
+        itemCount: processedData.items?.length || 0
+      })
+    });
     
     res.status(201).json(invoice);
   } catch (error) {
@@ -187,8 +211,17 @@ router.patch('/:id', async (req, res) => {
     const updateSchema = invoiceFormSchema.partial();
     const validatedData = updateSchema.parse(req.body);
     
+    // Convert string dates to Date objects if present
+    const processedUpdateData: any = { ...validatedData };
+    if (processedUpdateData.issueDate) {
+      processedUpdateData.issueDate = new Date(processedUpdateData.issueDate);
+    }
+    if (processedUpdateData.dueDate) {
+      processedUpdateData.dueDate = new Date(processedUpdateData.dueDate);
+    }
+
     // Update invoice
-    const updatedInvoice = await storage.updateInvoice(invoiceId, validatedData, user.companyId);
+    const updatedInvoice = await storage.updateInvoice(invoiceId, processedUpdateData, user.companyId);
     
     res.json(updatedInvoice);
   } catch (error) {

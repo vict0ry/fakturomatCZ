@@ -67,6 +67,22 @@ router.post('/send-email', requireAuth, async (req, res) => {
         await storage.updateInvoiceStatus(invoice.id, 'sent');
       }
       
+      // Log email sending to history
+      await storage.createInvoiceHistory({
+        invoiceId: invoice.id,
+        companyId: user.companyId,
+        userId: user.id,
+        action: 'email_sent',
+        description: `Faktura ${invoice.invoiceNumber} byla odeslána na email ${validatedData.to}`,
+        recipientEmail: validatedData.to,
+        metadata: JSON.stringify({
+          subject: validatedData.subject,
+          cc: validatedData.cc,
+          bcc: validatedData.bcc,
+          messageLength: validatedData.message.length
+        })
+      });
+      
       res.json({ 
         success: true, 
         message: 'Invoice sent successfully' 

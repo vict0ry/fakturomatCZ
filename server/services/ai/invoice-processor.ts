@@ -55,6 +55,20 @@ export class InvoiceProcessor {
       // Create invoice draft
       const invoice = await this.createInvoice(invoiceData, customerId, userContext);
       
+      // Log invoice creation to history
+      await userContext.storage.createInvoiceHistory({
+        invoiceId: invoice.id,
+        companyId: userContext.companyId,
+        userId: userContext.userId,
+        action: 'created',
+        description: `Faktura ${invoice.invoiceNumber} byla vytvořena prostřednictvím AI`,
+        metadata: JSON.stringify({ 
+          customerName: invoiceData.customerName,
+          source: 'ai_chat',
+          itemCount: invoiceData.items?.length || 0
+        })
+      });
+      
       // Create invoice items
       await this.createInvoiceItems(invoice.id, invoiceData.items, userContext);
       
