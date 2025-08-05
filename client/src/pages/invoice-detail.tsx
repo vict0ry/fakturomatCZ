@@ -614,6 +614,11 @@ export default function InvoiceDetail() {
                                     {entry.action === 'sent' && '📧 Odeslání'}
                                     {entry.action === 'paid' && '💰 Uhrazení'}
                                     {entry.action === 'reminder_sent' && '⏰ Upomínka'}
+                                    {entry.action === 'item_added' && '➕ Přidání položky'}
+                                    {entry.action === 'item_updated' && '✏️ Úprava položky'}
+                                    {entry.action === 'item_deleted' && '❌ Smazání položky'}
+                                    {entry.action === 'item_updated_via_form' && '🔄 Úprava položky (formulář)'}
+                                    {entry.action === 'items_updated' && '📝 Úprava položek'}
                                   </span>
                                   <span className="text-xs text-gray-500">
                                     {new Date(entry.createdAt).toLocaleString('cs-CZ')}

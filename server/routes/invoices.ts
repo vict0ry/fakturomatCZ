@@ -220,6 +220,46 @@ router.patch('/:id', async (req, res) => {
       processedUpdateData.dueDate = new Date(processedUpdateData.dueDate);
     }
 
+    // Handle items changes if provided
+    let itemsChanged = false;
+    if (processedUpdateData.items) {
+      const oldItems = await storage.getInvoiceItems(invoiceId);
+      const newItems = processedUpdateData.items;
+      
+      // First, delete all old items
+      for (const oldItem of oldItems) {
+        await storage.deleteInvoiceItem(oldItem.id);
+      }
+      
+      // Then create all new items and log each addition
+      for (const newItem of newItems) {
+        const createdItem = await storage.createInvoiceItem({
+          ...newItem,
+          invoiceId: invoiceId
+        });
+        
+        // Log each item addition
+        await storage.createInvoiceHistory({
+          invoiceId: invoiceId,
+          companyId: user.companyId,
+          userId: user.id,
+          action: 'item_updated_via_form',
+          description: `Položka "${newItem.description}" byla upravena prostřednictvím formuláře (${newItem.quantity} ${newItem.unit} za ${newItem.unitPrice})`,
+          metadata: JSON.stringify({
+            itemDescription: newItem.description,
+            quantity: newItem.quantity,
+            unit: newItem.unit,
+            unitPrice: newItem.unitPrice,
+            total: newItem.total,
+            source: 'form_edit'
+          })
+        });
+      }
+      
+      itemsChanged = true;
+      delete processedUpdateData.items; // Remove items from invoice update data
+    }
+
     // Update invoice
     const updatedInvoice = await storage.updateInvoice(invoiceId, processedUpdateData, user.companyId);
     
@@ -231,7 +271,7 @@ router.patch('/:id', async (req, res) => {
         companyId: user.companyId,
         userId: user.id,
         action: 'updated',
-        description: `Faktura ${existingInvoice.invoiceNumber} byla upravena (${changedFields.join(', ')})`,
+        description: `Faktura ${existingInvoice.invoiceNumber} byla upravena (${changedFields.join(', ')})${itemsChanged ? ', položky' : ''}`,
         metadata: JSON.stringify({
           changedFields,
           oldValues: changedFields.reduce((acc, field) => {
@@ -239,7 +279,21 @@ router.patch('/:id', async (req, res) => {
             return acc;
           }, {} as any),
           newValues: processedUpdateData,
+          itemsChanged,
           source: 'manual_edit'
+        })
+      });
+    } else if (itemsChanged) {
+      // Log if only items were changed
+      await storage.createInvoiceHistory({
+        invoiceId: invoiceId,
+        companyId: user.companyId,
+        userId: user.id,
+        action: 'items_updated',
+        description: `Položky faktury ${existingInvoice.invoiceNumber} byly upraveny prostřednictvím formuláře`,
+        metadata: JSON.stringify({
+          source: 'form_edit',
+          itemsCount: processedUpdateData.items?.length || 0
         })
       });
     }
