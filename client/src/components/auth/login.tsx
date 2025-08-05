@@ -70,9 +70,12 @@ export function Login() {
       const urlParams = new URLSearchParams(window.location.search);
       const returnTo = urlParams.get('returnTo');
       
+      // Decode URL parameter if it exists
+      const decodedReturnTo = returnTo ? decodeURIComponent(returnTo) : null;
+      
       // Přesměrování podle role nebo returnTo
-      if (returnTo && returnTo !== '/login' && returnTo !== '/') {
-        navigate(returnTo);
+      if (decodedReturnTo && decodedReturnTo !== '/login' && decodedReturnTo !== '/') {
+        navigate(decodedReturnTo);
       } else if (result.user.role === 'admin') {
         navigate('/admin');
       } else {

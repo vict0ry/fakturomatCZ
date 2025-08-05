@@ -124,6 +124,11 @@ export const AI_TOOLS = [
           unitPrice: {
             type: "number",
             description: "Cena za jednotku"
+          },
+          currency: {
+            type: "string",
+            description: "Měna položky (CZK, EUR, USD, etc.) - výchozí CZK",
+            enum: ["CZK", "EUR", "USD", "GBP"]
           }
         },
         required: ["description", "quantity", "unit", "unitPrice"]

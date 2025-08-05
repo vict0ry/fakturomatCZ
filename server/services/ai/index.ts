@@ -515,6 +515,20 @@ Kontext: ${context}`;
       const unitPrice = args.unitPrice || 0;
       const total = quantity * unitPrice;
 
+      // Get current invoice to check currency
+      const currentInvoice = await userContext.storage.getInvoice(invoiceId, userContext.companyId);
+      const currency = currentInvoice?.currency || 'CZK';
+      
+      // Handle currency from args if provided (EUR, USD, etc.)
+      if (args.currency && args.currency.toUpperCase() !== currency) {
+        // Update invoice currency if specified in args
+        await userContext.storage.updateInvoice(invoiceId, {
+          currency: args.currency.toUpperCase()
+        }, userContext.companyId);
+      }
+      
+      const finalCurrency = args.currency?.toUpperCase() || currency;
+
       // Create new invoice item
       const newItem = {
         invoiceId: invoiceId,
@@ -545,11 +559,16 @@ Kontext: ${context}`;
       await userContext.storage.updateInvoice(invoiceId, {
         subtotal: newSubtotal.toString(),
         vatAmount: newVatAmount.toString(), 
-        total: newTotal.toString()
+        total: newTotal.toString(),
+        currency: finalCurrency
       }, userContext.companyId);
 
+      // Format currency display
+      const currencySymbol = finalCurrency === 'EUR' ? '€' : 
+                           finalCurrency === 'USD' ? '$' : 'Kč';
+      
       return {
-        content: `Položka "${args.description}" byla přidána k faktuře ${invoice.invoiceNumber}!\n\n• Množství: ${args.quantity} ${args.unit}\n• Cena: ${unitPrice.toLocaleString('cs-CZ')} Kč/${args.unit}\n• Celkem za položku: ${total.toLocaleString('cs-CZ')} Kč\n\nNový celkový součet faktury: ${newTotal.toLocaleString('cs-CZ')} Kč (vč. DPH)`,
+        content: `Položka "${args.description}" byla přidána k faktuře ${invoice.invoiceNumber}!\n\n• Množství: ${args.quantity} ${args.unit}\n• Cena: ${unitPrice.toLocaleString('cs-CZ')} ${currencySymbol}/${args.unit}\n• Celkem za položku: ${total.toLocaleString('cs-CZ')} ${currencySymbol}\n\nNový celkový součet faktury: ${newTotal.toLocaleString('cs-CZ')} ${currencySymbol} (vč. DPH)`,
         action: { type: 'refresh_current_page', data: {} }
       };
 

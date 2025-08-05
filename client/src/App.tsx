@@ -62,8 +62,19 @@ function PublicRouter() {
       <Route>
         {() => {
           const currentPath = window.location.pathname;
-          // Přesměruj na login s return URL
-          window.location.href = `/login?returnTo=${encodeURIComponent(currentPath)}`;
+          
+          // Don't redirect if already on login page to avoid loops
+          if (currentPath === '/login') {
+            return <Login />;
+          }
+          
+          // Přesměruj na login s return URL pouze pokud to není root
+          if (currentPath !== '/') {
+            window.location.href = `/login?returnTo=${encodeURIComponent(currentPath)}`;
+          } else {
+            window.location.href = '/login';
+          }
+          
           return (
             <div className="min-h-screen flex items-center justify-center">
               <div className="p-8 text-center">
