@@ -223,6 +223,27 @@ router.patch('/:id', async (req, res) => {
     // Update invoice
     const updatedInvoice = await storage.updateInvoice(invoiceId, processedUpdateData, user.companyId);
     
+    // Log invoice update to history
+    const changedFields = Object.keys(processedUpdateData).filter(key => processedUpdateData[key] !== undefined);
+    if (changedFields.length > 0) {
+      await storage.createInvoiceHistory({
+        invoiceId: invoiceId,
+        companyId: user.companyId,
+        userId: user.id,
+        action: 'updated',
+        description: `Faktura ${existingInvoice.invoiceNumber} byla upravena (${changedFields.join(', ')})`,
+        metadata: JSON.stringify({
+          changedFields,
+          oldValues: changedFields.reduce((acc, field) => {
+            acc[field] = (existingInvoice as any)[field];
+            return acc;
+          }, {} as any),
+          newValues: processedUpdateData,
+          source: 'manual_edit'
+        })
+      });
+    }
+    
     res.json(updatedInvoice);
   } catch (error) {
     if (error instanceof z.ZodError) {

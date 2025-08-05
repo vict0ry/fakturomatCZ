@@ -466,6 +466,12 @@ export class DatabaseStorage implements IStorage {
       .where(eq(invoiceItems.invoiceId, invoiceId));
   }
 
+  async getInvoiceItem(id: number): Promise<InvoiceItem | undefined> {
+    const [item] = await db.select().from(invoiceItems)
+      .where(eq(invoiceItems.id, id));
+    return item;
+  }
+
   async updateInvoiceItem(id: number, item: Partial<InsertInvoiceItem>): Promise<InvoiceItem> {
     const [updatedItem] = await db
       .update(invoiceItems)
