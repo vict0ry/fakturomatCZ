@@ -611,18 +611,36 @@ export default function InvoiceDetail() {
                                   <span className="font-medium text-sm capitalize">
                                     {entry.action === 'created' && '📄 Vytvoření'}
                                     {entry.action === 'updated' && '✏️ Úprava'}
+                                    {entry.action === 'auto_updated' && '🔧 Automatická změna'}
                                     {entry.action === 'sent' && '📧 Odeslání'}
                                     {entry.action === 'paid' && '💰 Uhrazení'}
                                     {entry.action === 'reminder_sent' && '⏰ Upomínka'}
-
                                     {entry.action === 'item_updated_via_form' && '🔄 Úprava položky (formulář)'}
                                     {entry.action === 'items_updated' && '📝 Úprava položek'}
+                                    {entry.action === 'item_added' && '➕ Přidání položky'}
+                                    {entry.action === 'item_updated' && '✏️ Změna položky'}
+                                    {entry.action === 'item_deleted' && '🗑️ Smazání položky'}
+                                    {entry.action === 'test_production_logging' && '🧪 Test produkce'}
+                                    {entry.action === 'test_development_logging' && '🧪 Test vývoje'}
+                                    {!['created', 'updated', 'auto_updated', 'sent', 'paid', 'reminder_sent', 'item_updated_via_form', 'items_updated', 'item_added', 'item_updated', 'item_deleted', 'test_production_logging', 'test_development_logging'].includes(entry.action) && '📋 ' + entry.action}
                                   </span>
                                   <span className="text-xs text-gray-500">
                                     {new Date(entry.createdAt).toLocaleString('cs-CZ')}
                                   </span>
                                 </div>
                                 <p className="text-sm text-gray-700 mb-2">{entry.description}</p>
+                                
+                                {/* Zobrazit metadata pro technické detaily */}
+                                {entry.metadata && (
+                                  <details className="mt-2">
+                                    <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
+                                      Technické detaily
+                                    </summary>
+                                    <pre className="text-xs bg-gray-100 p-2 mt-1 rounded overflow-x-auto text-gray-600">
+                                      {JSON.stringify(JSON.parse(entry.metadata), null, 2)}
+                                    </pre>
+                                  </details>
+                                )}
                                 {entry.recipientEmail && (
                                   <div className="flex items-center text-xs text-gray-500">
                                     <Mail className="mr-1 h-3 w-3" />
@@ -642,6 +660,7 @@ export default function InvoiceDetail() {
                       <div className="text-center py-8 text-gray-500">
                         <History className="mx-auto h-12 w-12 mb-4 opacity-50" />
                         <p>Zatím žádná historie změn</p>
+                        <p className="text-xs mt-2">Historie se začne zapisovat automaticky při jakýchkoliv změnách faktury.</p>
                       </div>
                     )}
                   </div>
