@@ -9,6 +9,7 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import Invoices from "@/pages/invoices";
 import Customers from "@/pages/customers";
+import CustomerDetail from "@/pages/customer-detail";
 import Analytics from "@/pages/analytics";
 import InvoiceDetail from "@/pages/invoice-detail";
 import InvoiceEdit from "@/pages/invoice-edit";
@@ -119,6 +120,7 @@ function AuthenticatedRouter() {
       <Route path="/invoices/:id/edit" component={InvoiceEdit} />
       <Route path="/invoices/:id" component={InvoiceDetail} />
       <Route path="/recurring-invoices" component={RecurringInvoicesPage} />
+      <Route path="/customers/:id" component={CustomerDetail} />
       <Route path="/customers" component={Customers} />
       <Route path="/expenses/new">
         {() => <ExpenseCreatePage />}
