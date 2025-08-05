@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Download, Edit, ArrowLeft, Send, Check, Clock, AlertTriangle, Plus, History, User, Mail } from "lucide-react";
@@ -33,6 +34,7 @@ export default function InvoiceDetail() {
 
   const [showHistory, setShowHistory] = useState(false);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [showEditWarning, setShowEditWarning] = useState(false);
 
   const { data: invoice, isLoading, error } = useQuery({
     queryKey: ["/api/invoices", invoiceId],
@@ -362,6 +364,47 @@ export default function InvoiceDetail() {
             </div>
             
             <div className="mt-4 md:mt-0 flex space-x-3">
+              {/* Edit Button with Warning for Sent Invoices */}
+              {invoice!.status === 'sent' || invoice!.status === 'paid' || invoice!.status === 'overdue' ? (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" className="bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200">
+                      <Edit className="mr-2 h-4 w-4" />
+                      Upravit
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="flex items-center gap-2">
+                        <AlertTriangle className="h-5 w-5 text-orange-500" />
+                        Úprava odeslané faktury
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Tato faktura už byla odeslána zákazníkovi. Jste si jisti, že ji chcete upravovat? 
+                        Změny mohou způsobit nesrovnalosti v dokumentaci.
+                        <br /><br />
+                        <strong>Status faktury:</strong> {invoice!.status === 'sent' ? 'Odeslána' : invoice!.status === 'paid' ? 'Uhrazena' : 'Po splatnosti'}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Zrušit</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => setLocation(`/invoices/${invoiceId}/edit`)}>
+                        Ano, upravit fakturu
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={() => setLocation(`/invoices/${invoiceId}/edit`)}
+                  className="bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200"
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  Upravit
+                </Button>
+              )}
+              
               <Button
                 variant="outline"
                 onClick={() => downloadPDFMutation.mutate()}
