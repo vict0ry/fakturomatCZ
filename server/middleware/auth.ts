@@ -37,7 +37,7 @@ export const requireAdmin = (req: any, res: Response, next: NextFunction) => {
     return res.status(401).json({ message: 'Authentication required' });
   }
   
-  if (session.role !== 'admin') {
+  if (session.role !== 'admin' && session.role !== 'owner') {
     return res.status(403).json({ message: 'Admin access required' });
   }
   

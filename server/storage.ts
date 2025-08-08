@@ -27,6 +27,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, user: Partial<InsertUser>): Promise<User>;
+  deleteUser(id: number): Promise<void>;
   deactivateUser(id: number): Promise<User>;
   getCompanyUsers(companyId: number): Promise<User[]>;
   getAllUsersWithStats(): Promise<any[]>;
@@ -218,6 +219,11 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return updatedUser;
+  }
+
+  async deleteUser(id: number): Promise<void> {
+    // Hard delete user - in production, consider soft delete or archiving
+    await db.delete(users).where(eq(users.id, id));
   }
 
   async deactivateUser(id: number): Promise<User> {
