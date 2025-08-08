@@ -207,9 +207,24 @@ router.patch('/:id', async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
     
+    // Debug logging for update request
+    console.log('=== INVOICE UPDATE DEBUG ===');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    console.log('Items in request:', req.body.items?.length || 0);
+    if (req.body.items) {
+      console.log('Items details:', req.body.items.map((item: any, index: number) => ({
+        index,
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice
+      })));
+    }
+    
     // Validate partial update data
     const updateSchema = invoiceFormSchema.partial();
     const validatedData = updateSchema.parse(req.body);
+    
+    console.log('Validated data items:', validatedData.items?.length || 0);
     
     // Convert string dates to Date objects if present
     const processedUpdateData: any = { ...validatedData };

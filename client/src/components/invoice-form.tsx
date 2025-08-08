@@ -341,6 +341,17 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
   };
 
   const handleFormSubmit = (data: InvoiceFormData) => {
+    // Debug logging for form submission
+    console.log('=== FORM SUBMIT DEBUG ===');
+    console.log('Form data:', JSON.stringify(data, null, 2));
+    console.log('Items count:', data.items?.length || 0);
+    console.log('Items details:', data.items?.map((item, index) => ({
+      index,
+      description: item.description,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice
+    })));
+    
     // Check if we have a customerId from form data OR selectedCustomer
     const hasCustomer = data.customerId && data.customerId > 0 || selectedCustomer;
     
@@ -356,6 +367,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
 
     // If editing existing invoice and no new customer selected, use existing data
     if (invoice && invoice.customerId && !selectedCustomer) {
+      console.log('Submitting data for existing invoice with items:', data.items?.length);
       onSubmit(data);
       return;
     }

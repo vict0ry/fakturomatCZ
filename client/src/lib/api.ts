@@ -140,7 +140,7 @@ export const invoiceAPI = {
   },
 
   update: async (id: number, invoice: Partial<Invoice>): Promise<Invoice> => {
-    const response = await apiRequest("PUT", `/api/invoices/${id}`, invoice);
+    const response = await apiRequest("PATCH", `/api/invoices/${id}`, invoice);
     return response.json();
   },
 
