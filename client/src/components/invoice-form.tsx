@@ -28,7 +28,7 @@ const invoiceItemSchema = z.object({
 });
 
 const invoiceSchema = z.object({
-  customerId: z.number(),
+  customerId: z.number().min(1, "Vyberte zákazníka"),
   type: z.enum(["invoice", "proforma", "credit_note"]).default("invoice"),
   invoiceNumber: z.string().optional(),
   issueDate: z.string().min(1, "Datum vystavení je povinné"),
@@ -672,6 +672,45 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                         <span>⚠️</span>
                         <span>{errors.customerId.message}</span>
                       </p>
+                    )}
+
+                    {/* Selected Customer Display */}
+                    {selectedCustomer && (
+                      <div className="mt-4 p-4 bg-green-50 dark:bg-green-950/20 border-2 border-green-200 dark:border-green-800 rounded-xl">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <span className="text-green-600 dark:text-green-400">✅</span>
+                              <h4 className="font-semibold text-green-800 dark:text-green-200">
+                                Vybraný zákazník: {selectedCustomer.name}
+                              </h4>
+                            </div>
+                            {selectedCustomer.ico && (
+                              <p className="text-sm text-green-700 dark:text-green-300">
+                                🏢 IČO: {selectedCustomer.ico}
+                              </p>
+                            )}
+                            {selectedCustomer.address && (
+                              <p className="text-sm text-green-700 dark:text-green-300">
+                                📍 {selectedCustomer.address}
+                              </p>
+                            )}
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedCustomer(null);
+                              setCustomerSearch("");
+                              setValue("customerId", 0);
+                            }}
+                            className="text-green-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20"
+                          >
+                            🗑️ Změnit
+                          </Button>
+                        </div>
+                      </div>
                     )}
 
                     {/* Customer Search Results */}
