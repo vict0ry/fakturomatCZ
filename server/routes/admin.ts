@@ -96,4 +96,28 @@ router.patch('/users/:id/ban', async (req, res) => {
   }
 });
 
+// DELETE /api/admin/users/:id - Delete user (admin only)
+router.delete('/users/:id', async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    
+    // Check if user exists
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Delete user
+    await storage.deleteUser(userId);
+    
+    res.json({ 
+      message: 'User deleted successfully',
+      userId: userId
+    });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 export default router;

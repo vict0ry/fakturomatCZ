@@ -263,6 +263,39 @@ S pozdravem,
     }
   });
 
+  // Delete user
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete user');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Uživatel smazán',
+        description: 'Uživatel byl úspěšně odstraněn.'
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/company/users'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Chyba při mazání uživatele',
+        description: error.message,
+        variant: 'destructive'
+      });
+    }
+  });
+
   // Invite user
   const inviteUserMutation = useMutation({
     mutationFn: async (data: UserInvite) => {
@@ -762,7 +795,20 @@ S pozdravem,
                           {user.role === 'admin' ? 'Administrátor' : 'Uživatel'}
                         </Badge>
                         {user.role !== 'admin' && (
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              const confirmed = window.confirm(
+                                `Opravdu chcete smazat uživatele ${user.firstName} ${user.lastName} (${user.email})? Tato akce je nevratná.`
+                              );
+                              if (confirmed) {
+                                deleteUserMutation.mutate(user.id);
+                              }
+                            }}
+                            disabled={deleteUserMutation.isPending}
+                            className="hover:bg-red-50 hover:border-red-300 hover:text-red-600"
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         )}
