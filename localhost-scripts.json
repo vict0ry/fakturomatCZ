@@ -1,0 +1,29 @@
+{
+  "name": "localhost-development-scripts",
+  "description": "Additional scripts for localhost development - copy these to your package.json scripts section",
+  "scripts": {
+    "dev:localhost": "NODE_ENV=development HOST=localhost PORT=3000 tsx server/index.ts",
+    "dev:watch": "NODE_ENV=development tsx watch server/index.ts",
+    "localhost": "npm run dev:localhost", 
+    "start:localhost": "NODE_ENV=production HOST=localhost PORT=3000 node dist/index.js",
+    "test": "node test-simple-user-deletion.js",
+    "test:all": "node run-user-deletion-tests.js",
+    "test:backend": "node test-user-deletion.js",
+    "test:frontend": "node test-frontend-user-deletion.js",
+    "install:clean": "rm -rf node_modules package-lock.json && npm install",
+    "setup": "npm install && npm run db:push",
+    "db:studio": "drizzle-kit studio",
+    "dev:debug": "NODE_ENV=development DEBUG=true tsx server/index.ts",
+    "build:watch": "vite build --watch",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint . --ext .ts,.tsx",
+    "format": "prettier --write ."
+  },
+  "instructions": [
+    "1. Copy the scripts above to your local package.json",
+    "2. Create .env.local file with your environment variables",
+    "3. Run 'npm run setup' to install dependencies and setup database",
+    "4. Run 'npm run localhost' or 'npm run dev:localhost' to start development server",
+    "5. Access your application at http://localhost:3000"
+  ]
+}
