@@ -770,64 +770,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Send invoice via email
-  app.post('/api/invoices/:id/send-email', requireAuth, async (req: any, res) => {
-    try {
-      const invoiceId = parseInt(req.params.id);
-      const { to, subject, message } = req.body;
 
-      const invoice = await storage.getInvoiceWithDetails(invoiceId, req.user.companyId);
-      
-      if (!invoice) {
-        return res.status(404).json({ error: 'Faktura nenalezena' });
-      }
-
-      // Use provided email or customer email as fallback
-      const emailTo = to || invoice.customer?.email;
-      if (!emailTo) {
-        return res.status(400).json({ error: 'Email adresa není zadána' });
-      }
-
-      // Generate PDF
-      const pdfBuffer = await generateInvoicePDF(invoice, req.user.companyId);
-      
-      // Send email with PDF attachment using custom parameters
-      const emailSent = await emailService.sendCustomInvoiceEmail({
-        to: emailTo,
-        subject: subject || `Faktura č. ${invoice.invoiceNumber}`,
-        message: message || 'V příloze zasíláme fakturu k uhrazení.',
-        invoice,
-        pdfBuffer
-      });
-
-      if (emailSent) {
-        // Update invoice status to sent if it was draft
-        if (invoice.status === 'draft') {
-          await storage.updateInvoice(invoiceId, { status: 'sent' }, req.user.companyId);
-        }
-
-        // Record activity in invoice history
-        await storage.createInvoiceHistory({
-          invoiceId: invoiceId,
-          companyId: req.user.companyId,
-          userId: req.user.userId,
-          action: 'email_sent',
-          description: `Faktura odeslána emailem na ${emailTo}`,
-          oldValue: null,
-          newValue: { emailSentTo: emailTo, timestamp: new Date() }
-        });
-
-        res.json({ 
-          message: 'Faktura byla úspěšně odeslána emailem',
-          sentTo: emailTo
-        });
-      } else {
-        res.status(500).json({ error: 'Nepodařilo se odeslat email' });
-      }
-    } catch (error) {
-      console.error('Email sending error:', error);
-      res.status(500).json({ error: 'Chyba při odesílání emailu' });
-    }
-  });
 
   app.get("/api/invoices/:id/pdf", requireAuth, async (req: any, res) => {
     try {
@@ -1642,27 +1585,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/invoices/:id/email", requireAuth, async (req: any, res) => {
     try {
       const invoiceId = parseInt(req.params.id);
+      const { to, subject, customMessage } = req.body;
+
       const invoice = await storage.getInvoiceWithDetails(invoiceId, req.user.companyId);
       
-      if (!invoice || invoice.companyId !== req.user.companyId) {
-        return res.status(404).json({ message: "Invoice not found" });
+      if (!invoice) {
+        return res.status(404).json({ error: 'Faktura nenalezena' });
+      }
+
+      // Use provided email or customer email as fallback
+      const emailTo = to || invoice.customer?.email;
+      if (!emailTo) {
+        return res.status(400).json({ error: 'Email adresa není zadána' });
       }
 
       // Generate PDF
       const { generateInvoicePDF } = await import('./services/pdf');
       const pdfBuffer = await generateInvoicePDF(invoice, req.user.companyId);
       
-      // Send email (placeholder - need email configuration)
-      const emailSent = true; // await emailService.sendInvoiceEmail(invoice, pdfBuffer);
-      
+      // Send email with PDF attachment using custom parameters
+      const emailSent = await emailService.sendCustomInvoiceEmail({
+        to: emailTo,
+        subject: subject || `Faktura č. ${invoice.invoiceNumber}`,
+        message: customMessage || 'V příloze zasíláme fakturu k uhrazení.',
+        invoice,
+        pdfBuffer
+      });
+
       if (emailSent) {
-        res.json({ message: "Email sent successfully" });
+        // Update invoice status to sent if it was draft
+        if (invoice.status === 'draft') {
+          await storage.updateInvoice(invoiceId, { status: 'sent' }, req.user.companyId);
+        }
+
+        // Record activity in invoice history
+        await storage.createInvoiceHistory({
+          invoiceId: invoiceId,
+          companyId: req.user.companyId,
+          userId: req.user.userId,
+          action: 'email_sent',
+          description: `Faktura odeslána emailem na ${emailTo}`,
+          oldValue: null,
+          newValue: { emailSentTo: emailTo, timestamp: new Date() }
+        });
+
+        res.json({ 
+          message: 'Faktura byla úspěšně odeslána emailem',
+          sentTo: emailTo
+        });
       } else {
-        res.status(500).json({ message: "Failed to send email" });
+        res.status(500).json({ error: 'Nepodařilo se odeslat email' });
       }
     } catch (error) {
-      console.error("Error sending invoice email:", error);
-      res.status(500).json({ message: "Failed to send email" });
+      console.error('Email sending error:', error);
+      res.status(500).json({ error: 'Chyba při odesílání emailu' });
     }
   });
 

@@ -67,16 +67,22 @@ app.post('/api/invoices/:id/email', requireAuth, async (req: any, res) => {
     const companyId = req.user.companyId;
     
     // Get invoice with customer and items
-    const invoice = await storage.getInvoice(invoiceId, companyId);
+    const invoice = await storage.getInvoiceWithDetails(invoiceId, companyId);
     if (!invoice) {
       return res.status(404).json({ message: 'Invoice not found' });
     }
 
     // Generate PDF
-    const pdfBuffer = await generateInvoicePDF(invoice);
+    const pdfBuffer = await generateInvoicePDF(invoice, companyId);
     
-    // Send email
-    const success = await emailService.sendInvoiceEmail(invoice, pdfBuffer, customMessage);
+    // Send email with custom parameters
+    const success = await emailService.sendCustomInvoiceEmail({
+      to: to || invoice.customer?.email,
+      subject: subject || `Faktura č. ${invoice.invoiceNumber}`,
+      message: customMessage || 'V příloze zasíláme fakturu k uhrazení.',
+      invoice,
+      pdfBuffer
+    });
     
     if (success) {
       // Update invoice status to sent if it was draft
