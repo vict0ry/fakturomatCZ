@@ -46,7 +46,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         
         let sessionToTry = savedSessionId;
         
-        // Only use dev session if we have a saved session, not automatically
+        // For development, use test session if no session exists
+        if (!sessionToTry && process.env.NODE_ENV === 'development') {
+          sessionToTry = 'test-session-dev';
+        }
+        
         if (!sessionToTry) {
           // No session found, user is not logged in
           setIsLoading(false);
@@ -54,7 +58,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
         
         // Validate session with server
-        const response = await fetch('/api/auth/validate', {
+        const response = await fetch('/api/auth/user', {
           method: 'GET',
           credentials: 'include',
           headers: {
@@ -63,13 +67,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         });
 
         if (response.ok) {
-          const data = await response.json();
-          setUser(data.user);
+          const userData = await response.json();
+          setUser(userData);
           setSessionId(sessionToTry);
           
           // Save to localStorage if possible (not in incognito mode)
           try {
-            localStorage.setItem('user', JSON.stringify(data.user));
+            localStorage.setItem('user', JSON.stringify(userData));
             localStorage.setItem('sessionId', sessionToTry);
           } catch (e) {
             // localStorage not available (incognito mode) - that's fine

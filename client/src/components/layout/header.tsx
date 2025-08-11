@@ -46,7 +46,7 @@ export function Header() {
                 </div>
                 <div className="hidden sm:block text-right">
                   <div className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                    {user ? (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : (user.username !== user.email ? user.username : user.email.split('@')[0])) : 'Uživatel'}
+                    {user ? (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : (user.username || (user.email ? user.email.split('@')[0] : `Uživatel ${user.userId}`))) : 'Uživatel'}
                   </div>
                   <SubscriptionStatus />
                 </div>

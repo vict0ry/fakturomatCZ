@@ -28,14 +28,18 @@ export default function CustomerDetail() {
 
   const { data: customer, isLoading, error } = useQuery({
     queryKey: ["/api/customers", customerId],
-    queryFn: () => fetch(`/api/customers/${customerId}`).then(res => res.json()),
     enabled: !!customerId,
   });
 
   // Get customer invoices
   const { data: customerInvoices, isLoading: invoicesLoading } = useQuery({
     queryKey: ["/api/invoices", "customer", customerId],
-    queryFn: () => fetch(`/api/invoices?customerId=${customerId}`).then(res => res.json()),
+    queryFn: () => fetch(`/api/invoices?customerId=${customerId}`, {
+      credentials: "include",
+      headers: {
+        ...(localStorage.getItem('sessionId') ? { "Authorization": `Bearer ${localStorage.getItem('sessionId')}` } : {}),
+      },
+    }).then(res => res.json()),
     enabled: !!customerId,
   });
 
