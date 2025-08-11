@@ -6,9 +6,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { customerAPI } from "@/lib/api";
@@ -43,14 +56,18 @@ const invoiceSchema = z.object({
   recurringInterval: z.number().min(1).max(12).optional(),
   recurringTemplateName: z.string().optional(),
   // Payment details
-  paymentMethod: z.enum(["bank_transfer", "card", "cash", "online", "cheque"]).default("bank_transfer"),
+  paymentMethod: z
+    .enum(["bank_transfer", "card", "cash", "online", "cheque"])
+    .default("bank_transfer"),
   bankAccount: z.string().optional(),
   variableSymbol: z.string().optional(),
   constantSymbol: z.string().optional(),
   specificSymbol: z.string().optional(),
   paymentReference: z.string().optional(),
   // Delivery details
-  deliveryMethod: z.enum(["email", "post", "pickup", "courier"]).default("email"),
+  deliveryMethod: z
+    .enum(["email", "post", "pickup", "courier"])
+    .default("email"),
   deliveryAddress: z.string().optional(),
   orderNumber: z.string().optional(),
   warranty: z.string().optional(),
@@ -69,10 +86,16 @@ interface InvoiceFormProps {
   isLoading?: boolean;
 }
 
-export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFormProps) {
+export function InvoiceForm({
+  invoice,
+  onSubmit,
+  isLoading = false,
+}: InvoiceFormProps) {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerSearch, setCustomerSearch] = useState("");
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    null,
+  );
   const [showCustomerResults, setShowCustomerResults] = useState(false);
   const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
   const [newCustomerData, setNewCustomerData] = useState({
@@ -84,14 +107,14 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
     address: "",
     city: "",
     postalCode: "",
-    country: "CZ"
+    country: "CZ",
   });
   const { toast } = useToast();
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toISOString().split("T")[0];
   const defaultDueDate = new Date();
   defaultDueDate.setDate(defaultDueDate.getDate() + 14); // 14 days from today
-  const dueDateString = defaultDueDate.toISOString().split('T')[0];
+  const dueDateString = defaultDueDate.toISOString().split("T")[0];
 
   const form = useForm<InvoiceFormData>({
     resolver: zodResolver(invoiceSchema),
@@ -99,8 +122,12 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
       customerId: invoice?.customerId || 0,
       type: invoice?.type || "invoice",
       invoiceNumber: invoice?.invoiceNumber || "",
-      issueDate: invoice?.issueDate ? new Date(invoice.issueDate).toISOString().split('T')[0] : today,
-      dueDate: invoice?.dueDate ? new Date(invoice.dueDate).toISOString().split('T')[0] : dueDateString,
+      issueDate: invoice?.issueDate
+        ? new Date(invoice.issueDate).toISOString().split("T")[0]
+        : today,
+      dueDate: invoice?.dueDate
+        ? new Date(invoice.dueDate).toISOString().split("T")[0]
+        : dueDateString,
       subtotal: invoice?.subtotal || "0",
       vatAmount: invoice?.vatAmount || "0",
       total: invoice?.total || "0",
@@ -126,7 +153,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
       recurringFrequency: (invoice as any)?.recurringFrequency || "monthly",
       recurringInterval: (invoice as any)?.recurringInterval || 1,
       recurringTemplateName: (invoice as any)?.recurringTemplateName || "",
-      items: invoice?.items?.map(item => ({
+      items: invoice?.items?.map((item) => ({
         description: item.description,
         quantity: item.quantity,
         unit: (item as any).unit || "ks",
@@ -145,13 +172,25 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
           discountType: "none",
           discountValue: "0",
           total: "0",
-        }
+        },
       ],
     },
   });
 
-  const { register, handleSubmit, formState: { errors }, setValue, watch, control, clearErrors } = form;
-  const { fields: watchedItems, append, remove } = useFieldArray({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+    watch,
+    control,
+    clearErrors,
+  } = form;
+  const {
+    fields: watchedItems,
+    append,
+    remove,
+  } = useFieldArray({
     control,
     name: "items",
   });
@@ -188,6 +227,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
   };
 
   const selectCustomer = (customer: Customer) => {
+    console.log(customer);
     setSelectedCustomer(customer);
     setCustomerSearch(customer.name);
     setValue("customerId", customer.id);
@@ -198,7 +238,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
   const createNewCustomer = () => {
     // Create customer from current search or manual entry
     const customerName = customerSearch || newCustomerData.name;
-    
+
     if (!customerName.trim()) {
       toast({
         title: "Chyba",
@@ -230,7 +270,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
     clearErrors("customerId");
     setShowCustomerResults(false);
     setShowNewCustomerForm(false);
-    
+
     // Reset form
     setNewCustomerData({
       name: "",
@@ -241,7 +281,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
       address: "",
       city: "",
       postalCode: "",
-      country: "CZ"
+      country: "CZ",
     });
 
     toast({
@@ -265,11 +305,11 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
 
     currentItems.forEach((item, index) => {
       if (!item) return;
-      
+
       const quantity = parseFloat(item.quantity) || 0;
       const unitPrice = parseFloat(item.unitPrice) || 0;
       const vatRate = parseFloat(item.vatRate) || 21;
-      
+
       const itemSubtotal = quantity * unitPrice;
       // If reverse charge, VAT is 0
       const itemVat = isReverseCharge ? 0 : (itemSubtotal * vatRate) / 100;
@@ -310,7 +350,11 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
     });
   };
 
-  const updateItem = (index: number, field: keyof typeof invoiceItemSchema.shape, value: any) => {
+  const updateItem = (
+    index: number,
+    field: keyof typeof invoiceItemSchema.shape,
+    value: any,
+  ) => {
     setValue(`items.${index}.${field}` as any, value);
   };
 
@@ -319,9 +363,9 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
   };
 
   const formatCurrency = (amount: string | number) => {
-    return new Intl.NumberFormat('cs-CZ', {
-      style: 'currency',
-      currency: 'CZK',
+    return new Intl.NumberFormat("cs-CZ", {
+      style: "currency",
+      currency: "CZK",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(Number(amount));
@@ -329,12 +373,12 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
 
   const getTypeLabel = (type: string) => {
     switch (type) {
-      case 'invoice':
-        return 'Faktura';
-      case 'proforma':
-        return 'Proforma faktura';
-      case 'credit_note':
-        return 'Dobropis';
+      case "invoice":
+        return "Faktura";
+      case "proforma":
+        return "Proforma faktura";
+      case "credit_note":
+        return "Dobropis";
       default:
         return type;
     }
@@ -342,19 +386,23 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
 
   const handleFormSubmit = (data: InvoiceFormData) => {
     // Debug logging for form submission
-    console.log('=== FORM SUBMIT DEBUG ===');
-    console.log('Form data:', JSON.stringify(data, null, 2));
-    console.log('Items count:', data.items?.length || 0);
-    console.log('Items details:', data.items?.map((item, index) => ({
-      index,
-      description: item.description,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice
-    })));
-    
+    console.log("=== FORM SUBMIT DEBUG ===");
+    console.log("Form data:", JSON.stringify(data, null, 2));
+    console.log("Items count:", data.items?.length || 0);
+    console.log(
+      "Items details:",
+      data.items?.map((item, index) => ({
+        index,
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+      })),
+    );
+
     // Check if we have a customerId from form data OR selectedCustomer
-    const hasCustomer = data.customerId && data.customerId > 0 || selectedCustomer;
-    
+    const hasCustomer =
+      (data.customerId && data.customerId > 0) || selectedCustomer;
+
     // For edit mode, don't require customer selection if we already have customerId
     if (!hasCustomer && (!invoice || !invoice.customerId)) {
       toast({
@@ -367,13 +415,19 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
 
     // If editing existing invoice and no new customer selected, use existing data
     if (invoice && invoice.customerId && !selectedCustomer) {
-      console.log('Submitting data for existing invoice with items:', data.items?.length);
+      console.log(
+        "Submitting data for existing invoice with items:",
+        data.items?.length,
+      );
       onSubmit(data);
       return;
     }
 
     // For new customers from ARES without ID, create them first
-    if (selectedCustomer && (!selectedCustomer.id || selectedCustomer.id === -1)) {
+    if (
+      selectedCustomer &&
+      (!selectedCustomer.id || selectedCustomer.id === -1)
+    ) {
       const dataWithCustomer = data as any;
       dataWithCustomer.customer = selectedCustomer;
       dataWithCustomer.customerId = -1; // Flag for new customer
@@ -391,18 +445,22 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {invoice ? 'Upravit fakturu' : 'Nová faktura'}
+                {invoice ? "Upravit fakturu" : "Nová faktura"}
               </h2>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                {invoice ? 'Upravte údaje existující faktury' : 'Vytvořte novou fakturu pro vašeho zákazníka'}
+                {invoice
+                  ? "Upravte údaje existující faktury"
+                  : "Vytvořte novou fakturu pro vašeho zákazníka"}
               </p>
             </div>
             <div className="flex items-center space-x-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-lg border shadow-sm">
               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Krok 1 ze 3</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Krok 1 ze 3
+              </span>
             </div>
           </div>
-          
+
           <div className="flex space-x-1">
             <div className="flex-1 h-2 bg-blue-500 rounded-full"></div>
             <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
@@ -429,7 +487,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
             {isLoading && (
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
             )}
-            {invoice ? '✏️ Aktualizovat fakturu' : '✨ Vytvořit fakturu'}
+            {invoice ? "✏️ Aktualizovat fakturu" : "✨ Vytvořit fakturu"}
           </Button>
         </div>
 
@@ -449,7 +507,10 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
               <CardContent className="p-4 md:p-6 space-y-4 md:space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="type" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    <Label
+                      htmlFor="type"
+                      className="text-sm font-semibold text-gray-700 dark:text-gray-300"
+                    >
                       Typ dokumentu *
                     </Label>
                     <Select
@@ -461,22 +522,27 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="invoice">📄 Faktura</SelectItem>
-                        <SelectItem value="proforma">📋 Proforma faktura</SelectItem>
+                        <SelectItem value="proforma">
+                          📋 Proforma faktura
+                        </SelectItem>
                         <SelectItem value="credit_note">↩️ Dobropis</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="issueDate" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    <Label
+                      htmlFor="issueDate"
+                      className="text-sm font-semibold text-gray-700 dark:text-gray-300"
+                    >
                       Datum vystavení *
                     </Label>
                     <Input
                       {...register("issueDate")}
                       type="date"
                       className={`h-12 border-2 transition-colors ${
-                        errors.issueDate 
-                          ? "border-red-500 focus:border-red-500" 
+                        errors.issueDate
+                          ? "border-red-500 focus:border-red-500"
                           : "border-gray-200 dark:border-gray-600 hover:border-blue-300 focus:border-blue-500"
                       }`}
                     />
@@ -489,15 +555,18 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="dueDate" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    <Label
+                      htmlFor="dueDate"
+                      className="text-sm font-semibold text-gray-700 dark:text-gray-300"
+                    >
                       Datum splatnosti *
                     </Label>
                     <Input
                       {...register("dueDate")}
                       type="date"
                       className={`h-12 border-2 transition-colors ${
-                        errors.dueDate 
-                          ? "border-red-500 focus:border-red-500" 
+                        errors.dueDate
+                          ? "border-red-500 focus:border-red-500"
                           : "border-gray-200 dark:border-gray-600 hover:border-blue-300 focus:border-blue-500"
                       }`}
                     />
@@ -514,7 +583,10 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="currency" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    <Label
+                      htmlFor="currency"
+                      className="text-sm font-semibold text-gray-700 dark:text-gray-300"
+                    >
                       Měna *
                     </Label>
                     <Select
@@ -525,10 +597,16 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="CZK">🇨🇿 CZK - Česká koruna</SelectItem>
+                        <SelectItem value="CZK">
+                          🇨🇿 CZK - Česká koruna
+                        </SelectItem>
                         <SelectItem value="EUR">🇪🇺 EUR - Euro</SelectItem>
-                        <SelectItem value="USD">🇺🇸 USD - Americký dolar</SelectItem>
-                        <SelectItem value="GBP">🇬🇧 GBP - Britská libra</SelectItem>
+                        <SelectItem value="USD">
+                          🇺🇸 USD - Americký dolar
+                        </SelectItem>
+                        <SelectItem value="GBP">
+                          🇬🇧 GBP - Britská libra
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -545,8 +623,12 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                           className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2"
                         />
                         <div>
-                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Reverse Charge</span>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Přenesení daňové povinnosti</p>
+                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            Reverse Charge
+                          </span>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            Přenesení daňové povinnosti
+                          </p>
                         </div>
                       </label>
                     </div>
@@ -555,7 +637,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
 
                 {/* Recurring Invoice Section */}
                 <Separator className="my-6" />
-                
+
                 <div className="space-y-4">
                   <div className="flex items-center space-x-3">
                     <input
@@ -570,7 +652,7 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                       </Label>
                     </div>
                   </div>
-                  
+
                   {watch("isRecurring") && (
                     <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800 space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -584,47 +666,64 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                             className="border-blue-300 focus:border-blue-500"
                           />
                         </div>
-                        
+
                         <div className="space-y-2">
                           <Label className="text-sm font-medium text-blue-800 dark:text-blue-200">
                             Frekvence
                           </Label>
                           <Select
                             value={watch("recurringFrequency")}
-                            onValueChange={(value) => setValue("recurringFrequency", value as any)}
+                            onValueChange={(value) =>
+                              setValue("recurringFrequency", value as any)
+                            }
                           >
                             <SelectTrigger className="border-blue-300 focus:border-blue-500">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="monthly">📅 Měsíčně</SelectItem>
-                              <SelectItem value="quarterly">📅 Čtvrtletně</SelectItem>
+                              <SelectItem value="monthly">
+                                📅 Měsíčně
+                              </SelectItem>
+                              <SelectItem value="quarterly">
+                                📅 Čtvrtletně
+                              </SelectItem>
                               <SelectItem value="yearly">📅 Ročně</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
-                        
+
                         <div className="space-y-2">
                           <Label className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                            Interval (každých X {watch("recurringFrequency") === "monthly" ? "měsíců" : watch("recurringFrequency") === "quarterly" ? "čtvrtletí" : "let"})
+                            Interval (každých X{" "}
+                            {watch("recurringFrequency") === "monthly"
+                              ? "měsíců"
+                              : watch("recurringFrequency") === "quarterly"
+                                ? "čtvrtletí"
+                                : "let"}
+                            )
                           </Label>
                           <Input
                             type="number"
                             min="1"
                             max="12"
-                            {...register("recurringInterval", { valueAsNumber: true })}
+                            {...register("recurringInterval", {
+                              valueAsNumber: true,
+                            })}
                             className="border-blue-300 focus:border-blue-500"
                           />
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center space-x-2 text-sm text-blue-700 dark:text-blue-300">
                         <Repeat className="w-4 h-4" />
                         <span>
                           Tato faktura se bude automaticky generovat každé{" "}
                           {watch("recurringInterval") || 1}{" "}
-                          {watch("recurringFrequency") === "monthly" ? "měsíc" : 
-                           watch("recurringFrequency") === "quarterly" ? "čtvrtletí" : "rok"}
+                          {watch("recurringFrequency") === "monthly"
+                            ? "měsíc"
+                            : watch("recurringFrequency") === "quarterly"
+                              ? "čtvrtletí"
+                              : "rok"}
                         </span>
                       </div>
                     </div>
@@ -633,7 +732,10 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
 
                 {invoice?.invoiceNumber && (
                   <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border-l-4 border-blue-500">
-                    <Label htmlFor="invoiceNumber" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    <Label
+                      htmlFor="invoiceNumber"
+                      className="text-sm font-semibold text-gray-700 dark:text-gray-300"
+                    >
                       Číslo faktury
                     </Label>
                     <Input
@@ -660,8 +762,13 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
               <CardContent className="p-4 md:p-6">
                 <div className="space-y-4 md:space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="customer" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      {selectedCustomer ? "Změnit zákazníka" : "Vyhledat zákazníka *"}
+                    <Label
+                      htmlFor="customer"
+                      className="text-sm font-semibold text-gray-700 dark:text-gray-300"
+                    >
+                      {selectedCustomer
+                        ? "Změnit zákazníka"
+                        : "Vyhledat zákazníka *"}
                     </Label>
                     <div className="relative">
                       <Input
@@ -672,8 +779,8 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                         }}
                         placeholder="🔍 Začněte psát název firmy nebo IČO..."
                         className={`h-12 md:h-14 pl-10 md:pl-12 text-base md:text-lg border-2 transition-colors ${
-                          errors.customerId 
-                            ? "border-red-500 focus:border-red-500" 
+                          errors.customerId
+                            ? "border-red-500 focus:border-red-500"
                             : "border-gray-200 dark:border-gray-600 hover:border-green-300 focus:border-green-500"
                         }`}
                       />
@@ -692,7 +799,9 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center space-x-2 mb-2">
-                              <span className="text-green-600 dark:text-green-400">✅</span>
+                              <span className="text-green-600 dark:text-green-400">
+                                ✅
+                              </span>
                               <h4 className="font-semibold text-green-800 dark:text-green-200">
                                 Vybraný zákazník: {selectedCustomer.name}
                               </h4>
@@ -747,8 +856,11 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                                       <h4 className="font-semibold text-gray-900 dark:text-gray-100 group-hover:text-green-700 dark:group-hover:text-green-300">
                                         {customer.name}
                                       </h4>
-                                      {customer.source === 'ares' && (
-                                        <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                                      {customer.source === "ares" && (
+                                        <Badge
+                                          variant="secondary"
+                                          className="bg-blue-100 text-blue-800"
+                                        >
                                           📋 ARES
                                         </Badge>
                                       )}
@@ -776,35 +888,42 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                     )}
 
                     {/* No Results Found - Show Manual Add Option */}
-                    {customerSearch.length >= 3 && showCustomerResults && customers.length === 0 && (
-                      <Card className="mt-4 border-2 border-orange-200 dark:border-orange-700 shadow-xl">
-                        <CardContent className="p-4">
-                          <div className="text-center space-y-3">
-                            <div className="text-orange-600 dark:text-orange-400">
-                              <span className="text-2xl">🔍</span>
-                              <p className="text-sm font-medium mt-2">
-                                Nenalezen žádný zákazník pro "{customerSearch}"
-                              </p>
-                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                Možná se jedná o zahraniční firmu nebo nového zákazníka
-                              </p>
+                    {customerSearch.length >= 3 &&
+                      showCustomerResults &&
+                      customers.length === 0 && (
+                        <Card className="mt-4 border-2 border-orange-200 dark:border-orange-700 shadow-xl">
+                          <CardContent className="p-4">
+                            <div className="text-center space-y-3">
+                              <div className="text-orange-600 dark:text-orange-400">
+                                <span className="text-2xl">🔍</span>
+                                <p className="text-sm font-medium mt-2">
+                                  Nenalezen žádný zákazník pro "{customerSearch}
+                                  "
+                                </p>
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                  Možná se jedná o zahraniční firmu nebo nového
+                                  zákazníka
+                                </p>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                  setNewCustomerData((prev) => ({
+                                    ...prev,
+                                    name: customerSearch,
+                                  }));
+                                  setShowNewCustomerForm(true);
+                                }}
+                                className="w-full border-orange-300 text-orange-700 hover:bg-orange-50"
+                              >
+                                <Plus className="w-4 h-4 mr-2" />
+                                Přidat "{customerSearch}" jako nového zákazníka
+                              </Button>
                             </div>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={() => {
-                                setNewCustomerData(prev => ({ ...prev, name: customerSearch }));
-                                setShowNewCustomerForm(true);
-                              }}
-                              className="w-full border-orange-300 text-orange-700 hover:bg-orange-50"
-                            >
-                              <Plus className="w-4 h-4 mr-2" />
-                              Přidat "{customerSearch}" jako nového zákazníka
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
+                          </CardContent>
+                        </Card>
+                      )}
 
                     {/* Always Show Manual Add Option */}
                     {!selectedCustomer && (
@@ -843,20 +962,34 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                         <CardContent className="pt-0 space-y-4">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                              <Label className="text-sm font-medium">Název společnosti *</Label>
+                              <Label className="text-sm font-medium">
+                                Název společnosti *
+                              </Label>
                               <Input
                                 value={newCustomerData.name}
-                                onChange={(e) => setNewCustomerData(prev => ({ ...prev, name: e.target.value }))}
+                                onChange={(e) =>
+                                  setNewCustomerData((prev) => ({
+                                    ...prev,
+                                    name: e.target.value,
+                                  }))
+                                }
                                 placeholder="Název firmy nebo jméno"
                                 className="border-blue-300 focus:border-blue-500"
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label className="text-sm font-medium">Email</Label>
+                              <Label className="text-sm font-medium">
+                                Email
+                              </Label>
                               <Input
                                 type="email"
                                 value={newCustomerData.email}
-                                onChange={(e) => setNewCustomerData(prev => ({ ...prev, email: e.target.value }))}
+                                onChange={(e) =>
+                                  setNewCustomerData((prev) => ({
+                                    ...prev,
+                                    email: e.target.value,
+                                  }))
+                                }
                                 placeholder="email@firma.cz"
                                 className="border-blue-300 focus:border-blue-500"
                               />
@@ -868,7 +1001,12 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                               <Label className="text-sm font-medium">IČO</Label>
                               <Input
                                 value={newCustomerData.ico}
-                                onChange={(e) => setNewCustomerData(prev => ({ ...prev, ico: e.target.value }))}
+                                onChange={(e) =>
+                                  setNewCustomerData((prev) => ({
+                                    ...prev,
+                                    ico: e.target.value,
+                                  }))
+                                }
                                 placeholder="12345678"
                                 maxLength={8}
                                 className="border-blue-300 focus:border-blue-500"
@@ -878,7 +1016,12 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                               <Label className="text-sm font-medium">DIČ</Label>
                               <Input
                                 value={newCustomerData.dic}
-                                onChange={(e) => setNewCustomerData(prev => ({ ...prev, dic: e.target.value }))}
+                                onChange={(e) =>
+                                  setNewCustomerData((prev) => ({
+                                    ...prev,
+                                    dic: e.target.value,
+                                  }))
+                                }
                                 placeholder="CZ12345678"
                                 className="border-blue-300 focus:border-blue-500"
                               />
@@ -886,10 +1029,17 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                           </div>
 
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">Adresa</Label>
+                            <Label className="text-sm font-medium">
+                              Adresa
+                            </Label>
                             <Input
                               value={newCustomerData.address}
-                              onChange={(e) => setNewCustomerData(prev => ({ ...prev, address: e.target.value }))}
+                              onChange={(e) =>
+                                setNewCustomerData((prev) => ({
+                                  ...prev,
+                                  address: e.target.value,
+                                }))
+                              }
                               placeholder="Ulice a číslo popisné"
                               className="border-blue-300 focus:border-blue-500"
                             />
@@ -897,10 +1047,17 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
 
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="space-y-2">
-                              <Label className="text-sm font-medium">Město</Label>
+                              <Label className="text-sm font-medium">
+                                Město
+                              </Label>
                               <Input
                                 value={newCustomerData.city}
-                                onChange={(e) => setNewCustomerData(prev => ({ ...prev, city: e.target.value }))}
+                                onChange={(e) =>
+                                  setNewCustomerData((prev) => ({
+                                    ...prev,
+                                    city: e.target.value,
+                                  }))
+                                }
                                 placeholder="Praha"
                                 className="border-blue-300 focus:border-blue-500"
                               />
@@ -909,16 +1066,28 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                               <Label className="text-sm font-medium">PSČ</Label>
                               <Input
                                 value={newCustomerData.postalCode}
-                                onChange={(e) => setNewCustomerData(prev => ({ ...prev, postalCode: e.target.value }))}
+                                onChange={(e) =>
+                                  setNewCustomerData((prev) => ({
+                                    ...prev,
+                                    postalCode: e.target.value,
+                                  }))
+                                }
                                 placeholder="11000"
                                 className="border-blue-300 focus:border-blue-500"
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label className="text-sm font-medium">Telefon</Label>
+                              <Label className="text-sm font-medium">
+                                Telefon
+                              </Label>
                               <Input
                                 value={newCustomerData.phone}
-                                onChange={(e) => setNewCustomerData(prev => ({ ...prev, phone: e.target.value }))}
+                                onChange={(e) =>
+                                  setNewCustomerData((prev) => ({
+                                    ...prev,
+                                    phone: e.target.value,
+                                  }))
+                                }
                                 placeholder="+420 123 456 789"
                                 className="border-blue-300 focus:border-blue-500"
                               />
@@ -964,8 +1133,11 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                                   <h4 className="text-lg font-bold text-gray-900 dark:text-gray-100">
                                     {selectedCustomer.name}
                                   </h4>
-                                  {selectedCustomer.source === 'ares' && (
-                                    <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                                  {selectedCustomer.source === "ares" && (
+                                    <Badge
+                                      variant="secondary"
+                                      className="bg-blue-100 text-blue-800"
+                                    >
                                       ARES
                                     </Badge>
                                   )}
@@ -973,28 +1145,40 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                   {selectedCustomer.ico && (
                                     <p className="text-sm text-gray-700 dark:text-gray-300 flex items-center space-x-2">
-                                      <span className="font-medium">🏢 IČO:</span>
+                                      <span className="font-medium">
+                                        🏢 IČO:
+                                      </span>
                                       <span>{selectedCustomer.ico}</span>
                                     </p>
                                   )}
                                   {selectedCustomer.dic && (
                                     <p className="text-sm text-gray-700 dark:text-gray-300 flex items-center space-x-2">
-                                      <span className="font-medium">💼 DIČ:</span>
+                                      <span className="font-medium">
+                                        💼 DIČ:
+                                      </span>
                                       <span>{selectedCustomer.dic}</span>
                                     </p>
                                   )}
                                   {selectedCustomer.address && (
                                     <p className="text-sm text-gray-700 dark:text-gray-300 flex items-center space-x-2">
-                                      <span className="font-medium">📍 Adresa:</span>
+                                      <span className="font-medium">
+                                        📍 Adresa:
+                                      </span>
                                       <span>{selectedCustomer.address}</span>
                                     </p>
                                   )}
-                                  {selectedCustomer.city && selectedCustomer.postalCode && (
-                                    <p className="text-sm text-gray-700 dark:text-gray-300 flex items-center space-x-2">
-                                      <span className="font-medium">🏙️ Město:</span>
-                                      <span>{selectedCustomer.postalCode} {selectedCustomer.city}</span>
-                                    </p>
-                                  )}
+                                  {selectedCustomer.city &&
+                                    selectedCustomer.postalCode && (
+                                      <p className="text-sm text-gray-700 dark:text-gray-300 flex items-center space-x-2">
+                                        <span className="font-medium">
+                                          🏙️ Město:
+                                        </span>
+                                        <span>
+                                          {selectedCustomer.postalCode}{" "}
+                                          {selectedCustomer.city}
+                                        </span>
+                                      </p>
+                                    )}
                                 </div>
                               </div>
                               <Button
@@ -1033,10 +1217,15 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
               <CardContent className="p-4 md:p-6">
                 <div className="space-y-4">
                   {watchedItems.map((item, index) => (
-                    <div key={`item-${index}`} className="p-4 border-2 border-gray-100 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-700/50">
+                    <div
+                      key={`item-${index}`}
+                      className="p-4 border-2 border-gray-100 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-700/50"
+                    >
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-11 gap-3 md:gap-4 items-end">
                         <div className="sm:col-span-2 lg:col-span-4">
-                          <Label className="text-sm font-semibold">Popis služby/produktu</Label>
+                          <Label className="text-sm font-semibold">
+                            Popis služby/produktu
+                          </Label>
                           <Input
                             {...register(`items.${index}.description`)}
                             placeholder="Název položky..."
@@ -1044,7 +1233,9 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                           />
                         </div>
                         <div className="sm:col-span-1 lg:col-span-2">
-                          <Label className="text-sm font-semibold">Množství</Label>
+                          <Label className="text-sm font-semibold">
+                            Množství
+                          </Label>
                           <Input
                             type="number"
                             {...register(`items.${index}.quantity`)}
@@ -1055,7 +1246,9 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                           />
                         </div>
                         <div className="sm:col-span-1 lg:col-span-2">
-                          <Label className="text-sm font-semibold">Jednotka</Label>
+                          <Label className="text-sm font-semibold">
+                            Jednotka
+                          </Label>
                           <Input
                             {...register(`items.${index}.unit`)}
                             defaultValue="ks"
@@ -1064,7 +1257,9 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                           />
                         </div>
                         <div className="sm:col-span-1 lg:col-span-1">
-                          <Label className="text-sm font-semibold">Cena za jednotku</Label>
+                          <Label className="text-sm font-semibold">
+                            Cena za jednotku
+                          </Label>
                           <Input
                             type="number"
                             {...register(`items.${index}.unitPrice`)}
@@ -1078,8 +1273,12 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                         <div className="sm:col-span-1 lg:col-span-1">
                           <Label className="text-sm font-semibold">VAT %</Label>
                           <Select
-                            value={watchedItems[index]?.vatRate?.toString() || "21"}
-                            onValueChange={(value) => setValue(`items.${index}.vatRate`, value)}
+                            value={
+                              watchedItems[index]?.vatRate?.toString() || "21"
+                            }
+                            onValueChange={(value) =>
+                              setValue(`items.${index}.vatRate`, value)
+                            }
                           >
                             <SelectTrigger className="h-11 border-2 border-gray-200 dark:border-gray-600">
                               <SelectValue />
@@ -1106,31 +1305,53 @@ export function InvoiceForm({ invoice, onSubmit, isLoading = false }: InvoiceFor
                       </div>
                       <div className="mt-3 p-3 bg-white dark:bg-gray-800 rounded-lg border">
                         {(() => {
-                          const quantity = parseFloat(watchedItems[index]?.quantity) || 0;
-                          const unitPrice = parseFloat(watchedItems[index]?.unitPrice) || 0;
-                          const vatRate = parseFloat(watchedItems[index]?.vatRate) || 21;
+                          const quantity =
+                            parseFloat(watchedItems[index]?.quantity) || 0;
+                          const unitPrice =
+                            parseFloat(watchedItems[index]?.unitPrice) || 0;
+                          const vatRate =
+                            parseFloat(watchedItems[index]?.vatRate) || 21;
                           const isReverseCharge = watch("isReverseCharge");
-                          
+
                           const baseAmount = quantity * unitPrice;
                           // Reverse charge = no VAT calculation
-                          const vatAmount = isReverseCharge ? 0 : (baseAmount * vatRate) / 100;
+                          const vatAmount = isReverseCharge
+                            ? 0
+                            : (baseAmount * vatRate) / 100;
                           const totalWithVat = baseAmount + vatAmount;
-                          
+
                           return (
                             <>
                               <div className="flex justify-between text-sm">
-                                <span>Základ ({quantity} × {unitPrice} {watchedItems[index]?.unit || 'ks'}):</span>
-                                <span className="font-medium">{formatCurrency(baseAmount)}</span>
+                                <span>
+                                  Základ ({quantity} × {unitPrice}{" "}
+                                  {watchedItems[index]?.unit || "ks"}):
+                                </span>
+                                <span className="font-medium">
+                                  {formatCurrency(baseAmount)}
+                                </span>
                               </div>
                               <div className="flex justify-between text-sm">
-                                <span>DPH ({vatRate}%){isReverseCharge ? " - přenesená daňová povinnost" : ""}:</span>
-                                <span className={`font-medium ${isReverseCharge ? "text-orange-600" : ""}`}>
-                                  {isReverseCharge ? "0,00 Kč" : formatCurrency(vatAmount)}
+                                <span>
+                                  DPH ({vatRate}%)
+                                  {isReverseCharge
+                                    ? " - přenesená daňová povinnost"
+                                    : ""}
+                                  :
+                                </span>
+                                <span
+                                  className={`font-medium ${isReverseCharge ? "text-orange-600" : ""}`}
+                                >
+                                  {isReverseCharge
+                                    ? "0,00 Kč"
+                                    : formatCurrency(vatAmount)}
                                 </span>
                               </div>
                               <div className="flex justify-between text-sm font-bold border-t pt-2 mt-2">
                                 <span>Celkem s DPH:</span>
-                                <span className="text-blue-600">{formatCurrency(totalWithVat)}</span>
+                                <span className="text-blue-600">
+                                  {formatCurrency(totalWithVat)}
+                                </span>
                               </div>
                             </>
                           );
