@@ -18,6 +18,7 @@ import ExpensesPage from "@/pages/expenses";
 import ExpenseCreatePage from "@/pages/expense-create";
 import ExpenseDetail from "./pages/expense-detail";
 import BankAccountsPage from "@/pages/bank-accounts";
+import PaymentMatchingPage from "@/pages/payment-matching";
 import ProfilePage from "@/pages/ProfilePage";
 import EmailSettings from "@/pages/EmailSettings";
 import BlogPage from "@/pages/blog";
@@ -137,6 +138,7 @@ function AuthenticatedRouter() {
       <Route path="/email-settings" component={EmailSettings} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/bank-accounts" component={BankAccountsPage} />
+      <Route path="/payment-matching" component={PaymentMatchingPage} />
       <Route path="/subscription" component={Subscription} />
       {/* BEZPEČNOSTNÍ BLOKACE - Admin panel je zakázán pro běžné uživatele */}
       <Route path="/admin">

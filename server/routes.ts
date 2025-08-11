@@ -1395,6 +1395,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const bankAccountRoutes = (await import('./routes/bank-accounts.js')).default;
   app.use('/api/bank-accounts', bankAccountRoutes);
   
+  // Payment matching routes
+  const paymentMatchingRoutes = (await import('./routes/payment-matching.js')).default;
+  app.use('/api/payment-matching', paymentMatchingRoutes);
+  
   // Import and mount new route modules
   try {
     const chatRoutes = (await import("./routes/chat")).default;

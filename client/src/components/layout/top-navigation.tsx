@@ -10,7 +10,8 @@ import {
   Calendar,
   Building2,
   Settings,
-  User
+  User,
+  CreditCard
 } from "lucide-react";
 
 export function TopNavigation() {
@@ -52,6 +53,12 @@ export function TopNavigation() {
       href: "/bank-accounts",
       icon: Building2,
       current: location === "/bank-accounts",
+    },
+    {
+      name: "Párování plateb",
+      href: "/payment-matching",
+      icon: CreditCard,
+      current: location === "/payment-matching",
     },
     {
       name: "Profil",
