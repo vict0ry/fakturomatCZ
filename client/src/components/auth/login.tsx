@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
-
 import { Receipt, Eye, EyeOff } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -66,19 +65,24 @@ export function Login() {
         description: `Vítejte zpět, ${result.user.firstName || result.user.username}!`,
       });
       
-      // Zkontroluj returnTo parametr v URL
+      // Čti returnTo parametr z URL
       const urlParams = new URLSearchParams(window.location.search);
       const returnTo = urlParams.get('returnTo');
       
-      // Decode URL parameter if it exists
+      console.log('🔍 RETURN TO CHECK:', { returnTo, decoded: returnTo ? decodeURIComponent(returnTo) : null });
+      
+      // Decode URL parameter if it exists and validate it
       const decodedReturnTo = returnTo ? decodeURIComponent(returnTo) : null;
       
-      // Přesměrování podle role nebo returnTo
-      if (decodedReturnTo && decodedReturnTo !== '/login' && decodedReturnTo !== '/') {
+      // Přesměrování podle returnTo nebo role
+      if (decodedReturnTo && decodedReturnTo.startsWith('/') && decodedReturnTo !== '/login' && decodedReturnTo !== '/') {
+        console.log('🔀 Redirecting to returnTo:', decodedReturnTo);
         navigate(decodedReturnTo);
       } else if (result.user.role === 'admin') {
+        console.log('🔀 Admin redirect to /admin');
         navigate('/admin');
       } else {
+        console.log('🔀 Default redirect to /dashboard');
         navigate('/dashboard');
       }
     } catch (error: any) {

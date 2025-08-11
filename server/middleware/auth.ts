@@ -21,7 +21,8 @@ export const requireAuth = (req: any, res: Response, next: NextFunction) => {
   const session = sessions.get(sessionId || '');
   
   if (!session) {
-    return res.status(401).json({ message: 'Authentication required' });
+    const returnTo = encodeURIComponent(req.originalUrl || '/dashboard');
+    return res.redirect(`/login?returnTo=${returnTo}`);
   }
   
   req.user = session;
