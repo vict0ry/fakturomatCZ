@@ -46,6 +46,7 @@ export interface IStorage {
   createCustomer(customer: InsertCustomer): Promise<Customer>;
   updateCustomer(id: number, customer: Partial<InsertCustomer>, companyId: number): Promise<Customer>;
   getCompanyCustomers(companyId: number): Promise<Customer[]>;
+  getRecentCustomers(companyId: number, limit?: number): Promise<Customer[]>;
   getCustomers(companyId: number, filters?: { page?: number; limit?: number; search?: string }): Promise<Customer[]>;
   searchCustomers(query: string, companyId: number): Promise<Customer[]>;
   getInactiveCustomers(companyId: number, daysSince: number): Promise<Customer[]>;
@@ -311,6 +312,13 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(customers)
       .where(and(eq(customers.companyId, companyId), eq(customers.isActive, true)))
       .orderBy(desc(customers.createdAt));
+  }
+
+  async getRecentCustomers(companyId: number, limit: number = 5): Promise<Customer[]> {
+    return await db.select().from(customers)
+      .where(and(eq(customers.companyId, companyId), eq(customers.isActive, true)))
+      .orderBy(desc(customers.createdAt))
+      .limit(limit);
   }
 
   async searchCustomers(query: string, companyId: number): Promise<Customer[]> {

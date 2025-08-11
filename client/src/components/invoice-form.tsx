@@ -218,6 +218,27 @@ export function InvoiceForm({
     }
   }, [invoice, setValue]);
 
+  // Auto-preload most recent customer for new invoices
+  useEffect(() => {
+    const loadRecentCustomer = async () => {
+      // Only auto-load for new invoices (no existing invoice data)
+      if (!invoice) {
+        try {
+          const recentCustomers = await customerAPI.getRecent(1);
+          if (recentCustomers && recentCustomers.length > 0) {
+            const mostRecentCustomer = recentCustomers[0];
+            console.log('Auto-preloading recent customer:', mostRecentCustomer);
+            selectCustomer(mostRecentCustomer);
+          }
+        } catch (error) {
+          console.log('No recent customer to preload:', error);
+        }
+      }
+    };
+
+    loadRecentCustomer();
+  }, [invoice]); // Only run when invoice prop changes
+
   // Search customers (both database and ARES)
   const searchCustomers = async (query: string) => {
     if (!query || query.length < 2) {

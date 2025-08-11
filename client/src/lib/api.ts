@@ -95,6 +95,11 @@ export const customerAPI = {
     return response.json();
   },
 
+  getRecent: async (limit: number = 5): Promise<Customer[]> => {
+    const response = await apiRequest("GET", `/api/customers/recent?limit=${limit}`);
+    return response.json();
+  },
+
   search: async (query: string): Promise<Customer[]> => {
     const response = await apiRequest("GET", `/api/customers/search?q=${encodeURIComponent(query)}`);
     return response.json();

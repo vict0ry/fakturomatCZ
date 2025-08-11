@@ -64,6 +64,20 @@ router.post('/', async (req, res) => {
   }
 });
 
+// GET /api/customers/recent - Get recent customers
+router.get('/recent', async (req, res) => {
+  try {
+    const user = (req as any).user;
+    const limit = parseInt(req.query.limit as string) || 5;
+    
+    const customers = await storage.getRecentCustomers(user.companyId, limit);
+    res.json(customers);
+  } catch (error) {
+    console.error('Error fetching recent customers:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 // GET /api/customers/search - Search customers in database and ARES
 // THIS MUST BE BEFORE /:id route to avoid conflicts
 router.get('/search', async (req, res) => {
