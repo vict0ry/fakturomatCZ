@@ -41,7 +41,8 @@ const invoiceItemSchema = z.object({
 });
 
 const invoiceSchema = z.object({
-  customerId: z.number().min(1, "Vyberte zákazníka"),
+  customerId: z.number().optional(), // Není povinné - vytvoří se při uložení
+  customerName: z.string().min(1, "Vyberte zákazníka"), // Povinný název zákazníka
   type: z.enum(["invoice", "proforma", "credit_note"]).default("invoice"),
   invoiceNumber: z.string().optional(),
   issueDate: z.string().min(1, "Datum vystavení je povinné"),
@@ -76,6 +77,18 @@ const invoiceSchema = z.object({
   status: z.enum(["draft", "sent", "paid", "overdue"]).default("draft"),
   notes: z.string().optional(),
   items: z.array(invoiceItemSchema).min(1, "Alespoň jedna položka je povinná"),
+  // Customer data for creating new customer if needed
+  customerData: z.object({
+    name: z.string(),
+    ico: z.string().optional(),
+    dic: z.string().optional(),
+    email: z.string().optional(),
+    phone: z.string().optional(),
+    address: z.string().optional(),
+    city: z.string().optional(),
+    postalCode: z.string().optional(),
+    country: z.string().default("CZ"),
+  }).optional(),
 });
 
 type InvoiceFormData = z.infer<typeof invoiceSchema>;
@@ -119,7 +132,8 @@ export function InvoiceForm({
   const form = useForm<InvoiceFormData>({
     resolver: zodResolver(invoiceSchema),
     defaultValues: {
-      customerId: invoice?.customerId || 0,
+      customerId: invoice?.customerId || undefined,
+      customerName: invoice?.customer?.name || "",
       type: invoice?.type || "invoice",
       invoiceNumber: invoice?.invoiceNumber || "",
       issueDate: invoice?.issueDate
@@ -226,61 +240,36 @@ export function InvoiceForm({
     }
   };
 
-  const selectCustomer = async (customer: Customer) => {
+  const selectCustomer = (customer: Customer) => {
     console.log('Selecting customer:', customer);
     
-    // If customer has an ID, it's an existing customer from database
+    setSelectedCustomer(customer);
+    setCustomerSearch(customer.name);
+    
+    // Set customerName for validation and customerId if exists
+    setValue("customerName", customer.name);
     if (customer.id && customer.id > 0) {
-      setSelectedCustomer(customer);
-      setCustomerSearch(customer.name);
       setValue("customerId", customer.id);
-      clearErrors("customerId"); // Clear validation error
-      setShowCustomerResults(false);
-      return;
     }
-
-    // If customer doesn't have ID (ARES data), create new customer first
-    if (!customer.id || customer.id <= 0) {
-      try {
-        // Create customer data for the API
-        const customerData = {
-          name: customer.name,
-          ico: customer.ico || "",
-          dic: customer.dic || "",
-          email: customer.email || "",
-          phone: customer.phone || "",
-          address: customer.address || "",
-          city: customer.city || "",
-          postalCode: customer.postalCode || "",
-          country: customer.country || "CZ"
-        };
-
-        // Create customer in database
-        const newCustomer = await customerAPI.create(customerData);
-        
-        // Set the new customer with proper ID
-        setSelectedCustomer(newCustomer);
-        setCustomerSearch(newCustomer.name);
-        setValue("customerId", newCustomer.id);
-        clearErrors("customerId");
-        setShowCustomerResults(false);
-
-        toast({
-          title: "Zákazník vytvořen",
-          description: `Zákazník "${newCustomer.name}" byl úspěšně vytvořen a vybrán.`,
-        });
-      } catch (error) {
-        console.error("Error creating customer:", error);
-        toast({
-          title: "Chyba při vytváření zákazníka",
-          description: "Nepodařilo se vytvořit nového zákazníka. Zkuste to znovu.",
-          variant: "destructive",
-        });
-      }
-    }
+    
+    // Set customer data for creating new customer later if needed
+    setValue("customerData", {
+      name: customer.name,
+      ico: customer.ico || "",
+      dic: customer.dic || "",
+      email: customer.email || "",
+      phone: customer.phone || "",
+      address: customer.address || "",
+      city: customer.city || "",
+      postalCode: customer.postalCode || "",
+      country: customer.country || "CZ"
+    });
+    
+    clearErrors("customerName");
+    setShowCustomerResults(false);
   };
 
-  const createNewCustomer = async () => {
+  const createNewCustomer = () => {
     // Create customer from current search or manual entry
     const customerName = customerSearch || newCustomerData.name;
 
@@ -293,53 +282,52 @@ export function InvoiceForm({
       return;
     }
 
-    try {
-      const customerData = {
-        name: customerName,
-        ico: newCustomerData.ico,
-        dic: newCustomerData.dic,
-        email: newCustomerData.email,
-        phone: newCustomerData.phone,
-        address: newCustomerData.address,
-        city: newCustomerData.city,
-        postalCode: newCustomerData.postalCode,
-        country: newCustomerData.country,
-      };
+    const customerData = {
+      name: customerName,
+      ico: newCustomerData.ico,
+      dic: newCustomerData.dic,
+      email: newCustomerData.email,
+      phone: newCustomerData.phone,
+      address: newCustomerData.address,
+      city: newCustomerData.city,
+      postalCode: newCustomerData.postalCode,
+      country: newCustomerData.country,
+    };
 
-      // Create customer in database
-      const newCustomer = await customerAPI.create(customerData);
-      
-      setSelectedCustomer(newCustomer);
-      setValue("customerId", newCustomer.id);
-      clearErrors("customerId");
-      setShowCustomerResults(false);
-      setShowNewCustomerForm(false);
+    // Just set the data, don't create customer yet
+    const tempCustomer = {
+      id: 0, // No ID yet - will be created when invoice is saved
+      ...customerData,
+      isActive: true,
+      companyId: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
 
-      // Reset form
-      setNewCustomerData({
-        name: "",
-        ico: "",
-        dic: "",
-        email: "",
-        phone: "",
-        address: "",
-        city: "",
-        postalCode: "",
-        country: "CZ",
-      });
+    setSelectedCustomer(tempCustomer);
+    setValue("customerName", customerName);
+    setValue("customerData", customerData);
+    clearErrors("customerName");
+    setShowCustomerResults(false);
+    setShowNewCustomerForm(false);
 
-      toast({
-        title: "Zákazník vytvořen",
-        description: `Zákazník "${newCustomer.name}" byl úspěšně vytvořen a vybrán.`,
-      });
-    } catch (error) {
-      console.error("Error creating customer:", error);
-      toast({
-        title: "Chyba při vytváření zákazníka",
-        description: "Nepodařilo se vytvořit nového zákazníka. Zkuste to znovu.",
-        variant: "destructive",
-      });
-    }
+    // Reset form
+    setNewCustomerData({
+      name: "",
+      ico: "",
+      dic: "",
+      email: "",
+      phone: "",
+      address: "",
+      city: "",
+      postalCode: "",
+      country: "CZ",
+    });
+
+    toast({
+      title: "Zákazník připraven",
+      description: "Zákazník bude vytvořen při uložení faktury",
+    });
   };
 
   // Calculate totals
@@ -831,17 +819,17 @@ export function InvoiceForm({
                         }}
                         placeholder="🔍 Začněte psát název firmy nebo IČO..."
                         className={`h-12 md:h-14 pl-10 md:pl-12 text-base md:text-lg border-2 transition-colors ${
-                          errors.customerId
+                          errors.customerName
                             ? "border-red-500 focus:border-red-500"
                             : "border-gray-200 dark:border-gray-600 hover:border-green-300 focus:border-green-500"
                         }`}
                       />
                       <Search className="absolute left-3 md:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 md:h-5 md:w-5" />
                     </div>
-                    {errors.customerId && (
+                    {errors.customerName && (
                       <p className="text-sm text-red-600 flex items-center space-x-1">
                         <span>⚠️</span>
-                        <span>{errors.customerId.message}</span>
+                        <span>{errors.customerName.message}</span>
                       </p>
                     )}
 
@@ -876,7 +864,8 @@ export function InvoiceForm({
                             onClick={() => {
                               setSelectedCustomer(null);
                               setCustomerSearch("");
-                              setValue("customerId", 0);
+                              setValue("customerName", "");
+                              setValue("customerId", undefined);
                             }}
                             className="text-green-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20"
                           >
@@ -1240,7 +1229,8 @@ export function InvoiceForm({
                                 onClick={() => {
                                   setSelectedCustomer(null);
                                   setCustomerSearch("");
-                                  setValue("customerId", 0);
+                                  setValue("customerName", "");
+                                  setValue("customerId", undefined);
                                 }}
                                 className="text-gray-500 hover:text-red-500"
                               >

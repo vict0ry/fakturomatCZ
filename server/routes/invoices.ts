@@ -6,7 +6,8 @@ import { insertInvoiceSchema, insertInvoiceItemSchema } from '@shared/schema';
 
 // Frontend compatible schema - accepts string dates
 const invoiceFormSchema = z.object({
-  customerId: z.number(),
+  customerId: z.number().optional(), // Not required - will be created if needed
+  customerName: z.string().min(1, "Customer name is required"),
   type: z.enum(["invoice", "proforma", "credit_note"]).default("invoice"),
   invoiceNumber: z.string().optional(),
   issueDate: z.string().min(1, "Issue date is required"),
@@ -28,6 +29,18 @@ const invoiceFormSchema = z.object({
   isReverseCharge: z.boolean().default(false),
   status: z.enum(["draft", "sent", "paid", "overdue"]).default("draft"),
   notes: z.string().optional(),
+  // Customer data for creating new customer if needed
+  customerData: z.object({
+    name: z.string(),
+    ico: z.string().optional(),
+    dic: z.string().optional(),
+    email: z.string().optional(),
+    phone: z.string().optional(),
+    address: z.string().optional(),
+    city: z.string().optional(),
+    postalCode: z.string().optional(),
+    country: z.string().default("CZ"),
+  }).optional(),
   items: z.array(z.object({
     description: z.string().min(1, "Description is required"),
     quantity: z.string().min(1, "Quantity is required"),
@@ -85,33 +98,30 @@ router.post('/', async (req, res) => {
   try {
     const user = (req as any).user;
     
-    // Handle customer creation if customerId is -1
-    let invoiceData = { ...req.body };
+    // Validate request body using frontend-compatible schema first
+    const validatedData = invoiceFormSchema.parse(req.body);
     
-    if (req.body.customerId === -1 && req.body.customer) {
-      console.log('Creating new customer for invoice with data:', req.body.customer);
+    let customerId = validatedData.customerId;
+    
+    // If no customerId provided, create customer from customerData
+    if (!customerId && validatedData.customerData) {
+      console.log('Creating new customer for invoice with data:', validatedData.customerData);
       const customerData = {
-        ...req.body.customer,
+        ...validatedData.customerData,
         companyId: user.companyId,
       };
       
-      // Remove auto-generated fields
-      delete customerData.id;
-      delete customerData.createdAt;
-      delete customerData.updatedAt;
-      
       const newCustomer = await storage.createCustomer(customerData);
       console.log('New customer created with ID:', newCustomer.id);
-      
-      // Update invoice data with the new customer ID
-      invoiceData.customerId = newCustomer.id;
+      customerId = newCustomer.id;
     }
     
-    // Remove the embedded customer object since we don't need it anymore
-    delete invoiceData.customer;
-    
-    // Validate request body using frontend-compatible schema
-    const validatedData = invoiceFormSchema.parse(invoiceData);
+    // Ensure we have a customerId at this point
+    if (!customerId) {
+      return res.status(400).json({ 
+        message: 'No customer specified and no customer data provided to create new customer'
+      });
+    }
     
     // Generate invoice number if not provided
     if (!validatedData.invoiceNumber) {
@@ -123,12 +133,17 @@ router.post('/', async (req, res) => {
     // Convert string dates to Date objects for database storage
     const processedData = {
       ...validatedData,
+      customerId, // Use the resolved customerId
       invoiceNumber: validatedData.invoiceNumber,
       issueDate: new Date(validatedData.issueDate),
       dueDate: new Date(validatedData.dueDate),
       companyId: user.companyId,
       userId: user.id
     };
+    
+    // Remove customerData as it's not needed for database storage
+    delete (processedData as any).customerData;
+    delete (processedData as any).customerName;
     
     // Create invoice with items  
     const invoice = await storage.createInvoiceWithItems(processedData);
