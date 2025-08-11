@@ -145,7 +145,7 @@ export default function CustomerDetail() {
                 Upravit
               </Button>
               
-              <Button onClick={() => setLocation("/invoices/new")}>
+              <Button onClick={() => setLocation(`/invoices/new?customerId=${customerId}`)}>
                 <FileText className="mr-2 h-4 w-4" />
                 Nová faktura
               </Button>
@@ -317,7 +317,7 @@ export default function CustomerDetail() {
                     <Button 
                       variant="outline" 
                       className="mt-4"
-                      onClick={() => setLocation("/invoices/new")}
+                      onClick={() => setLocation(`/invoices/new?customerId=${customerId}`)}
                     >
                       Vytvořit první fakturu
                     </Button>

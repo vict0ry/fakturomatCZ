@@ -97,12 +97,14 @@ interface InvoiceFormProps {
   invoice?: Invoice;
   onSubmit: (data: InvoiceFormData) => void;
   isLoading?: boolean;
+  preselectedCustomerId?: number | null;
 }
 
 export function InvoiceForm({
   invoice,
   onSubmit,
   isLoading = false,
+  preselectedCustomerId = null,
 }: InvoiceFormProps) {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerSearch, setCustomerSearch] = useState("");
@@ -377,6 +379,35 @@ export function InvoiceForm({
   useEffect(() => {
     calculateTotals();
   }, [watchedItemsArray, isReverseCharge]);
+  
+  // Auto-load customer if preselectedCustomerId is provided
+  useEffect(() => {
+    if (preselectedCustomerId && !selectedCustomer) {
+      const loadCustomer = async () => {
+        try {
+          const response = await fetch(`/api/customers/${preselectedCustomerId}`, {
+            credentials: "include",
+            headers: {
+              ...(localStorage.getItem('sessionId') ? { "Authorization": `Bearer ${localStorage.getItem('sessionId')}` } : {}),
+            },
+          });
+          
+          if (response.ok) {
+            const customer = await response.json();
+            selectCustomer(customer);
+            toast({
+              title: "Zákazník načten",
+              description: `Automaticky načten zákazník: ${customer.name}`,
+            });
+          }
+        } catch (error) {
+          console.error('Error loading preselected customer:', error);
+        }
+      };
+      
+      loadCustomer();
+    }
+  }, [preselectedCustomerId, selectedCustomer]);
 
   const addItem = () => {
     append({
