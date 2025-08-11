@@ -509,6 +509,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Duplicate invoice endpoint
+  app.post("/api/invoices/:id/duplicate", requireAuth, async (req: any, res) => {
+    try {
+      const originalId = parseInt(req.params.id);
+      const originalInvoice = await storage.getInvoiceWithDetails(originalId, req.user.companyId);
+      
+      if (!originalInvoice) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+      
+      // Create new invoice with data from original, but new dates and number
+      const today = new Date();
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 14); // 14 days from today
+      
+      // Generate new invoice number
+      const year = new Date().getFullYear();
+      const count = await storage.getInvoiceCount(req.user.companyId, year);
+      const newInvoiceNumber = `${year}${String(count + 1).padStart(4, '0')}`;
+      
+      // Create duplicate invoice with new data
+      const duplicateInvoiceData = {
+        customerId: originalInvoice.customerId,
+        companyId: req.user.companyId,
+        userId: req.user.userId,
+        type: originalInvoice.type,
+        invoiceNumber: newInvoiceNumber,
+        issueDate: today,
+        dueDate: dueDate,
+        subtotal: originalInvoice.subtotal,
+        vatAmount: originalInvoice.vatAmount,
+        total: originalInvoice.total,
+        currency: originalInvoice.currency,
+        paymentMethod: (originalInvoice as any).paymentMethod || 'bank_transfer',
+        bankAccount: (originalInvoice as any).bankAccount || '',
+        variableSymbol: (originalInvoice as any).variableSymbol || '',
+        constantSymbol: (originalInvoice as any).constantSymbol || '',
+        specificSymbol: (originalInvoice as any).specificSymbol || '',
+        paymentReference: (originalInvoice as any).paymentReference || '',
+        deliveryMethod: (originalInvoice as any).deliveryMethod || 'email',
+        deliveryAddress: (originalInvoice as any).deliveryAddress || '',
+        orderNumber: (originalInvoice as any).orderNumber || '',
+        warranty: (originalInvoice as any).warranty || '',
+        isReverseCharge: originalInvoice.isReverseCharge,
+        status: 'draft',
+        notes: originalInvoice.notes || '',
+      };
+      
+      const invoiceDataParsed = insertInvoiceSchema.parse(duplicateInvoiceData);
+      const newInvoice = await storage.createInvoice(invoiceDataParsed);
+      
+      // Copy invoice items if they exist
+      if (originalInvoice.items && Array.isArray(originalInvoice.items)) {
+        for (const item of originalInvoice.items) {
+          await storage.createInvoiceItem({
+            invoiceId: newInvoice.id,
+            description: item.description || '',
+            quantity: String(item.quantity || '1'),
+            unitPrice: String(item.unitPrice || '0'),
+            vatRate: String(item.vatRate || '21'),
+            total: String(item.total || '0')
+          });
+        }
+      }
+      
+      // Log creation in history
+      await storage.createInvoiceHistory({
+        invoiceId: newInvoice.id,
+        companyId: req.user.companyId,
+        userId: req.user.userId,
+        action: 'created',
+        description: `Faktúra ${newInvoice.invoiceNumber} bola vytvorená duplikovaním z ${originalInvoice.invoiceNumber}`,
+        newValue: { status: newInvoice.status, total: newInvoice.total }
+      });
+      
+      res.json(newInvoice);
+    } catch (error) {
+      console.error("Error duplicating invoice:", error);
+      res.status(500).json({ message: "Failed to duplicate invoice" });
+    }
+  });
+
   app.get("/api/invoices/recent", requireAuth, async (req: any, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 10;

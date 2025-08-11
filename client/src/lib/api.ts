@@ -149,6 +149,10 @@ export const invoiceAPI = {
     return response.blob();
   },
 
+  duplicate: async (id: number): Promise<Invoice> => {
+    const response = await apiRequest("POST", `/api/invoices/${id}/duplicate`);
+    return response.json();
+  },
 
 };
 

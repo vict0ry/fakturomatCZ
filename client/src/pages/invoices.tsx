@@ -96,6 +96,26 @@ export default function Invoices() {
     },
   });
 
+  const duplicateInvoiceMutation = useMutation({
+    mutationFn: (id: number) => invoiceAPI.duplicate(id),
+    onSuccess: (duplicatedInvoice) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      toast({
+        title: "Faktura duplikována",
+        description: "Nová faktura byla úspěšně vytvořena z existující faktury.",
+      });
+      // Navigate to edit the duplicated invoice
+      window.location.href = `/invoices/${duplicatedInvoice.id}/edit`;
+    },
+    onError: () => {
+      toast({
+        title: "Chyba",
+        description: "Nepodařilo se duplikovat fakturu.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('cs-CZ');
   };
@@ -298,6 +318,16 @@ export default function Invoices() {
                             disabled={downloadPDFMutation.isPending}
                           >
                             <Download className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => duplicateInvoiceMutation.mutate(invoice.id)}
+                            disabled={duplicateInvoiceMutation.isPending}
+                            className="text-green-600 hover:text-green-700"
+                            data-testid={`button-duplicate-${invoice.id}`}
+                          >
+                            <Plus className="h-4 w-4" />
                           </Button>
                           <Select
                             value={invoice.status}

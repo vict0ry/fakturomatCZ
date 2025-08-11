@@ -317,7 +317,7 @@ export default function CustomerDetail() {
                     <Button 
                       variant="outline" 
                       className="mt-4"
-                      onClick={() => setLocation(`/invoices/new?customerId=${customerId}`)}
+                      onClick={() => setLocation("/invoices/new")}
                     >
                       Vytvořit první fakturu
                     </Button>

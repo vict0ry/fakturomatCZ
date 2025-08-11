@@ -32,9 +32,7 @@ export default function InvoiceDetail() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  // Get URL search params to check for customerId
-  const urlParams = new URLSearchParams(window.location.search);
-  const preselectedCustomerId = urlParams.get('customerId') ? parseInt(urlParams.get('customerId')!) : null;
+
 
   const [showHistory, setShowHistory] = useState(false);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
@@ -219,6 +217,25 @@ export default function InvoiceDetail() {
     },
   });
 
+  const duplicateInvoiceMutation = useMutation({
+    mutationFn: (id: number) => invoiceAPI.duplicate(id),
+    onSuccess: (duplicatedInvoice) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      toast({
+        title: "Faktura duplikována",
+        description: "Nová faktura byla úspěšně vytvořena z existující faktury.",
+      });
+      setLocation(`/invoices/${duplicatedInvoice.id}/edit`);
+    },
+    onError: () => {
+      toast({
+        title: "Chyba",
+        description: "Nepodařilo se duplikovat fakturu.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Handle creating new invoice
   if (isNew) {
 
@@ -253,7 +270,6 @@ export default function InvoiceDetail() {
               <InvoiceForm
                 onSubmit={createInvoiceMutation.mutate}
                 isLoading={createInvoiceMutation.isPending}
-                preselectedCustomerId={preselectedCustomerId}
               />
             </CardContent>
           </Card>
@@ -444,6 +460,16 @@ export default function InvoiceDetail() {
               >
                 <History className="mr-2 h-4 w-4" />
                 Historie
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={() => duplicateInvoiceMutation.mutate(invoiceId!)}
+                disabled={duplicateInvoiceMutation.isPending}
+                className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                {duplicateInvoiceMutation.isPending ? 'Duplikování...' : 'Duplikovat'}
               </Button>
               
               <Select
