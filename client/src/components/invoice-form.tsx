@@ -226,16 +226,61 @@ export function InvoiceForm({
     }
   };
 
-  const selectCustomer = (customer: Customer) => {
-    console.log(customer);
-    setSelectedCustomer(customer);
-    setCustomerSearch(customer.name);
-    setValue("customerId", customer.id);
-    clearErrors("customerId"); // Clear validation error
-    setShowCustomerResults(false);
+  const selectCustomer = async (customer: Customer) => {
+    console.log('Selecting customer:', customer);
+    
+    // If customer has an ID, it's an existing customer from database
+    if (customer.id && customer.id > 0) {
+      setSelectedCustomer(customer);
+      setCustomerSearch(customer.name);
+      setValue("customerId", customer.id);
+      clearErrors("customerId"); // Clear validation error
+      setShowCustomerResults(false);
+      return;
+    }
+
+    // If customer doesn't have ID (ARES data), create new customer first
+    if (!customer.id || customer.id <= 0) {
+      try {
+        // Create customer data for the API
+        const customerData = {
+          name: customer.name,
+          ico: customer.ico || "",
+          dic: customer.dic || "",
+          email: customer.email || "",
+          phone: customer.phone || "",
+          address: customer.address || "",
+          city: customer.city || "",
+          postalCode: customer.postalCode || "",
+          country: customer.country || "CZ"
+        };
+
+        // Create customer in database
+        const newCustomer = await customerAPI.create(customerData);
+        
+        // Set the new customer with proper ID
+        setSelectedCustomer(newCustomer);
+        setCustomerSearch(newCustomer.name);
+        setValue("customerId", newCustomer.id);
+        clearErrors("customerId");
+        setShowCustomerResults(false);
+
+        toast({
+          title: "Zákazník vytvořen",
+          description: `Zákazník "${newCustomer.name}" byl úspěšně vytvořen a vybrán.`,
+        });
+      } catch (error) {
+        console.error("Error creating customer:", error);
+        toast({
+          title: "Chyba při vytváření zákazníka",
+          description: "Nepodařilo se vytvořit nového zákazníka. Zkuste to znovu.",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
-  const createNewCustomer = () => {
+  const createNewCustomer = async () => {
     // Create customer from current search or manual entry
     const customerName = customerSearch || newCustomerData.name;
 
@@ -248,46 +293,53 @@ export function InvoiceForm({
       return;
     }
 
-    const newCustomer = {
-      id: -1, // Temporary ID for new customer
-      name: customerName,
-      ico: newCustomerData.ico,
-      dic: newCustomerData.dic,
-      email: newCustomerData.email,
-      phone: newCustomerData.phone,
-      address: newCustomerData.address,
-      city: newCustomerData.city,
-      postalCode: newCustomerData.postalCode,
-      country: newCustomerData.country,
-      isActive: true,
-      companyId: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    try {
+      const customerData = {
+        name: customerName,
+        ico: newCustomerData.ico,
+        dic: newCustomerData.dic,
+        email: newCustomerData.email,
+        phone: newCustomerData.phone,
+        address: newCustomerData.address,
+        city: newCustomerData.city,
+        postalCode: newCustomerData.postalCode,
+        country: newCustomerData.country,
+      };
 
-    setSelectedCustomer(newCustomer);
-    setValue("customerId", -1);
-    clearErrors("customerId");
-    setShowCustomerResults(false);
-    setShowNewCustomerForm(false);
+      // Create customer in database
+      const newCustomer = await customerAPI.create(customerData);
+      
+      setSelectedCustomer(newCustomer);
+      setValue("customerId", newCustomer.id);
+      clearErrors("customerId");
+      setShowCustomerResults(false);
+      setShowNewCustomerForm(false);
 
-    // Reset form
-    setNewCustomerData({
-      name: "",
-      ico: "",
-      dic: "",
-      email: "",
-      phone: "",
-      address: "",
-      city: "",
-      postalCode: "",
-      country: "CZ",
-    });
+      // Reset form
+      setNewCustomerData({
+        name: "",
+        ico: "",
+        dic: "",
+        email: "",
+        phone: "",
+        address: "",
+        city: "",
+        postalCode: "",
+        country: "CZ",
+      });
 
-    toast({
-      title: "Zákazník připraven",
-      description: "Nový zákazník bude vytvořen při uložení faktury",
-    });
+      toast({
+        title: "Zákazník vytvořen",
+        description: `Zákazník "${newCustomer.name}" byl úspěšně vytvořen a vybrán.`,
+      });
+    } catch (error) {
+      console.error("Error creating customer:", error);
+      toast({
+        title: "Chyba při vytváření zákazníka",
+        description: "Nepodařilo se vytvořit nového zákazníka. Zkuste to znovu.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Calculate totals
