@@ -464,13 +464,22 @@ export function InvoiceForm({
     }
 
     // For new customers from ARES without ID, create them first
-    if (
-      selectedCustomer &&
-      (!selectedCustomer.id || selectedCustomer.id === -1)
-    ) {
-      const dataWithCustomer = data as any;
-      dataWithCustomer.customer = selectedCustomer;
-      dataWithCustomer.customerId = -1; // Flag for new customer
+    if (selectedCustomer && selectedCustomer.id === 0) {
+      // Creating new customer - send customer data for creation
+      const dataWithCustomer = {
+        ...data,
+        customerData: {
+          name: selectedCustomer.name,
+          ico: selectedCustomer.ico || "",
+          dic: selectedCustomer.dic || "",
+          email: selectedCustomer.email || "",
+          phone: selectedCustomer.phone || "",
+          address: selectedCustomer.address || "",
+          city: selectedCustomer.city || "",
+          postalCode: selectedCustomer.postalCode || "",
+          country: selectedCustomer.country || "CZ"
+        }
+      };
       onSubmit(dataWithCustomer);
     } else {
       onSubmit(data);
