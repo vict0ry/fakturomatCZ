@@ -115,6 +115,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register enhanced auth routes (includes password reset)
   setupEnhancedAuthRoutes(app, sessions);
   
+  // Authentication endpoint for frontend
+  app.get('/api/auth/user', requireAuth, async (req: any, res) => {
+    try {
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ message: 'Not authenticated' });
+      }
+      res.json(user);
+    } catch (error) {
+      console.error('Error getting current user:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+  
   // Register company routes
   setupCompanyRoutes(app);
   
